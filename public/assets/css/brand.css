@@ -1,0 +1,67 @@
+/* public/assets/css/brand.css */
+:root{
+  /* Colores aproximados del manual (ajústalos si te pasan los hex oficiales) */
+  --rhr-orange: #F47A21;     /* naranja principal */
+  --rhr-orange-dark: #D14B16;/* naranja más oscuro */
+  --rhr-cyan: #18A9C8;       /* cian principal */
+  --rhr-cyan-light: #66D7F2; /* cian claro */
+  --rhr-navy: #083B5C;       /* azul marino */
+  --rhr-teal: #0C7EA1;       /* azul/teal intermedio */
+
+  --bg: #ECECEC;             /* gris claro fondo */
+  --panel: #FFFFFF;
+  --text: #0F172A;
+  --muted: #6B7280;
+  --border: #D1D5DB;
+
+  --radius: 14px;
+}
+
+/* Reset básico */
+*{ box-sizing: border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+a{ color: var(--rhr-cyan); text-decoration:none; }
+a:hover{ text-decoration:underline; }
+
+/* Componentes reutilizables */
+.container{
+  width: min(1100px, 100%);
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.card{
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+}
+
+.badge{
+  display:inline-block;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--rhr-navy);
+  color: white;
+  font-weight: 700;
+  letter-spacing: .2px;
+}
+
+.btn{
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.btn-primary{
+  background: linear-gradient(90deg, var(--rhr-orange), var(--rhr-orange-dark));
+  color: white;
+}
+.btn-primary:hover{ filter: brightness(0.98); }

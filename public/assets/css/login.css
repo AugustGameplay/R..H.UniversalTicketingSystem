@@ -1,0 +1,120 @@
+/* Fondo como tu ejemplo */
+.page{
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background: var(--bg);
+}
+
+/* Tarjeta */
+.login-card{
+  width: min(420px, 100%);
+  padding: 26px 26px 30px;
+  border-radius: 18px;
+  border: 2px solid rgba(24,169,200,.9);
+  background: rgba(220,220,220,.75);
+  box-shadow: 0 18px 45px rgba(0,0,0,.22);
+  text-align: center;
+}
+
+/* Logo pequeño debajo */
+.mini-logo{
+  margin: 6px 0 8px;
+}
+.mini-logo__img{
+  width: 110px;
+  height: auto;
+  display: inline-block;
+}
+
+/* Título */
+.title{
+  margin: 8px 0 18px;
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 900;
+  color: #111;
+  letter-spacing: .2px;
+}
+
+/* Inputs */
+.form{
+  display: grid;
+  gap: 18px;
+  margin-top: 6px;
+}
+
+/* Contenedor input + icono */
+.input-wrap{
+  position: relative;
+}
+
+.input{
+  width: 100%;
+  height: 58px;
+  border-radius: 14px;
+  border: 0;
+  outline: none;
+  background: rgba(255,255,255,.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.55),
+    0 6px 14px rgba(0,0,0,.16);
+  padding: 0 62px 0 20px; /* espacio para el icono */
+  font-size: 20px;
+  color: #222;
+}
+
+/* Placeholder más fino */
+.input::placeholder{
+  color: rgba(60,60,60,.55);
+}
+
+/* Focus profesional */
+.input:focus{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.6),
+    0 0 0 4px rgba(24,169,200,.20),
+    0 10px 18px rgba(0,0,0,.18);
+}
+
+/* Icono del lado derecho */
+.input-icon{
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  pointer-events: none;
+}
+
+/* Botón sólido (sin degradado) */
+/* Botón sólido + hover naranja (ligeramente más oscuro) */
+.btn-login{
+  width: 160px;
+  height: 46px;
+  margin: 12px auto 0;
+  border: 0;
+  border-radius: 14px;
+
+  background: var(--rhr-navy);
+  color: #fff;
+
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+
+  box-shadow: 0 10px 20px rgba(0,0,0,.18);
+  transition: background-color .18s ease, transform .08s ease, filter .18s ease, box-shadow .18s ease;
+}
+
+.btn-login:hover{
+  background: var(--rhr-orange-dark); /* naranja más oscuro, poquito */
+  filter: none;
+}
+
+.btn-login:active{
+  transform: translateY(1px);
+  box-shadow: 0 6px 14px rgba(0,0,0,.18);
+}
