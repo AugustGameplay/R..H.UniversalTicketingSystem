@@ -11,6 +11,7 @@
 
   <!-- Tu CSS -->
   <link rel="stylesheet" href="./assets/css/generarTickets.css">
+  <script src="./assets/js/selects.js"></script>
 </head>
 
 <body>
@@ -40,10 +41,10 @@
 
       <!-- Menú -->
       <nav class="menu nav flex-column mt-3">
-        <a class="menu__item nav-link active" href="#">Generar Ticket</a>
-        <a class="menu__item nav-link" href="#">Tickets</a>
-        <a class="menu__item nav-link" href="#">Users</a>
-        <a class="menu__item nav-link" href="#">History</a>
+        <a class="menu__item nav-link active" href="dashboard.html">Generate Ticket</a>
+        <a class="menu__item nav-link" href="tickets.html">Tickets</a>
+        <a class="menu__item nav-link" href="users.html">Users</a>
+        <a class="menu__item nav-link" href="history.html">History</a>
       </nav>
 
       <!-- Logout abajo -->
@@ -59,38 +60,52 @@
     <main class="main flex-grow-1 d-flex justify-content-center align-items-start">
       <section class="panel card">
 
-        <h1 class="panel__title mb-4">Generar Ticket</h1>
+        <h1 class="panel__title mb-4">Generate Ticket</h1>
 
         <form class="ticket-form mx-auto" id="ticketForm" novalidate>
 
           <!-- Category -->
-          <div class="select-wrap">
-            <select class="select" id="category" required>
-              <option value="" selected disabled>Category</option>
-              <option>Hardware</option>
-              <option>Software</option>
-              <option>Red</option>
-              <option>Correo</option>
-            </select>
-            <span class="select-arrow" aria-hidden="true"></span>
-          </div>
+<div class="dropdown w-100">
+<button class="select-pro dropdown-toggle w-100" type="button" id="catBtn" data-bs-toggle="dropdown" aria-expanded="false">
+  <span id="catText">Category</span>
+  <span class="chev" aria-hidden="true"></span>
+</button>
 
-          <!-- Tipo de problema -->
-          <div class="select-wrap">
-            <select class="select" id="problemType" required>
-              <option value="" selected disabled>Tipo de problema</option>
-              <option>Equipo lento</option>
-              <option>No enciende</option>
-              <option>Sin internet</option>
-              <option>Error de aplicación</option>
-            </select>
-            <span class="select-arrow" aria-hidden="true"></span>
-          </div>
 
+  <ul class="dropdown-menu dropdown-pro w-100" aria-labelledby="catBtn">
+    <li><button class="dropdown-item" type="button" data-value="Hardware">Hardware</button></li>
+    <li><button class="dropdown-item" type="button" data-value="Software">Software</button></li>
+    <li><button class="dropdown-item" type="button" data-value="Red">Network</button></li>
+    <li><button class="dropdown-item" type="button" data-value="Correo">Email</button></li>
+  </ul>
+
+  <!-- input oculto para “enviar” el valor después -->
+  <input type="hidden" name="category" id="category">
+</div>
+
+<div class="dropdown w-100">
+<button class="select-pro dropdown-toggle w-100" type="button" id="typeBtn" data-bs-toggle="dropdown" aria-expanded="false">
+  <span id="typeText">Type</span>
+  <span class="chev" aria-hidden="true"></span>
+</button>
+
+  <ul class="dropdown-menu dropdown-pro w-100" aria-labelledby="typeBtn">
+    <li><button class="dropdown-item" type="button" data-value="Equipo lento">Equipo lento</button></li>
+    <li><button class="dropdown-item" type="button" data-value="No enciende">No enciende</button></li>
+    <li><button class="dropdown-item" type="button" data-value="Sin internet">Sin internet</button></li>
+    <li><button class="dropdown-item" type="button" data-value="Error de aplicación">Error de aplicación</button></li>
+    <li><button class="dropdown-item" type="button" data-value="Acceso / credenciales">Acceso / credenciales</button></li>
+    <li><button class="dropdown-item" type="button" data-value="Impresora">Impresora</button></li>
+  </ul>
+
+  <!-- valor oculto para backend -->
+  <input type="hidden" name="problemType" id="problemType">
+</div>
+          <div>
           <!-- Descripción -->
-          <label class="label" for="desc">Describe tu problema</label>
-          <textarea class="textarea" id="desc" rows="6" required></textarea>
-
+          <label class="label" for="desc">Comments</label>
+          <textarea class="textarea" id="desc" rows="6" required placeholder="Describe your problem"></textarea>
+            </div>
           <!-- Botón -->
           <button class="btn-send" type="submit">Send</button>
 
@@ -123,6 +138,12 @@
       form.reset();
     });
   </script>
+
+<script src="./assets/js/data/mock.js"></script>
+<script type="module">
+  import { initStore } from "./assets/js/store.js";
+  initStore();
+</script>
 
 </body>
 </html>

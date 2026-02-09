@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Users | RH&R Ticketing</title>
+
+  <!-- Bootstrap + FontAwesome -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+  <!-- Base del sistema -->
+  <link rel="stylesheet" href="./assets/css/generarTickets.css">
+  <!-- Users específicos -->
+  <link rel="stylesheet" href="./assets/css/users.css">
+</head>
+
+<body>
+
+  <div class="layout d-flex">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar d-flex flex-column">
+      <div class="sidebar__logo text-center">
+        <img src="./assets/img/rhr-logo.png" alt="RH&R Universal" class="img-fluid">
+      </div>
+
+      <div class="welcome text-center">
+        <span class="welcome__label">Welcome,</span>
+        <span class="welcome__name">Emilio</span>
+      </div>
+
+      <div class="user-badge mx-auto" aria-hidden="true">
+        <i class="fa-regular fa-user fs-3 text-dark"></i>
+      </div>
+
+      <nav class="menu nav flex-column mt-3">
+        <a class="menu__item nav-link" href="./generarTickets.html">Generar Ticket</a>
+        <a class="menu__item nav-link" href="./tickets.html">Tickets</a>
+        <a class="menu__item nav-link active" href="./users.html">Users</a>
+        <a class="menu__item nav-link" href="./history.html">History</a>
+      </nav>
+
+      <div class="mt-auto d-flex justify-content-end pt-3">
+        <button class="logout" type="button" title="Logout" aria-label="Logout">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main flex-grow-1 d-flex justify-content-center align-items-start">
+      <section class="panel card users-panel">
+
+        <!-- Header panel (título + acciones derecha) -->
+        <div class="users-head">
+          <h1 class="panel__title m-0">Users</h1>
+
+          <div class="users-actions">
+            <button class="btn-pro" type="button" data-bs-toggle="modal" data-bs-target="#createUserModal">
+              Create User
+            </button>
+
+            <button class="btn-pro btn-pro--sm" type="button" data-bs-toggle="modal" data-bs-target="#genPassModal">
+              Generate Password
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="table-responsive users-table mt-3">
+          <table class="table table-borderless align-middle mb-0">
+            <thead>
+              <tr>
+                <th class="th-center">ID</th>
+                <th>Name</th>
+                <th>Area</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th class="th-center">Modify Password</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <!-- Filas demo -->
+              <tr>
+                <td class="th-center fw-bold">001</td>
+                <td>Emilio Puigcerver</td>
+                <td>IT Support</td>
+                <td>emilio@rhr.com</td>
+                <td><span class="badge role-badge role-admin">Administrador</span></td>
+                <td class="th-center">
+                  <button class="icon-action" type="button" title="Cambiar contraseña" data-bs-toggle="modal" data-bs-target="#modPassModal">
+                    <i class="fa-solid fa-key"></i>
+                  </button>
+                </td>
+              </tr>
+
+              <tr>
+                <td class="th-center fw-bold">002</td>
+                <td>Jared Cano</td>
+                <td>IT Support</td>
+                <td>jared@rhr.com</td>
+                <td><span class="badge role-badge role-super">Superadmin</span></td>
+                <td class="th-center">
+                  <button class="icon-action" type="button" title="Cambiar contraseña" data-bs-toggle="modal" data-bs-target="#modPassModal">
+                    <i class="fa-solid fa-key"></i>
+                  </button>
+                </td>
+              </tr>
+
+              <tr>
+                <td class="th-center fw-bold">003</td>
+                <td>Juan Pérez</td>
+                <td>Infraestructura</td>
+                <td>juan@rhr.com</td>
+                <td><span class="badge role-badge role-user">Usuario</span></td>
+                <td class="th-center">
+                  <button class="icon-action" type="button" title="Cambiar contraseña" data-bs-toggle="modal" data-bs-target="#modPassModal">
+                    <i class="fa-solid fa-key"></i>
+                  </button>
+                </td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Footer tabla -->
+        <div class="table-foot d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 mt-3">
+          <span class="foot-text">Mostrando 1–3 de 3 usuarios</span>
+
+          <nav aria-label="Paginación">
+            <ul class="pagination pagination-sm mb-0">
+              <li class="page-item disabled"><a class="page-link" href="#">Anterior</a></li>
+              <li class="page-item active"><a class="page-link" href="#">1</a></li>
+              <li class="page-item"><a class="page-link" href="#">2</a></li>
+              <li class="page-item"><a class="page-link" href="#">Siguiente</a></li>
+            </ul>
+          </nav>
+        </div>
+
+      </section>
+    </main>
+
+  </div>
+
+  <!-- MODAL: Create User -->
+  <div class="modal fade" id="createUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content modal-pro">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Create User</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <form class="row g-2">
+            <div class="col-12">
+              <label class="form-label">Nombre</label>
+              <input class="form-control pro-input" type="text" placeholder="Nombre completo">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Email</label>
+              <input class="form-control pro-input" type="email" placeholder="correo@dominio.com">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Area</label>
+              <input class="form-control pro-input" type="text" placeholder="IT Support / Marketing / ...">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Rol</label>
+              <select class="form-select pro-input">
+                <option>Usuario</option>
+                <option>Administrador</option>
+                <option>Superadmin</option>
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancelar</button>
+          <button class="btn-pro" type="button">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Generate Password -->
+  <div class="modal fade" id="genPassModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content modal-pro">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Generate Password</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted mb-2">Genera una contraseña segura para el usuario seleccionado.</p>
+          <div class="d-flex gap-2">
+            <input class="form-control pro-input" type="text" value="RHR-9xA!2kP@" readonly>
+            <button class="btn-pro btn-pro--sm" type="button"><i class="fa-regular fa-copy me-2"></i>Copy</button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cerrar</button>
+          <button class="btn-pro" type="button">Regenerar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Modify Password -->
+  <div class="modal fade" id="modPassModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content modal-pro">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Modify Password</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <label class="form-label">Nueva contraseña</label>
+          <input class="form-control pro-input" type="password" placeholder="••••••••">
+          <small class="text-muted">Mínimo 8 caracteres, incluye mayúscula, número y símbolo.</small>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancelar</button>
+          <button class="btn-pro" type="button">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
