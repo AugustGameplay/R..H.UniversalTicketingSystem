@@ -41,10 +41,10 @@
 
       <!-- Menú -->
       <nav class="menu nav flex-column mt-3">
-        <a class="menu__item nav-link active" href="dashboard.html">Generar Ticket</a>
+        <a class="menu__item nav-link active" href="dashboard.html">Generate Ticket</a>
         <a class="menu__item nav-link" href="tickets.html">Tickets</a>
-        <a class="menu__item nav-link" href="#">Users</a>
-        <a class="menu__item nav-link" href="#">History</a>
+        <a class="menu__item nav-link" href="users.html">Users</a>
+        <a class="menu__item nav-link" href="history.html">History</a>
       </nav>
 
       <!-- Logout abajo -->
@@ -60,7 +60,7 @@
     <main class="main flex-grow-1 d-flex justify-content-center align-items-start">
       <section class="panel card">
 
-        <h1 class="panel__title mb-4">Generar Ticket</h1>
+        <h1 class="panel__title mb-4">Generate Ticket</h1>
 
         <form class="ticket-form mx-auto" id="ticketForm" novalidate>
 
@@ -75,8 +75,8 @@
   <ul class="dropdown-menu dropdown-pro w-100" aria-labelledby="catBtn">
     <li><button class="dropdown-item" type="button" data-value="Hardware">Hardware</button></li>
     <li><button class="dropdown-item" type="button" data-value="Software">Software</button></li>
-    <li><button class="dropdown-item" type="button" data-value="Red">Red</button></li>
-    <li><button class="dropdown-item" type="button" data-value="Correo">Correo</button></li>
+    <li><button class="dropdown-item" type="button" data-value="Red">Network</button></li>
+    <li><button class="dropdown-item" type="button" data-value="Correo">Email</button></li>
   </ul>
 
   <!-- input oculto para “enviar” el valor después -->
@@ -85,7 +85,7 @@
 
 <div class="dropdown w-100">
 <button class="select-pro dropdown-toggle w-100" type="button" id="typeBtn" data-bs-toggle="dropdown" aria-expanded="false">
-  <span id="typeText">Tipo de problema</span>
+  <span id="typeText">Type</span>
   <span class="chev" aria-hidden="true"></span>
 </button>
 
@@ -103,7 +103,7 @@
 </div>
           <div>
           <!-- Descripción -->
-          <label class="label" for="desc">Describe tu problema</label>
+          <label class="label" for="desc">Comments</label>
           <textarea class="textarea" id="desc" rows="6" required placeholder="Describe your problem"></textarea>
             </div>
           <!-- Botón -->
@@ -138,6 +138,12 @@
       form.reset();
     });
   </script>
+
+<script src="./assets/js/data/mock.js"></script>
+<script type="module">
+  import { initStore } from "./assets/js/store.js";
+  initStore();
+</script>
 
 </body>
 </html>

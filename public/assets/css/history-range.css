@@ -1,0 +1,85 @@
+/* ===== Pastilla del rango (contenedor) ===== */
+.history-date{
+  width: 340px;
+  height: 50px;
+  border-radius: 16px;
+  background: rgba(255,255,255,.65);
+  display:flex;
+  align-items:center;
+  border: 1px red solid;
+  gap: 12px;
+  padding: 0 16px;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.65),
+    0 8px 18px rgba(0,0,0,.16);
+
+  cursor: pointer;            /* toda la pastilla se siente clic */
+}
+
+
+/* Icono */
+.history-date{
+    align-items: center;
+    justify-content: center;
+    padding: auto;
+    border: 5px var(--rhr-orange-dark) solid;
+}
+.history-date i{
+  color: var(--rhr-orange-dark);
+  font-size: 25px;
+}
+
+/* ===== Input limpio (sin caja fea) ===== */
+.date-range-input{
+  flex: 1;
+  width: 100%;
+  align-items: center;
+  border: 0 !important;
+  outline: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+
+  padding: 0 !important;
+  margin: 0 !important;
+
+  font-weight: 900;
+  font-size: 15px;
+  color: #111;
+
+  caret-color: transparent;   /* no cursor de escritura */
+  cursor: pointer;
+}
+
+/* Quita el highlight/borde al hacer focus */
+.date-range-input:focus{
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* ===== Flatpickr: pro ===== */
+.flatpickr-calendar{
+  border: 0 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25) !important;
+  overflow: hidden;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange{
+  background: var(--rhr-orange-dark) !important;
+  border-color: var(--rhr-orange-dark) !important;
+  color: #fff !important;
+}
+
+.flatpickr-day.inRange{
+  background: rgba(244,122,33,.22) !important;
+  border-color: rgba(244,122,33,.05) !important;
+}
+
+.flatpickr-day:hover{
+  background: rgba(8,59,92,.14) !important;
+}
+
+
