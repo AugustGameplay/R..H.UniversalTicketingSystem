@@ -1,3 +1,6 @@
+<?php
+$active = 'history';
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -11,6 +14,8 @@
 
   <!-- Base -->
   <link rel="stylesheet" href="./assets/css/generarTickets.css">
+  <link rel="stylesheet" href="./assets/css/menu.css">
+
   <link rel="stylesheet" href="./assets/css/history-range.css">
   <!-- History -->
   <link rel="stylesheet" href="./assets/css/history.css">
@@ -21,52 +26,24 @@
 
   <div class="layout d-flex">
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar d-flex flex-column">
-      <div class="sidebar__logo text-center">
-        <img src="./assets/img/logo-white.svg" alt="RH&R Universal" class="img-fluid">
-      </div>
-
-      <div class="welcome text-center">
-        <span class="welcome__label">Welcome,</span>
-        <span class="welcome__name">Emilio</span>
-      </div>
-
-      <div class="user-badge mx-auto" aria-hidden="true">
-        <i class="fa-regular fa-user fs-3 text-dark"></i>
-      </div>
-
-      <nav class="menu nav flex-column mt-3">
-        <a class="menu__item nav-link" href="./generarTickets.html">Dashboard</a>
-        <a class="menu__item nav-link" href="./tickets.html">Tickets</a>
-        <a class="menu__item nav-link" href="./users.html">Users</a>
-        <a class="menu__item nav-link active" href="./history.html">History</a>
-      </nav>
-
-      <div class="mt-auto d-flex justify-content-end pt-3">
-        <button class="logout" type="button" title="Logout" aria-label="Logout">
-          <i class="fa-solid fa-right-from-bracket"></i>
-        </button>
-      </div>
-    </aside>
+    <!-- SIDEBAR reutilizable -->
+    <?php include __DIR__ . '/partials/menu.php'; ?>
 
     <!-- MAIN -->
     <main class="main flex-grow-1 d-flex justify-content-center align-items-start">
       <section class="panel card history-panel">
 
-      <!-- Rango de fechas -->
-<div class="history-date">
-  <i class="fa-solid fa-calendar-days"></i>
-
-  <input
-    id="dateRange"
-    class="date-range-input"
-    type="text"
-    placeholder="Selecciona un rango"
-    readonly
-  />
-</div>
-
+        <!-- Rango de fechas -->
+        <div class="history-date">
+          <i class="fa-solid fa-calendar-days"></i>
+          <input
+            id="dateRange"
+            class="date-range-input"
+            type="text"
+            placeholder="Selecciona un rango"
+            readonly
+          />
+        </div>
 
         <!-- Métricas -->
         <div class="history-grid">
@@ -111,18 +88,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-  <!-- opcional: fecha automática (si quieres) -->
-  <script>
-    // Si quieres que sea automático:
-    // const d = new Date();
-    // const dd = String(d.getDate()).padStart(2,'0');
-    // const mm = String(d.getMonth()+1).padStart(2,'0');
-    // const yyyy = d.getFullYear();
-    // document.getElementById("todayDate").textContent = `${dd}/${mm}/${yyyy}`;
-  </script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="./assets/js/history-range.js"></script>
+  <script src="./assets/js/history-range.js"></script>
 
 </body>
 </html>

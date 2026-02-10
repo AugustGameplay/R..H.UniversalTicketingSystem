@@ -1,3 +1,6 @@
+<?php
+$active = 'tickets';
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -9,9 +12,10 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 
-  <!-- Base (sidebar/panel) -->
+  <!-- Base -->
   <link rel="stylesheet" href="./assets/css/generarTickets.css">
-  <!-- Tickets pro -->
+  <link rel="stylesheet" href="./assets/css/menu.css">
+  <!-- Tickets -->
   <link rel="stylesheet" href="./assets/css/tickets.css">
 </head>
 
@@ -19,34 +23,8 @@
 
   <div class="layout d-flex">
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar d-flex flex-column">
-      <div class="sidebar__logo text-center">
-        <img src="./assets/img/logo-white.svg" alt="RH&R Universal" class="img-fluid">
-      </div>
-
-      <div class="welcome text-center">
-        <span class="welcome__label">Welcome,</span>
-        <span class="welcome__name">Emilio</span>
-      </div>
-
-      <div class="user-badge mx-auto" aria-hidden="true">
-        <i class="fa-regular fa-user fs-3 text-dark"></i>
-      </div>
-
-      <nav class="menu nav flex-column mt-3">
-        <a class="menu__item nav-link" href="./generarTickets.html">Generar Ticket</a>
-        <a class="menu__item nav-link active" href="./tickets.html">Tickets</a>
-        <a class="menu__item nav-link" href="./users.html">Users</a>
-        <a class="menu__item nav-link" href="./history.html">History</a>
-      </nav>
-
-      <div class="mt-auto d-flex justify-content-end pt-3">
-        <button class="logout" type="button" title="Logout" aria-label="Logout">
-          <i class="fa-solid fa-right-from-bracket"></i>
-        </button>
-      </div>
-    </aside>
+    <!-- SIDEBAR reutilizable -->
+    <?php include __DIR__ . '/partials/menu.php'; ?>
 
     <!-- MAIN -->
     <main class="main flex-grow-1 d-flex justify-content-center align-items-start">
@@ -70,7 +48,7 @@
           </div>
         </div>
 
-        <!-- Filtros (pro pero discreto) -->
+        <!-- Filtros -->
         <div class="filters row g-2 mt-3">
           <div class="col-12 col-md-4">
             <select class="form-select filter-select">
@@ -113,7 +91,6 @@
             </thead>
 
             <tbody>
-              <!-- Filas demo (luego backend) -->
               <tr>
                 <td class="th-center fw-bold">001</td>
                 <td>IT Support</td>
