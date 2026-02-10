@@ -70,7 +70,21 @@
 
             <input type="hidden" name="problemType" id="problemType">
           </div>
+          <!-- Area -->
+          <div class="dropdown w-100">
+            <button class="select-pro dropdown-toggle w-100" type="button" id="typeBtn" data-bs-toggle="dropdown" aria-expanded="false">
+              <span id="typeText">Area</span>
+              <span class="chev" aria-hidden="true"></span>
+            </button>
 
+            <ul class="dropdown-menu dropdown-pro w-100" aria-labelledby="typeBtn">
+              <li><button class="dropdown-item" type="button" data-value="Equipo lento">Marketing e IT</button></li>
+              <li><button class="dropdown-item" type="button" data-value="Corporate">Corporate</button></li>
+              <li><button class="dropdown-item" type="button" data-value="Sin internet">Recruiters</button></li>
+            </ul>
+
+            <input type="hidden" name="problemType" id="problemType">
+          </div>
           <!-- Descripción -->
           <div>
             <label class="label" for="desc">Comments</label>
@@ -115,6 +129,8 @@
     import { initStore } from "./assets/js/store.js";
     initStore();
   </script>
+  <script src="./assets/js/sidebar.js"></script>
+
 
 </body>
 </html>

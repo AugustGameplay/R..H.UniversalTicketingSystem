@@ -29,7 +29,7 @@
   border-radius: 14px;
   padding: 0 18px;
   font-weight: 900;
-  color: #fff;
+  color: #ffffff;
   background: var(--rhr-navy);
   box-shadow: 0 10px 20px rgba(0,0,0,.18);
   transition: background-color .18s ease, transform .08s ease, box-shadow .18s ease;
@@ -46,7 +46,7 @@
   height: 34px;
   padding: 0 14px;
   border-radius: 12px;
-  font-size: 13px;
+  font-size: 10px;
   font-weight: 900;
 }
 
