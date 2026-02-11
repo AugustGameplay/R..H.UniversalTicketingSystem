@@ -1,5 +1,5 @@
 <?php
-// generarTickets.php
+$active = 'dashboard'; // <-- para que "Generar Ticket" quede activo
 ?>
 <!DOCTYPE html>
 <html lang="es">

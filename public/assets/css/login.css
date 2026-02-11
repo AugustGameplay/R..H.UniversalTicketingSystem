@@ -118,3 +118,9 @@
   transform: translateY(1px);
   box-shadow: 0 6px 14px rgba(0,0,0,.18);
 }
+
+.alert-danger {
+  background-color: var(--rhr-navy);
+  color: white;
+  border-color: var(--rhr-orange-dark);
+}
