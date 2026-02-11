@@ -1,5 +1,5 @@
 <?php
-$active = 'dashboard'; // <-- para que "Generar Ticket" quede activo
+$active = 'generarTickets'; // <-- para que "Generar Ticket" quede activo
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -15,6 +15,9 @@ $active = 'dashboard'; // <-- para que "Generar Ticket" quede activo
   <!-- Tu CSS -->
   <link rel="stylesheet" href="./assets/css/generarTickets.css">
   <link rel="stylesheet" href="./assets/css/menu.css">
+  <link rel="stylesheet" href="./assets/css/movil.css">
+  <script defer src="./assets/js/sidebar.js"></script>
+
 
   <script src="./assets/js/selects.js"></script>
 </head>
@@ -70,7 +73,7 @@ $active = 'dashboard'; // <-- para que "Generar Ticket" quede activo
 
             <input type="hidden" name="problemType" id="problemType">
           </div>
-          <!-- Area -->
+        <!-- Area -->
           <div class="dropdown w-100">
             <button class="select-pro dropdown-toggle w-100" type="button" id="typeBtn" data-bs-toggle="dropdown" aria-expanded="false">
               <span id="typeText">Area</span>
@@ -129,8 +132,6 @@ $active = 'dashboard'; // <-- para que "Generar Ticket" quede activo
     import { initStore } from "./assets/js/store.js";
     initStore();
   </script>
-  <script src="./assets/js/sidebar.js"></script>
-
 
 </body>
 </html>

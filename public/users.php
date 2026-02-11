@@ -146,6 +146,8 @@ $users = $stmt->fetchAll();
   <!-- Base -->
   <link rel="stylesheet" href="./assets/css/generarTickets.css">
   <link rel="stylesheet" href="./assets/css/menu.css">
+  <link rel="stylesheet" href="./assets/css/movil.css">
+  <script defer src="./assets/js/sidebar.js"></script>
   <!-- Users -->
   <link rel="stylesheet" href="./assets/css/users.css?v=1">
 </head>

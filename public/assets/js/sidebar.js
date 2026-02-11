@@ -10,7 +10,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const toggle = () => {
     document.body.classList.toggle("sidebar-open");
-    btn.setAttribute("aria-expanded", document.body.classList.contains("sidebar-open") ? "true" : "false");
+    btn.setAttribute(
+      "aria-expanded",
+      document.body.classList.contains("sidebar-open") ? "true" : "false"
+    );
   };
 
   const close = () => {
@@ -32,10 +35,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.key === "Escape") close();
   });
 
-  // (Opcional) cerrar al dar click en un link del menú en móvil
+  // Cerrar al dar click en un link del menú en móvil
   sidebar.addEventListener("click", (e) => {
     const a = e.target.closest("a");
-    if (a && window.matchMedia("(max-width: 759.98px)").matches) close();
+    if (a && window.matchMedia("(max-width: 767.98px)").matches) close();
   });
 });
-

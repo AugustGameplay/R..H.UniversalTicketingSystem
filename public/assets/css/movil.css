@@ -1,0 +1,96 @@
+/* movil.css (MÓVIL) */
+
+/* ===== TOPBAR ===== */
+.mobile-topbar{
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  width: 100%;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background: var(--sidebar);
+  box-shadow: 0 10px 18px rgba(0,0,0,.18);
+}
+
+.mobile-topbar__logo{
+  width: 90px;
+}
+
+/* Botón sandwich */
+.hamburger{
+  border: 1px var(--rhr-orange) solid;
+  background: transparent;
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+
+/* ===== OVERLAY ===== */
+.sidebar-overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease;
+  z-index: 1090;
+}
+
+/* Bloqueo de scroll solo cuando abierto */
+body.sidebar-open{
+  overflow: hidden;
+}
+
+/* ===== RESPONSIVE (Bootstrap md=768) ===== */
+@media (max-width: 767.98px){
+
+  /* ✅ Evita que el layout siga como flex en móvil (esto causaba la “barra flaca”) */
+  .layout{
+    display: block !important;
+  }
+
+  /* Empuja el contenido por la topbar fija */
+  .main{
+    padding-top: 56px;
+  }
+
+  /* Sidebar tipo drawer (fuera del flujo) */
+  .sidebar{
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100dvh;
+    z-index: 1200;
+    transform: translateX(-105%);
+    transition: transform .25s ease;
+  }
+
+  body.sidebar-open .sidebar{
+    transform: translateX(0);
+  }
+
+  body.sidebar-open .sidebar-overlay{
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* Desktop: ocultar topbar/overlay por si acaso */
+@media (min-width: 768px){
+  .mobile-topbar,
+  .sidebar-overlay{
+    display: none !important;
+  }
+
+  body.sidebar-open{
+    overflow: auto;
+  }
+}
