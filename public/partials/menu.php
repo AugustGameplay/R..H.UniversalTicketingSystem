@@ -52,7 +52,7 @@ if (!empty($photo)) {
   </button>
 
   <div class="mobile-topbar__brand">
-    <img src="./assets/img/logo-white.svg" alt="RH&R Universal" class="mobile-topbar__logo">
+    <img src="./assets/img/RHR UNIVERSAL-01.png" alt="RH&R Universal" class="mobile-topbar__logo">
   </div>
 </header>
 
@@ -64,7 +64,7 @@ if (!empty($photo)) {
 
   <!-- Logo solo desktop -->
   <div class="sidebar__logo text-center d-none d-md-block">
-    <img src="./assets/img/logo-white.svg" alt="RH&R Universal" class="img-fluid">
+    <img src="./assets/img/RHR UNIVERSAL-01.png" alt="RH&R Universal" class="img-fluid">
   </div>
 
   <div class="welcome text-center">

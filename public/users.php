@@ -153,8 +153,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
         ':profile_photo' => $profilePhotoPath,
       ]);
 
+      $newId = (int)$pdo->lastInsertId();
+
       // Flash para mostrar la contraseña generada/ingresada una sola vez
       $_SESSION['flash_generated_pass'] = [
+        'id_user' => $newId,
         'full_name' => $full_name,
         'email' => $email,
         'password' => $plain_pass,
@@ -295,44 +298,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
 }
 
 // ============================
-// GENERATE PASSWORD (POST)
-// ============================
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'generate_password') {
-  $id_user = (int)($_POST['id_user'] ?? 0);
-  if ($id_user <= 0) {
-    $passErrors[] = "Usuario inválido.";
-  }
-
-  if (!$passErrors) {
-    try {
-      // Genera una contraseña fuerte y actualiza
-      $plain = 'RHR-' . generateStrongPassword(10);
-      $hash  = password_hash($plain, PASSWORD_BCRYPT);
-
-      // Traer datos para el flash
-      $q = $pdo->prepare("SELECT full_name, email FROM users WHERE id_user = :id");
-      $q->execute([':id' => $id_user]);
-      $u = $q->fetch();
-
-      $up = $pdo->prepare("UPDATE users SET password_hash = :hash WHERE id_user = :id");
-      $up->execute([':hash' => $hash, ':id' => $id_user]);
-
-      $_SESSION['flash_generated_pass'] = [
-        'full_name' => $u['full_name'] ?? ('ID ' . $id_user),
-        'email' => $u['email'] ?? '',
-        'password' => $plain,
-      ];
-
-      header("Location: users.php?pass_updated=1");
-      exit;
-
-    } catch (PDOException $ex) {
-      $passErrors[] = "Error al generar contraseña: " . $ex->getMessage();
-    }
-  }
-}
-
-// ============================
 // DELETE USER (POST)
 // ============================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_user') {
@@ -462,10 +427,6 @@ $users = $stmt->fetchAll();
           <div class="users-actions">
             <button class="btn-pro" type="button" data-bs-toggle="modal" data-bs-target="#createUserModal">
               Create User
-            </button>
-
-            <button class="btn-pro btn-pro--sm" type="button" data-bs-toggle="modal" data-bs-target="#genPassModal">
-              Generate Password
             </button>
           </div>
         </div>
@@ -757,81 +718,54 @@ $users = $stmt->fetchAll();
     </div>
   </div>
 
-
-<!-- MODAL: Generate Password (real) -->
-  <div class="modal fade" id="genPassModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <form class="modal-content modal-pro" method="POST" action="users.php">
-        <div class="modal-header">
-          <h5 class="modal-title fw-bold">Generate Password</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-        </div>
-
-        <div class="modal-body">
-          <input type="hidden" name="action" value="generate_password">
-
-          <label class="form-label">Usuario</label>
-          <select class="form-select pro-input" name="id_user" required>
-            <option value="" selected disabled>Selecciona un usuario</option>
-            <?php foreach ($users as $u): ?>
-              <option value="<?= e($u['id_user']) ?>"><?= e($u['full_name']) ?> (<?= e($u['email']) ?>)</option>
-            <?php endforeach; ?>
-          </select>
-
-          <div class="mt-3">
-            <label class="form-label mb-1">Contraseña generada</label>
-            <div class="d-flex gap-2">
-              <input class="form-control pro-input" id="generatedPassOutput" type="text" value="" readonly>
-              <button class="btn btn-outline-light" id="copyGeneratedPass" type="button" title="Copiar">
-                <i class="fa-regular fa-copy"></i>
-              </button>
-            </div>
-            <small class="text-muted">Se guarda encriptada (hash) en la BD. Copia la contraseña antes de cerrar.</small>
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cerrar</button>
-          <button class="btn-pro-save" type="submit"><i class="fa-solid fa-wand-magic-sparkles me-2"></i>Generate & save</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
   <!-- MODAL: Modify Password -->
-  <div class="modal fade" id="modPassModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <form class="modal-content modal-pro" method="POST" action="users.php">
-        <div class="modal-header">
-          <h5 class="modal-title fw-bold">
-            Modify Password <span class="text-muted" id="modPassUserName" style="font-size: 14px;"></span>
-          </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-        </div>
+<div class="modal fade" id="modPassModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content modal-pro" method="POST" action="users.php">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">
+          Contraseña <span class="text-muted" id="modPassUserName" style="font-size: 14px;"></span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
 
-        <div class="modal-body">
-          <input type="hidden" name="action" value="update_password">
-          <input type="hidden" id="userIdToUpdate" name="id_user" value="">
+      <div class="modal-body">
+        <input type="hidden" name="action" value="update_password">
+        <input type="hidden" id="userIdToUpdate" name="id_user" value="">
 
-          <label class="form-label">New Password</label>
+        <label class="form-label">Nueva contraseña</label>
+
+        <div class="input-group">
           <input
             class="form-control pro-input"
             id="newPassInput"
             name="new_password"
-            type="password"
-            placeholder="new password here"
+            type="text"
+            placeholder="Genera o escribe una contraseña"
+            autocomplete="off"
             required
           >
-          <small class="text-muted">Mínimo 8 caracteres, incluye mayúscula, número y símbolo.</small>
+          <button class="btn-pro btn-pro--sm" type="button" id="btnGenPass" title="Generar contraseña">
+            <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Generar
+          </button>
         </div>
 
-        <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancelar</button>
-          <button class="btn-pro" type="submit">Guardar</button>
+        <small class="text-muted d-block mt-1">Mínimo 8 caracteres e incluir mayúscula, número y símbolo.</small>
+
+        <div class="d-flex justify-content-end mt-3">
+          <button class="btn-secondary btn-secondary--sm" type="button" id="btnCopyPass" title="Copiar contraseña">
+            <i class="fa-regular fa-copy me-1"></i>Copiar
+          </button>
         </div>
-      </form>
-    </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancelar</button>
+        <button class="btn-pro" type="submit">Guardar</button>
+      </div>
+    </form>
   </div>
+</div>
 
   <!-- MODAL: Delete User -->
   <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-hidden="true">
@@ -870,8 +804,7 @@ $users = $stmt->fetchAll();
     document.addEventListener('DOMContentLoaded', function () {
       const modPassModal = document.getElementById('modPassModal');
       const editUserModal = document.getElementById('editUserModal');
-      const deleteUserModal = document.getElementById('deleteUserModal');
-      const genPassModalEl = document.getElementById('genPassModal');
+      const deleteUserModal = document.getElementById('deleteUserModal'); 
 
       const userIdToUpdate = document.getElementById('userIdToUpdate');
       const modPassUserName = document.getElementById('modPassUserName');
@@ -928,30 +861,64 @@ $users = $stmt->fetchAll();
         });
       }
 
-      // Generate password: copiar + mostrar flash
-      const generatedPassOutput = document.getElementById('generatedPassOutput');
-      const copyGeneratedPass = document.getElementById('copyGeneratedPass');
-      if (copyGeneratedPass && generatedPassOutput) {
-        copyGeneratedPass.addEventListener('click', async () => {
-          try {
-            await navigator.clipboard.writeText(generatedPassOutput.value || '');
-            copyGeneratedPass.innerHTML = '<i class="fa-solid fa-check"></i>';
-            setTimeout(() => copyGeneratedPass.innerHTML = '<i class="fa-regular fa-copy"></i>', 1200);
-          } catch (e) {
-            // fallback
-            generatedPassOutput.select();
-            document.execCommand('copy');
-          }
-        });
-      }
+      // ===== Contraseña (Generar + Copiar + Flash) =====
+const btnGenPass = document.getElementById('btnGenPass');
+const btnCopyPass = document.getElementById('btnCopyPass');
 
-      const flashGen = <?php echo json_encode($flashGeneratedPass, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES); ?>;
-      if (flashGen && generatedPassOutput && genPassModalEl) {
-        generatedPassOutput.value = flashGen.password || '';
-        // Abrir modal automáticamente para que el usuario pueda copiar la contraseña
-        const modal = bootstrap.Modal.getOrCreateInstance(genPassModalEl);
-        modal.show();
-      }
+function genStrongPassword(len = 12){
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lower = 'abcdefghijkmnopqrstuvwxyz';
+  const nums  = '23456789';
+  const sym   = '!@#$%&*?_-';
+  const all   = upper + lower + nums + sym;
+
+  const pick = (s) => s[Math.floor(Math.random() * s.length)];
+  let out = pick(upper) + pick(nums) + pick(sym) + pick(lower);
+  for(let i = out.length; i < len; i++) out += pick(all);
+
+  // shuffle
+  out = out.split('').sort(() => Math.random() - 0.5).join('');
+  return 'RHR-' + out;
+}
+
+if (btnGenPass && newPassInput){
+  btnGenPass.addEventListener('click', () => {
+    newPassInput.value = genStrongPassword(10); // total aprox 14-15 con prefijo
+    newPassInput.focus();
+  });
+}
+
+if (btnCopyPass && newPassInput){
+  btnCopyPass.addEventListener('click', async () => {
+    const val = newPassInput.value || '';
+    if (!val) return;
+
+    try{
+      await navigator.clipboard.writeText(val);
+    }catch(e){
+      newPassInput.select();
+      document.execCommand('copy');
+    }
+
+    const old = btnCopyPass.innerHTML;
+    btnCopyPass.innerHTML = '<i class="fa-solid fa-check"></i> Copiado';
+    setTimeout(() => btnCopyPass.innerHTML = old, 1200);
+  });
+}
+
+// Si venimos de crear usuario (o de algún flujo que setee flash), abre el modal con la contraseña lista
+const flashGen = <?php echo json_encode($flashGeneratedPass, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES); ?>;
+if (flashGen && modPassModal) {
+  if (userIdToUpdate) userIdToUpdate.value = flashGen.id_user || '';
+  if (modPassUserName) {
+    const name = flashGen.full_name || '';
+    modPassUserName.textContent = name ? `(${name})` : '';
+  }
+  if (newPassInput) newPassInput.value = flashGen.password || '';
+
+  const modal = bootstrap.Modal.getOrCreateInstance(modPassModal);
+  modal.show();
+}
 
       if (editUserModal) {
         editUserModal.addEventListener('show.bs.modal', function (event) {
@@ -1011,7 +978,7 @@ $users = $stmt->fetchAll();
 
           userIdToUpdate.value = id;
           modPassUserName.textContent = name ? `(${name})` : '';
-          if (newPassInput) newPassInput.value = '';
+                    if (newPassInput && !newPassInput.value) newPassInput.value = '';
         });
       }
 
