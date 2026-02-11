@@ -1,4 +1,5 @@
 <?php
+require __DIR__ . '/partials/auth.php';
 $active = 'generarTickets'; // <-- para que "Generar Ticket" quede activo
 ?>
 <!DOCTYPE html>

@@ -94,3 +94,117 @@ body.sidebar-open{
     overflow: auto;
   }
 }
+
+/* ============================
+   MOBILE: tabla -> tarjetas
+   (sin scroll horizontal)
+   ============================ */
+@media (max-width: 576px){
+
+  /* Que el panel use todo el ancho */
+  .users-panel{ width: 100%; }
+
+  /* Botón principal a ancho completo */
+  .users-actions{ width: 100%; }
+  .users-actions .btn-pro{ width: 100%; }
+
+  /* Tabla en modo "cards" */
+  .users-table{ padding: 10px; }
+  .users-table table,
+  .users-table thead,
+  .users-table tbody,
+  .users-table th,
+  .users-table td,
+  .users-table tr{
+    display: block;
+    width: 100%;
+  }
+
+  /* Ocultar encabezado */
+  .users-table thead{
+    display: none;
+  }
+
+  /* Cada fila como tarjeta */
+  .users-table tbody tr{
+    background: rgba(255,255,255,.45);
+    border: 1px solid rgba(0,0,0,.08);
+    border-radius: 16px;
+    padding: 12px;
+    margin-bottom: 12px;
+    box-shadow: 0 10px 18px rgba(0,0,0,.10);
+  }
+
+  /* Caso "No hay usuarios" (colspan) no debe verse como card rara */
+  .users-table tbody tr td[colspan]{
+    padding: 18px 10px !important;
+    text-align: center;
+  }
+  .users-table tbody tr:has(td[colspan]){
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  /* Celdas con etiqueta a la izquierda */
+  .users-table tbody td{
+    border: 0;
+    padding: 10px 0;
+  }
+
+  /* Primera celda (Usuario) ocupa todo */
+  .users-table tbody td:first-child{
+    padding-top: 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(0,0,0,.08);
+    margin-bottom: 10px;
+  }
+
+  .user-cell{ gap: 10px; }
+  .user-avatar{ width: 44px; height: 44px; flex: 0 0 44px; }
+  .user-meta .name{ font-size: 14px; }
+
+  /* Etiquetas automáticas por columna (sin tocar PHP) */
+  .users-table tbody td:nth-child(2),
+  .users-table tbody td:nth-child(3),
+  .users-table tbody td:nth-child(4){
+    position: relative;
+    padding-left: 86px; /* espacio para la etiqueta */
+  }
+
+  .users-table tbody td:nth-child(2)::before,
+  .users-table tbody td:nth-child(3)::before,
+  .users-table tbody td:nth-child(4)::before{
+    position: absolute;
+    left: 0;
+    top: 10px;
+    width: 78px;
+    font-size: 11px;
+    font-weight: 900;
+    color: rgba(0,0,0,.55);
+    text-transform: uppercase;
+    letter-spacing: .2px;
+  }
+
+  .users-table tbody td:nth-child(2)::before{ content: "Área"; }
+  .users-table tbody td:nth-child(3)::before{ content: "Email"; }
+  .users-table tbody td:nth-child(4)::before{ content: "Rol"; }
+
+  /* Acciones: full ancho y alineadas bonito */
+  .users-table tbody td:nth-child(5){
+    padding-top: 12px;
+    border-top: 1px solid rgba(0,0,0,.08);
+  }
+
+  .actions-cell{
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .icon-action{
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+  }
+}
