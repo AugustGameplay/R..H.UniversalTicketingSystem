@@ -1,10 +1,24 @@
 <?php
-// partials/menu.php
-// Usa $active si existe (history/tickets/users/dashboard)
 $active = $active ?? '';
 ?>
-<aside class="sidebar d-flex flex-column">
-  <div class="sidebar__logo text-center">
+
+<!-- HEADER MÓVIL (solo se verá en pantallas pequeñas) -->
+<header class="mobile-topbar d-md-none">
+
+  <button id="btnSidebarOpen" class="hamburger" type="button" aria-label="Abrir menú" aria-controls="sidebar" aria-expanded="false">
+    <i class="fa-solid fa-bars"></i>
+  </button>
+
+  <div class="mobile-topbar__brand">
+    <img src="./assets/img/logo-white.svg" alt="RH&R Universal" class="mobile-topbar__logo">
+  </div>
+</header>
+
+<!-- OVERLAY (para cerrar al tocar fuera) -->
+<div id="sidebarOverlay" class="sidebar-overlay" aria-hidden="true"></div>
+
+<aside id="sidebar" class="sidebar d-flex flex-column" aria-label="Menú lateral">
+  <div class="sidebar__logo text-center d-none d-md-block">
     <img src="./assets/img/logo-white.svg" alt="RH&R Universal" class="img-fluid">
   </div>
 
