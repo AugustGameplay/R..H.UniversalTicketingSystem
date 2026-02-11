@@ -1,4 +1,5 @@
 <?php
+require __DIR__ . '/partials/auth.php';
 $active = 'tickets';
 ?>
 <!DOCTYPE html>

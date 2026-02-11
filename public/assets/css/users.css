@@ -1,52 +1,57 @@
 /* =========================================
-   Users view - pro (sin romper base)
+   USERS.CSS - "Perrón" (limpio, moderno, sin scroll)
+   Requiere variables del brand.css: --rhr-navy, --rhr-orange-dark
    ========================================= */
 
-.users-panel{
-  padding: 22px 24px 22px;
+:root{
+  --glass: rgba(255,255,255,.58);
+  --glass-strong: rgba(255,255,255,.78);
+  --stroke: rgba(0,0,0,.08);
+  --stroke-strong: rgba(0,0,0,.12);
+  --shadow-lg: 0 18px 55px rgba(0,0,0,.22);
+  --shadow-md: 0 12px 26px rgba(0,0,0,.16);
+  --shadow-sm: 0 8px 16px rgba(0,0,0,.12);
 }
 
-/* header */
+.users-panel{ padding: 22px 24px 22px; }
+
 .users-head{
   display:flex;
   align-items:flex-start;
   justify-content: space-between;
   gap: 16px;
+  margin-bottom: 14px;
 }
 
-/* acciones derecha (Create + Generate) */
 .users-actions{
   display:flex;
   flex-direction:column;
   align-items:flex-end;
-  gap: 8px;
+  gap: 10px;
 }
 
-/* Botón pro (igual feeling que Send) */
 .btn-pro{
   height: 44px;
   border: 0;
   border-radius: 14px;
   padding: 0 18px;
   font-weight: 900;
+  letter-spacing: .2px;
   color: #ffffff;
   background: var(--rhr-navy);
   box-shadow: 0 10px 20px rgba(0,0,0,.18);
-  transition: background-color .18s ease, transform .08s ease, box-shadow .18s ease;
+  transition: transform .08s ease, box-shadow .18s ease, filter .18s ease;
   cursor:pointer;
 }
 
-.btn-pro:hover{
-  background: var(--rhr-orange-dark);
-  box-shadow: 0 12px 24px rgba(0,0,0,.22);
-}
+.btn-pro:hover{ filter: brightness(1.06); box-shadow: 0 14px 30px rgba(0,0,0,.24); }
 .btn-pro:active{ transform: translateY(2px); }
 
 .btn-pro--sm{
-  height: 34px;
+  height: 36px;
   padding: 0 14px;
   border-radius: 12px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 900;
 }
 
@@ -56,115 +61,223 @@
   border-radius: 14px;
   padding: 0 18px;
   font-weight: 900;
-  color: #fff;
-  background-color: grey;
-  box-shadow: 0 10px 20px rgba(0,0,0,.18);
-  transition: background-color .18s ease, transform .08s ease, box-shadow .18s ease;
+  color: #faf8f8;
+  background-color: var(--rhr-navy);
+  box-shadow: 0 10px 20px rgba(0,0,0,.12);
+  transition: transform .08s ease, box-shadow .18s ease, background-color .18s ease;
   cursor:pointer;
 }
 
-.btn-secondary:hover{
-  background-color: red;
-  box-shadow: 0 12px 24px rgba(0,0,0,.22);
-}
+.btn-secondary:hover{ background-color: grey; box-shadow: 0 14px 30px rgba(0,0,0,.18); }
 .btn-secondary:active{ transform: translateY(2px); }
 
-.btn-secondary--sm{
-  height: 34px;
-  padding: 0 14px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 900;
-}
-
-
-/* tabla */
-.users-table{
-  border-radius: 16px;
-  background: rgba(255,255,255,.45);
-  box-shadow: 0 10px 26px rgba(0,0,0,.16);
-  padding: 10px 10px 6px;
-}
-
-/* headers */
-.users-table thead th{
-  font-weight: 900;
-  color: #111;
-  padding: 14px 12px;
-}
-
-/* filas */
-.users-table tbody td{
-  padding: 14px 12px;
-  border-top: 1px solid rgba(0,0,0,.08);
-}
-
-.th-center{ text-align:center; }
-
-/* roles */
-.role-badge{
-  border-radius: 999px;
-  padding: 8px 10px;
-  font-weight: 900;
-  font-size: 12px;
-  color: #111;
-}
-
-.role-user{ background: rgba(24,169,200,.18); }
-.role-admin{ background: rgba(244,122,33,.18); }
-.role-super{ background: rgba(209,75,22,.24); }
-
-/* botón modificar pass */
-.icon-action{
-  width: 44px;
+.btn-danger{
   height: 44px;
-  border-radius: 12px;
-  border: 2px solid var(--rhr-orange-dark);
-  background: transparent;
-  color: var(--rhr-orange-dark);
-  display:grid;
-  place-items:center;
-  cursor:pointer;
-  transition: background-color .18s ease, transform .08s ease, color .18s ease;
-}
-
-.icon-action:hover{
-  background: var(--rhr-orange-dark);
-  color:#fff;
-}
-
-.icon-action:active{
-  transform: translateY(2px);
-}
-
-/* footer */
-.table-foot .foot-text{
-  color: rgba(0,0,0,.65);
-  font-size: 13px;
-}
-
-.pagination .page-link{
-  border-radius: 10px;
-}
-.pagination .page-item.active .page-link{
-  background: var(--rhr-orange-dark);
-  border-color: var(--rhr-orange-dark);
-}
-
-/* Modal pro */
-.modal-pro{
   border: 0;
+  border-radius: 14px;
+  padding: 0 18px;
+  font-weight: 900;
+}
+
+.btn-pro-save{
+  height: 44px;
+  border: 0;
+  border-radius: 14px;
+  padding: 0 18px;
+  font-weight: 900;
+  color: #faf8f8;
+  background-color: var(--rhr-navy);
+  box-shadow: 0 10px 20px rgba(0,0,0,.12);
+  transition: transform .08s ease, box-shadow .18s ease, background-color .18s ease;
+  cursor:pointer;
+}
+
+.btn-pro-save:hover{ background-color: grey; box-shadow: 0 14px 30px rgba(0,0,0,.18); }
+.btn-pro-save:active{ transform: translateY(2px); }
+
+/* ===== Tabla sin scroll ===== */
+.users-table{
   border-radius: 18px;
-  box-shadow: 0 20px 60px rgba(0,0,0,.30);
-  background: rgba(255,255,255,.92);
+  background: var(--glass);
+  border: 1px solid var(--stroke);
+  box-shadow: var(--shadow-md);
+  padding: 10px;
+  overflow: hidden;
   backdrop-filter: blur(8px);
 }
 
+.users-table table{ width: 100%; }
+
+.users-table thead th{
+  font-weight: 900;
+  color: rgba(0,0,0,.88);
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--stroke-strong);
+  white-space: nowrap;
+}
+
+.users-table tbody td{
+  padding: 14px 5px;
+  border-top: 1px solid var(--stroke);
+  vertical-align: middle;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.users-table tbody tr:hover{ background: rgba(255,255,255,.35); }
+
+.th-center{ text-align: center; }
+
+/* Usuario: avatar + nombre */
+.user-cell{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+  min-width: 160px;
+}
+
+.user-avatar{
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex: 0 0 42px;
+  box-shadow: 0 10px 20px rgba(0,0,0,.14);
+  border: 1px solid rgba(0,0,0,.08);
+  background: rgba(255,255,255,.6);
+  display:grid;
+  place-items:center;
+  color: rgba(0,0,0,.55);
+}
+
+.user-avatar img{ width:100%; height:100%; object-fit: cover; display:block; }
+
+.user-meta{ display:flex; flex-direction:column; line-height: 1.1; }
+.user-meta .name{ font-weight: 900; color: rgba(0,0,0,.92); }
+
+/* Badge rol */
+.role-badge{
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-weight: 900;
+  font-size: 12px;
+  color: rgba(0,0,0,.86);
+  border: 1px solid rgba(0,0,0,.08);
+  background: rgba(255,255,255,.35);
+  white-space: nowrap;
+}
+
+.role-user{ background: rgba(24,169,200,.16); }
+.role-admin{ background: rgba(244,122,33,.16); }
+.role-super{ background: rgba(209,75,22,.18); }
+
+/* Acciones */
+.actions-cell{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap: 10px;
+}
+
+.icon-action{
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,.10);
+  background: rgba(255,255,255,.55);
+  color: rgba(0,0,0,.72);
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  transition: transform .08s ease, box-shadow .18s ease, background-color .18s ease, color .18s ease;
+  box-shadow: 0 10px 18px rgba(0,0,0,.10);
+}
+
+.icon-action:hover{ background: rgba(255,255,255,.85); box-shadow: 0 14px 30px rgba(0,0,0,.16); }
+.icon-action:active{ transform: translateY(2px); }
+
+.icon-action--pass{ border-color: rgba(244,122,33,.35); color: var(--rhr-orange-dark); }
+.icon-action--pass:hover{ background: rgba(244,122,33,.14); }
+
+.icon-action--danger{ border-color: rgba(220,53,69,.35); color: rgba(220,53,69,.95); }
+.icon-action--danger:hover{ background: rgba(220,53,69,.12); }
+
+/* ===== Modal pro + inputs ===== */
+.modal-pro{
+  border: 0;
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+  background: var(--glass-strong);
+  backdrop-filter: blur(10px);
+  overflow:hidden;
+}
+
+.modal-pro .modal-header{ border-bottom: 1px solid var(--stroke); padding: 16px 18px; }
+.modal-pro .modal-body{ padding: 18px; }
+.modal-pro .modal-footer{ border-top: 1px solid var(--stroke); padding: 14px 18px; }
+
 .pro-input{
   border-radius: 14px !important;
-  border: 0 !important;
-  background: rgba(0,0,0,.04) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.55),
-    0 6px 14px rgba(0,0,0,.10) !important;
+  border: 1px solid rgba(0,0,0,.08) !important;
+  background: rgba(255,255,255,.62) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 8px 16px rgba(0,0,0,.10) !important;
+  padding: 12px 14px !important;
 }
+
+.pro-input:focus{
+  border-color: rgba(244,122,33,.55) !important;
+  box-shadow: 0 0 0 4px rgba(244,122,33,.18), 0 10px 18px rgba(0,0,0,.12) !important;
+}
+
+/* Selects en naranja (la opción del menú depende del SO, pero esto mejora mucho) */
+select.form-select.pro-input option:checked{ background: var(--rhr-orange-dark); color: #fff; }
+
+/* Uploader avatar */
+.avatar-uploader{
+  display:flex;
+  align-items:center;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px dashed rgba(0,0,0,.18);
+  background: rgba(255,255,255,.45);
+}
+
+.avatar-preview{
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  overflow:hidden;
+  border: 1px solid rgba(0,0,0,.10);
+  box-shadow: 0 10px 20px rgba(0,0,0,.14);
+  background: rgba(255,255,255,.7);
+  display:grid;
+  place-items:center;
+  flex: 0 0 64px;
+  color: rgba(0,0,0,.55);
+}
+
+.avatar-preview img{ width:100%; height:100%; object-fit: cover; display:block; }
+
+.avatar-uploader .hint{ font-size: 12px; color: rgba(0,0,0,.55); margin-top: 6px; }
+
+/* Footer */
+.table-foot .foot-text{ color: rgba(0,0,0,.60); font-size: 13px; }
+
+.pagination .page-link{ border-radius: 12px; border: 1px solid rgba(0,0,0,.10); color: rgba(0,0,0,.72); }
+.pagination .page-item.active .page-link{ background: var(--rhr-orange-dark); border-color: var(--rhr-orange-dark); color: #fff; }
+
+/* Responsive */
+@media (max-width: 992px){
+  .users-head{ flex-direction: column; align-items: stretch; }
+  .users-actions{ flex-direction: row; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+}
+
+@media (max-width: 576px){
+  .users-panel{ padding: 16px 14px; }
+  .users-table{ padding: 8px; }
+  .user-cell{ min-width: 0; }
+  .icon-action{ width: 40px; height: 40px; border-radius: 14px; }
+  .user-avatar{ width: 40px; height: 40px; }
+}
+
