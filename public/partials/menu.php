@@ -1,6 +1,5 @@
 <?php
-// partials/menu.php
-// Usa $active si existe (history/tickets/users/dashboard)
+// menu.php (sidebar reutilizable)
 $active = $active ?? '';
 ?>
 <aside class="sidebar d-flex flex-column">
@@ -10,7 +9,9 @@ $active = $active ?? '';
 
   <div class="welcome text-center">
     <span class="welcome__label">Welcome,</span>
-    <span class="welcome__name">Emilio</span>
+    <span class="welcome__name">
+      <?php echo htmlspecialchars($_SESSION['full_name'] ?? 'Usuario', ENT_QUOTES, 'UTF-8'); ?>
+    </span>
   </div>
 
   <div class="user-badge mx-auto" aria-hidden="true">
@@ -18,15 +19,18 @@ $active = $active ?? '';
   </div>
 
   <nav class="menu nav flex-column mt-3">
-    <a class="menu__item nav-link <?= ($active === 'dashboard') ? 'active' : '' ?>" href="./generarTickets.php">Generar Ticket</a>
-    <a class="menu__item nav-link <?= ($active === 'tickets') ? 'active' : '' ?>" href="./tickets.php">Tickets</a>
-    <a class="menu__item nav-link <?= ($active === 'users') ? 'active' : '' ?>" href="./users.php">Users</a>
-    <a class="menu__item nav-link <?= ($active === 'history') ? 'active' : '' ?>" href="./history.php">History</a>
+    <a class="menu__item nav-link <?php echo ($active === 'generar') ? 'active' : ''; ?>" href="./generarTickets.php">Generar Ticket</a>
+    <a class="menu__item nav-link <?php echo ($active === 'tickets') ? 'active' : ''; ?>" href="./tickets.php">Tickets</a>
+    <a class="menu__item nav-link <?php echo ($active === 'users') ? 'active' : ''; ?>" href="./users.php">Users</a>
+    <a class="menu__item nav-link <?php echo ($active === 'history') ? 'active' : ''; ?>" href="./history.php">History</a>
   </nav>
 
+  <!-- ✅ LOGOUT (POST) -->
   <div class="mt-auto d-flex justify-content-end pt-3">
-    <button class="logout" type="button" title="Logout" aria-label="Logout">
-      <i class="fa-solid fa-right-from-bracket"></i>
-    </button>
+    <form action="./logout.php" method="POST" class="m-0">
+      <button class="logout" type="submit" title="Logout" aria-label="Logout">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </button>
+    </form>
   </div>
 </aside>
