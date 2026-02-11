@@ -15,6 +15,8 @@ $active = 'tickets';
   <!-- Base -->
   <link rel="stylesheet" href="./assets/css/generarTickets.css">
   <link rel="stylesheet" href="./assets/css/menu.css">
+  <link rel="stylesheet" href="./assets/css/movil.css">
+  <script defer src="./assets/js/sidebar.js"></script>
   <!-- Tickets -->
   <link rel="stylesheet" href="./assets/css/tickets.css">
 </head>
@@ -166,6 +168,5 @@ $active = 'tickets';
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="./assets/js/sidebar.js"></script>
 </body>
 </html>

@@ -15,6 +15,8 @@ $active = 'history';
   <!-- Base -->
   <link rel="stylesheet" href="./assets/css/generarTickets.css">
   <link rel="stylesheet" href="./assets/css/menu.css">
+  <link rel="stylesheet" href="./assets/css/movil.css">
+  <script defer src="./assets/js/sidebar.js"></script>
 
   <link rel="stylesheet" href="./assets/css/history-range.css">
   <!-- History -->
@@ -90,7 +92,6 @@ $active = 'history';
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="./assets/js/history-range.js"></script>
-  <script src="./assets/js/sidebar.js"></script>
 
 </body>
 </html>
