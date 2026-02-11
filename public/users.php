@@ -402,20 +402,5 @@ $users = $stmt->fetchAll();
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-  <script>
-    // Pasa user_id al modal Modify Password
-    const modPassModal = document.getElementById('modPassModal');
-    modPassModal?.addEventListener('show.bs.modal', (event) => {
-      const btn = event.relatedTarget;
-      const userId = btn?.getAttribute('data-user-id') || '';
-      const hidden = document.getElementById('userIdToUpdate');
-      const pass   = document.getElementById('newPassInput');
-
-      if (hidden) hidden.value = userId;
-      if (pass) pass.value = '';
-    });
-  </script>
-
 </body>
 </html>
