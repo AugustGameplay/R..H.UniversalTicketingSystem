@@ -324,9 +324,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
 }
 
 // ============================
-// LISTADO USERS
+// PAGINACIÓN (5 por página)
 // ============================
-$stmt = $pdo->query("
+$limit = 5;
+
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+if ($page < 1) $page = 1;
+
+$totalUsers = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
+$totalPages = (int)ceil($totalUsers / $limit);
+if ($totalPages < 1) $totalPages = 1;
+
+if ($page > $totalPages) $page = $totalPages;
+
+$offset = ($page - 1) * $limit;
+
+// ============================
+// LISTADO USERS (con LIMIT/OFFSET)
+// ============================
+$stmt = $pdo->prepare("
   SELECT
     u.id_user,
     u.full_name,
@@ -338,7 +354,11 @@ $stmt = $pdo->query("
   FROM users u
   JOIN roles r ON r.id_role = u.id_role
   ORDER BY u.id_user DESC
+  LIMIT :limit OFFSET :offset
 ");
+$stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+$stmt->execute();
 $users = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
@@ -527,18 +547,35 @@ $users = $stmt->fetchAll();
           </table>
         </div>
 
-        <!-- Footer tabla -->
+        <!-- Footer tabla (real) -->
+        <?php
+          $from = ($totalUsers === 0) ? 0 : ($offset + 1);
+          $to   = min($offset + $limit, $totalUsers);
+        ?>
         <div class="table-foot d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 mt-3">
-          <span class="foot-text">Usuarios cargados: <?= e(count($users)) ?></span>
+          <span class="foot-text">
+            Mostrando <?= e($from) ?>–<?= e($to) ?> de <?= e($totalUsers) ?> usuarios
+          </span>
 
-          <nav aria-label="Paginación">
-            <ul class="pagination pagination-sm mb-0">
-              <li class="page-item disabled"><a class="page-link" href="#">Anterior</a></li>
-              <li class="page-item active"><a class="page-link" href="#">1</a></li>
-              <li class="page-item"><a class="page-link" href="#">2</a></li>
-              <li class="page-item"><a class="page-link" href="#">Siguiente</a></li>
-            </ul>
-          </nav>
+          <?php if ($totalPages > 1): ?>
+            <nav aria-label="Paginación">
+              <ul class="pagination pagination-sm mb-0">
+                <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
+                  <a class="page-link" href="?page=<?= $page - 1 ?>">Anterior</a>
+                </li>
+
+                <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                  <li class="page-item <?= ($i === $page) ? 'active' : '' ?>">
+                    <a class="page-link" href="?page=<?= $i ?>"><?= $i ?></a>
+                  </li>
+                <?php endfor; ?>
+
+                <li class="page-item <?= ($page >= $totalPages) ? 'disabled' : '' ?>">
+                  <a class="page-link" href="?page=<?= $page + 1 ?>">Siguiente</a>
+                </li>
+              </ul>
+            </nav>
+          <?php endif; ?>
         </div>
 
       </section>
@@ -862,63 +899,63 @@ $users = $stmt->fetchAll();
       }
 
       // ===== Contraseña (Generar + Copiar + Flash) =====
-const btnGenPass = document.getElementById('btnGenPass');
-const btnCopyPass = document.getElementById('btnCopyPass');
+      const btnGenPass = document.getElementById('btnGenPass');
+      const btnCopyPass = document.getElementById('btnCopyPass');
 
-function genStrongPassword(len = 12){
-  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-  const lower = 'abcdefghijkmnopqrstuvwxyz';
-  const nums  = '23456789';
-  const sym   = '!@#$%&*?_-';
-  const all   = upper + lower + nums + sym;
+      function genStrongPassword(len = 12){
+        const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+        const lower = 'abcdefghijkmnopqrstuvwxyz';
+        const nums  = '23456789';
+        const sym   = '!@#$%&*?_-';
+        const all   = upper + lower + nums + sym;
 
-  const pick = (s) => s[Math.floor(Math.random() * s.length)];
-  let out = pick(upper) + pick(nums) + pick(sym) + pick(lower);
-  for(let i = out.length; i < len; i++) out += pick(all);
+        const pick = (s) => s[Math.floor(Math.random() * s.length)];
+        let out = pick(upper) + pick(nums) + pick(sym) + pick(lower);
+        for(let i = out.length; i < len; i++) out += pick(all);
 
-  // shuffle
-  out = out.split('').sort(() => Math.random() - 0.5).join('');
-  return 'RHR-' + out;
-}
+        // shuffle
+        out = out.split('').sort(() => Math.random() - 0.5).join('');
+        return 'RHR-' + out;
+      }
 
-if (btnGenPass && newPassInput){
-  btnGenPass.addEventListener('click', () => {
-    newPassInput.value = genStrongPassword(10); // total aprox 14-15 con prefijo
-    newPassInput.focus();
-  });
-}
+      if (btnGenPass && newPassInput){
+        btnGenPass.addEventListener('click', () => {
+          newPassInput.value = genStrongPassword(10); // total aprox 14-15 con prefijo
+          newPassInput.focus();
+        });
+      }
 
-if (btnCopyPass && newPassInput){
-  btnCopyPass.addEventListener('click', async () => {
-    const val = newPassInput.value || '';
-    if (!val) return;
+      if (btnCopyPass && newPassInput){
+        btnCopyPass.addEventListener('click', async () => {
+          const val = newPassInput.value || '';
+          if (!val) return;
 
-    try{
-      await navigator.clipboard.writeText(val);
-    }catch(e){
-      newPassInput.select();
-      document.execCommand('copy');
-    }
+          try{
+            await navigator.clipboard.writeText(val);
+          }catch(e){
+            newPassInput.select();
+            document.execCommand('copy');
+          }
 
-    const old = btnCopyPass.innerHTML;
-    btnCopyPass.innerHTML = '<i class="fa-solid fa-check"></i> Copiado';
-    setTimeout(() => btnCopyPass.innerHTML = old, 1200);
-  });
-}
+          const old = btnCopyPass.innerHTML;
+          btnCopyPass.innerHTML = '<i class="fa-solid fa-check"></i> Copiado';
+          setTimeout(() => btnCopyPass.innerHTML = old, 1200);
+        });
+      }
 
-// Si venimos de crear usuario (o de algún flujo que setee flash), abre el modal con la contraseña lista
-const flashGen = <?php echo json_encode($flashGeneratedPass, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES); ?>;
-if (flashGen && modPassModal) {
-  if (userIdToUpdate) userIdToUpdate.value = flashGen.id_user || '';
-  if (modPassUserName) {
-    const name = flashGen.full_name || '';
-    modPassUserName.textContent = name ? `(${name})` : '';
-  }
-  if (newPassInput) newPassInput.value = flashGen.password || '';
+      // Si venimos de crear usuario (o de algún flujo que setee flash), abre el modal con la contraseña lista
+      const flashGen = <?php echo json_encode($flashGeneratedPass, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES); ?>;
+      if (flashGen && modPassModal) {
+        if (userIdToUpdate) userIdToUpdate.value = flashGen.id_user || '';
+        if (modPassUserName) {
+          const name = flashGen.full_name || '';
+          modPassUserName.textContent = name ? `(${name})` : '';
+        }
+        if (newPassInput) newPassInput.value = flashGen.password || '';
 
-  const modal = bootstrap.Modal.getOrCreateInstance(modPassModal);
-  modal.show();
-}
+        const modal = bootstrap.Modal.getOrCreateInstance(modPassModal);
+        modal.show();
+      }
 
       if (editUserModal) {
         editUserModal.addEventListener('show.bs.modal', function (event) {
@@ -978,7 +1015,7 @@ if (flashGen && modPassModal) {
 
           userIdToUpdate.value = id;
           modPassUserName.textContent = name ? `(${name})` : '';
-                    if (newPassInput && !newPassInput.value) newPassInput.value = '';
+          if (newPassInput && !newPassInput.value) newPassInput.value = '';
         });
       }
 
