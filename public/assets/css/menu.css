@@ -1,15 +1,63 @@
 /* menu.css (BASE/DESKTOP) */
 
 /* =========================================
+   LAYOUT FIX (SIDEBAR FIJA)
+   ========================================= */
+
+/* En desktop, el scroll sucede en el MAIN (no en el body) */
+html, body{
+  height: 100%;
+}
+
+@media (min-width: 760px){
+  body{
+    overflow: hidden; /* evita doble scroll */
+  }
+
+  .layout{
+    min-height: 100vh;
+    padding-left: 280px; /* deja espacio para la sidebar fija */
+  }
+
+  .main{
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
+/* En móvil, se comporta normal (sidebar tipo overlay) */
+@media (max-width: 759.98px){
+  body{
+    overflow-x: hidden;
+  }
+  .layout{
+    padding-left: 0;
+  }
+  .main{
+    height: auto;
+    overflow: visible;
+  }
+}
+
+
+/* =========================================
    SIDEBAR
    ========================================= */
 .sidebar{
   width: 280px;
-  height: 100vh;
   background: var(--sidebar);
   color: #fff;
   padding: 18px;
-  position: relative;
+
+  /* ✅ DESKTOP: sidebar fija (no se mueve al hacer scroll) */
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 1200;
 }
 
 /* Logo */

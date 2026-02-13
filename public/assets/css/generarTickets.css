@@ -24,56 +24,169 @@
 
   --shadow: rgba(0,0,0,.18);
   --shadow-strong: rgba(0,0,0,.22);
+
+  /* Fondo / glass */
+  --bg-1: #f6f8fb;
+  --bg-2: #eef2f7;
+  --glass: rgba(255,255,255,.72);
+  --stroke: rgba(8,59,92,.10);
 }
 
 /* Reset */
 *{ box-sizing: border-box; }
 html,body{ height:100%; }
-body{ margin:0; background:#fff; }
+body{ margin:0; background: radial-gradient(1200px 700px at 75% 25%, var(--bg-2), var(--bg-1)); }
+
+
+/* =========================================
+   MAIN (solo estilos visuales, sin tocar scroll global)
+   - Para evitar conflictos con menu.css (sidebar fija)
+   ========================================= */
+.page-generate .main{
+  padding: 32px;
+  background: transparent;
+}
+
+/* =========================================
+   INTRO ANIMATION (al entrar después de login)
+   - Suave, moderna, sin dependencias
+   - Respeta "prefers-reduced-motion"
+   ========================================= */
+
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{ animation: none !important; transition: none !important; }
+}
+
+/* Estado inicial: oculto (solo mientras exista .page-intro) */
+body.page-intro .panel,
+body.page-intro .sidebar{
+  opacity: 0;
+  transform: translateY(18px) scale(.985);
+}
+
+/* Animación al cargar */
+body.intro-play .sidebar{ animation: rhrSidebarIn .55s cubic-bezier(.2,.9,.2,1) .05s both; }
+body.intro-play .panel{   animation: rhrPanelIn   .70s cubic-bezier(.2,.9,.2,1) .10s both; }
+
+@keyframes rhrSidebarIn{
+  from{ opacity: 0; transform: translateX(-18px) scale(.99); filter: blur(2px); }
+  to  { opacity: 1; transform: translateX(0) scale(1);      filter: blur(0); }
+}
+
+@keyframes rhrPanelIn{
+  0%   { opacity: 0; transform: translateY(22px) scale(.98); filter: blur(3px); }
+  65%  { opacity: 1; transform: translateY(-2px) scale(1);  filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1);     filter: blur(0); }
+}
 
 /* =========================================
    LAYOUT
    ========================================= */
-.layout{
-  min-height: calc(100vh - 52px);
-  display:flex;
-}
 
 /* =========================================
    MAIN
    ========================================= */
-.main{
-  padding: 32px;
-  background: #fff;
-}
 
 /* Panel central */
 .panel{
   width: min(780px, 100%);
-  background: var(--panel);
-  border: 0;
-  border-radius: 16px;
-  box-shadow: 0 10px 26px var(--shadow);
+  background: linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,.62));
+  border: 1px solid var(--stroke);
+  border-radius: 22px;
+  box-shadow: 0 18px 50px rgba(0,0,0,.14);
+  backdrop-filter: blur(10px);
   padding: 26px 28px 28px;
 }
 
 /* Título */
+.panel__header{ display:flex; flex-direction:column; gap: 14px; margin-bottom: 18px; }
+.panel__headline{ display:flex; align-items:center; gap: 14px; }
+.panel__badge{
+  width: 48px; height: 48px; border-radius: 16px;
+  display:grid; place-items:center;
+  background: linear-gradient(135deg, var(--rhr-navy), rgba(24,169,200,.35));
+  color:#fff;
+  box-shadow: 0 12px 22px rgba(8,59,92,.22);
+}
 .panel__title{
   margin: 0;
-  text-align:center;
   font-size: 40px;
   font-weight: 900;
   color: var(--text);
   letter-spacing: .2px;
+  line-height: 1.05;
 }
+.panel__subtitle{
+  margin: 6px 0 0;
+  color: rgba(17,17,17,.72);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.panel__steps{
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.panel__steps .step{
+  position: relative;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(8,59,92,.06);
+  border: 1px solid rgba(8,59,92,.08);
+  font-weight: 700;
+  color: rgba(8,59,92,.85);
+  font-size: 12px;
+  letter-spacing: .2px;
+}
+.panel__steps .step::before{
+  content: attr(data-step);
+  display:inline-grid;
+  place-items:center;
+  width: 18px; height: 18px;
+  margin-right: 8px;
+  border-radius: 999px;
+  background: rgba(8,59,92,.12);
+  color: rgba(8,59,92,.9);
+  font-size: 11px;
+}
+.panel__steps .step.done{
+  background: rgba(244,122,33,.14);
+  border-color: rgba(244,122,33,.28);
+}
+.panel__steps .step.done::before{
+  content: "✓";
+  background: rgba(244,122,33,.28);
+  color: rgba(209,75,22,1);
+}
+
+.form-wrap{ width:min(520px, 100%); }
 
 /* =========================================
    FORM (Generar Ticket)
    ========================================= */
 .ticket-form{
   display:grid;
-  gap: 20px;
+  gap: 18px;
   width: min(520px, 100%);
+}
+
+.field{ display:grid; gap: 8px; }
+.field__label{
+  font-size: 13px;
+  font-weight: 800;
+  color: rgba(17,17,17,.82);
+  letter-spacing: .2px;
+}
+.field__hint{
+  color: rgba(17,17,17,.60);
+  font-size: 12px;
+}
+.field__row{ display:flex; justify-content:space-between; align-items:center; gap: 10px; }
+.field__counter{
+  font-size: 12px;
+  color: rgba(17,17,17,.55);
+  font-weight: 700;
 }
 
 /* ===== Select PRO (Bootstrap dropdown) ===== */
@@ -82,6 +195,7 @@ body{ margin:0; background:#fff; }
   border-radius: 14px;
   border: 0;
   outline: none;
+  position: relative;
 
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.55),
@@ -97,6 +211,23 @@ body{ margin:0; background:#fff; }
 
   cursor: pointer;
   transition: box-shadow .18s ease, transform .08s ease;
+}
+
+.select-pro__left{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  min-width: 0;
+}
+.select-pro__left i{
+  width: 22px;
+  text-align:center;
+  color: rgba(8,59,92,.92);
+}
+.select-pro__left span{
+  overflow:hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .select-pro:focus{
@@ -167,7 +298,12 @@ body{ margin:0; background:#fff; }
   border-radius: 10px;
   padding: 12px 12px;
   font-size: 18px;
+  display:flex;
+  align-items:center;
+  gap: 10px;
 }
+
+.dropdown-pro .dropdown-item i{ width: 18px; text-align:center; opacity: .85; }
 
 .dropdown-pro .dropdown-item:hover,
 .dropdown-pro .dropdown-item:focus{
@@ -201,6 +337,7 @@ body{ margin:0; background:#fff; }
   resize: none;
   transition: box-shadow .18s ease;
 }
+.textarea::placeholder{ color: rgba(17,17,17,.45); }
 .textarea:focus{
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.6),
@@ -226,6 +363,16 @@ body{ margin:0; background:#fff; }
   box-shadow: 0 10px 20px rgba(0,0,0,.18);
 
   transition: background-color .18s ease, transform .08s ease, box-shadow .18s ease;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap: 10px;
+}
+.btn-send:disabled{
+  opacity: .55;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 .btn-send:hover{
   background: var(--rhr-orange-dark);
