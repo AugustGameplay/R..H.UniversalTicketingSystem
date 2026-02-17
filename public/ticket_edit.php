@@ -25,7 +25,9 @@ $stmt = $pdo->prepare("
     created_at,
     updated_at,
     priority,
-    assigned_user_id
+    assigned_user_id,
+    ticket_url,
+    attachment_path
   FROM tickets
   WHERE id_ticket = :id
   LIMIT 1
@@ -127,6 +129,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // helpers UI
 $ticketCode = str_pad((string)$ticket['id_ticket'], 3, '0', STR_PAD_LEFT);
 $assignedName = '—';
+$ticketUrl = trim((string)($ticket['ticket_url'] ?? ''));
+$ticketEvidence = trim((string)($ticket['attachment_path'] ?? ''));
+
 if (!empty($ticket['assigned_user_id'])) {
   foreach ($itUsers as $u) {
     if ((int)$u['id_user'] === (int)$ticket['assigned_user_id']) {
@@ -158,7 +163,7 @@ if (!empty($ticket['assigned_user_id'])) {
   <script defer src="./assets/js/sidebar.js"></script>
 </head>
 
-<body>
+<body class="ticket-edit-page">
   <div class="layout d-flex">
 
     <!-- SIDEBAR -->

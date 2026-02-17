@@ -17,15 +17,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $area     = trim($_POST['area'] ?? '');
   $comments = trim($_POST['comments'] ?? '');
 
-  // Validación
-  if ($category === '') $errors[] = "Selecciona una categoría.";
-  if ($type === '')     $errors[] = "Selecciona un tipo.";
+
+  // Auto-categoría (backend) por si el front no la llena
+  $TYPE_TO_CATEGORY = [
+    'Impresora' => 'Hardware',
+    'No enciende' => 'Hardware',
+    'Equipo lento' => 'Hardware',
+    'Sin internet' => 'Network',
+    'Error de aplicación' => 'Software',
+    'Acceso / credenciales' => 'Email',
+  ];
+
+  if ($category === '') {
+    $category = $TYPE_TO_CATEGORY[$type] ?? '';
+  }
+  if ($category === '') {
+    $category = 'General';
+  }
+
+
+
+  
+  $ticket_url = trim($_POST['ticket_url'] ?? '');
+  $attachment_path = null;
+// Validación  if ($type === '')     $errors[] = "Selecciona un tipo.";
   if ($area === '')     $errors[] = "Selecciona un área.";
   if ($comments === '') $errors[] = "Escribe un comentario.";
 
-  if (!$errors) {
+  
+  if ($ticket_url !== '' && !filter_var($ticket_url, FILTER_VALIDATE_URL)) {
+    $errors[] = "La URL no es válida.";
+  }
+if (!$errors) {
     try {
-      // ✅ 3) Inserta en tu tabla
+      
+      // ====== Upload de evidencia (opcional) ======
+      if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] !== UPLOAD_ERR_NO_FILE) {
+        if ($_FILES['attachment']['error'] !== UPLOAD_ERR_OK) {
+          throw new Exception('Error al subir el archivo (código: ' . $_FILES['attachment']['error'] . ').');
+        }
+
+        // Tamaño máximo: 10MB
+        if ($_FILES['attachment']['size'] > 10 * 1024 * 1024) {
+          throw new Exception('El archivo excede el tamaño máximo de 10MB.');
+        }
+
+        $allowed_ext = ['png','jpg','jpeg','pdf','doc','docx','xlsx','xls','txt'];
+        $original_name = $_FILES['attachment']['name'];
+        $ext = strtolower(pathinfo($original_name, PATHINFO_EXTENSION));
+
+        if (!in_array($ext, $allowed_ext, true)) {
+          throw new Exception('Tipo de archivo no permitido.');
+        }
+
+        $upload_dir = __DIR__ . '/uploads/tickets';
+        if (!is_dir($upload_dir)) {
+          mkdir($upload_dir, 0777, true);
+        }
+
+        $safe_name = bin2hex(random_bytes(8)) . '_' . time() . '.' . $ext;
+        $dest = $upload_dir . '/' . $safe_name;
+
+        if (!move_uploaded_file($_FILES['attachment']['tmp_name'], $dest)) {
+          throw new Exception('No se pudo guardar el archivo subido.');
+        }
+
+        // Guardamos ruta relativa para BD / vistas
+        $attachment_path = 'uploads/tickets/' . $safe_name;
+      }
+
+// ✅ 3) Inserta en tu tabla
       // ======= AJUSTA ESTO A TU ESQUEMA REAL =======
       // Ejemplo recomendado de columnas:
       // tickets(id, user_id, category, type, area, comments, status, created_at)
@@ -33,16 +94,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $user_id = $_SESSION['id_user'] ?? $_SESSION['user_id'] ?? null; // por si tu sesión usa uno u otro
 
 $stmt = $pdo->prepare("
-  INSERT INTO tickets (id_user, category, type, area, comments, status, created_at)
-  VALUES (:id_user, :category, :type, :area, :comments, 'Pendiente', NOW())
+  INSERT INTO tickets (id_user, category, type, area, comments, ticket_url, attachment_path, status, created_at)
+  VALUES (:id_user, :category, :type, :area, :comments, :ticket_url, :attachment_path, 'Pendiente', NOW())
 ");
 
 $stmt->execute([
-  ':id_user'   => $user_id,
-  ':category'  => $category,
-  ':type'      => $type,
-  ':area'      => $area,
-  ':comments'  => $comments
+  ':id_user'          => $user_id,
+  ':category'         => $category,
+  ':type'             => $type,
+  ':area'             => $area,
+  ':comments'         => $comments,
+  ':ticket_url'       => ($ticket_url !== '' ? $ticket_url : null),
+  ':attachment_path'  => $attachment_path
 ]);
 
       $success = "✅ Ticket enviado correctamente.";
@@ -105,24 +168,10 @@ $stmt->execute([
         </div>
 
         <!-- ✅ FORM YA FUNCIONAL -->
-        <form class="ticket-form mx-auto" id="ticketForm" method="POST" action="" novalidate>
+        <form class="ticket-form mx-auto" id="ticketForm" method="POST" action="" novalidate enctype="multipart/form-data">
 
-          <!-- Category -->
-          <div class="dropdown w-100">
-            <button class="select-pro dropdown-toggle w-100" type="button" id="catBtn" data-bs-toggle="dropdown" aria-expanded="false">
-              <span id="catText">Category</span>
-              <span class="chev" aria-hidden="true"></span>
-            </button>
-
-            <ul class="dropdown-menu dropdown-pro w-100" aria-labelledby="catBtn" data-target-text="#catText" data-target-input="#category">
-              <li><button class="dropdown-item" type="button" data-value="Hardware">Hardware</button></li>
-              <li><button class="dropdown-item" type="button" data-value="Software">Software</button></li>
-              <li><button class="dropdown-item" type="button" data-value="Network">Network</button></li>
-              <li><button class="dropdown-item" type="button" data-value="Email">Email</button></li>
-            </ul>
-
-            <input type="hidden" name="category" id="category">
-          </div>
+          <!-- Category (auto, oculto) -->
+          <input type="hidden" name="category" id="category">
 
           <!-- Type -->
           <div class="dropdown w-100">
@@ -152,12 +201,30 @@ $stmt->execute([
 
             <ul class="dropdown-menu dropdown-pro w-100" aria-labelledby="areaBtn" data-target-text="#areaText" data-target-input="#area">
               <li><button class="dropdown-item" type="button" data-value="Marketing e IT">Marketing e IT</button></li>
+              <li><button class="dropdown-item" type="button" data-value="Managers">Managers</button></li>
               <li><button class="dropdown-item" type="button" data-value="Corporate">Corporate</button></li>
               <li><button class="dropdown-item" type="button" data-value="Recruiters">Recruiters</button></li>
+              <li><button class="dropdown-item" type="button" data-value="RH">RH</button></li>
+              <li><button class="dropdown-item" type="button" data-value="Accounting">Accounting</button></li>
+              <li><button class="dropdown-item" type="button" data-value="Workers Comp">Workers Comp</button></li>
             </ul>
 
             <input type="hidden" name="area" id="area">
           </div>
+          <!-- URL (opcional) -->
+          <div>
+            <label class="label" for="ticket_url">URL (optional)</label>
+            <input class="input" type="url" id="ticket_url" name="ticket_url" value="<?= htmlspecialchars($_POST['ticket_url'] ?? '') ?>" placeholder="Paste a link (Drive, SharePoint, etc.)">
+          </div>
+
+          <!-- Attachment / Evidence (opcional) -->
+          <div>
+            <label class="label" for="attachment">Attachment / Evidence (optional)</label>
+            <input class="input" type="file" id="attachment" name="attachment" accept=".png,.jpg,.jpeg,.pdf,.doc,.docx,.xlsx,.xls,.txt">
+            <small class="hint">Max 10MB. Allowed: images, PDF, Office docs, txt.</small>
+          </div>
+
+
 
           <!-- Comments (✅ ya manda POST por tener name) -->
           <div>
@@ -194,15 +261,51 @@ $stmt->execute([
       });
     });
 
-    // Validación: si falta algo, no manda POST
+    
+    // Auto-categoría según el "Type"
+    // Puedes ajustar/expandir este mapeo cuando agreguen más tipos.
+    const TYPE_TO_CATEGORY = {
+      "Impresora": "Hardware",
+      "No enciende": "Hardware",
+      "Equipo lento": "Hardware",
+      "Sin internet": "Network",
+      "Error de aplicación": "Software",
+      "Acceso / credenciales": "Email",
+    };
+
+    const typeMenu = document.querySelector('ul[aria-labelledby="typeBtn"]');
+    const catTextEl = document.querySelector("#catText");
+    const catInputEl = document.querySelector("#category");
+
+    // Cuando el usuario elige un Type, se asigna la Category automáticamente
+    typeMenu?.querySelectorAll('.dropdown-item[data-value]').forEach(item => {
+      item.addEventListener('click', () => {
+        const typeVal = item.getAttribute('data-value') || item.textContent.trim();
+        const autoCat = TYPE_TO_CATEGORY[typeVal];
+
+        if (autoCat && catInputEl) {
+          catInputEl.value = autoCat;
+          if (catTextEl) catTextEl.textContent = autoCat;
+        }
+      });
+    });
+
+
+// Validación: si falta algo, no manda POST
     const form = document.getElementById("ticketForm");
     form?.addEventListener("submit", (e) => {
-      const category = document.getElementById("category").value.trim();
       const type     = document.getElementById("type").value.trim();
       const area     = document.getElementById("area").value.trim();
       const comments = document.getElementById("comments").value.trim();
 
-      if (!category || !type || !area || !comments) {
+      // Si por alguna razón category viene vacía, la calculamos antes de validar/enviar
+      const catInput = document.getElementById("category");
+      if (catInput && !catInput.value.trim()) {
+        const autoCat = TYPE_TO_CATEGORY[type] || "General";
+        catInput.value = autoCat;
+      }
+
+      if (!type || !area || !comments) {
         e.preventDefault();
         alert("Completa todos los campos para enviar el ticket.");
       }

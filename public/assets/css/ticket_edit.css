@@ -63,6 +63,80 @@
   pointer-events:none;
 }
 
+
+/* ====== Resumen (mejor disposición) ====== */
+.ticket-edit-page .ticket-summary .row.g-3{
+  align-items: stretch;
+}
+
+/* “Bloques” de información (ID / Area / Categoría / Tipo / URL / Evidencia, etc.) */
+.ticket-edit-page .ticket-summary .row.g-3 > div{
+  position: relative;
+  padding: .85rem 1rem;
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: 16px;
+  background: rgba(255,255,255,.75);
+  box-shadow: 0 10px 22px rgba(0,0,0,.06);
+}
+
+/* Labels arriba, valor abajo (sin tocar HTML) */
+.ticket-edit-page .ticket-summary .row.g-3 > div > b{
+  display:block;
+  font-size: .78rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: .15rem;
+}
+
+/* Que links (URL / evidencia) se vean “clickeables” pero limpios */
+.ticket-edit-page .ticket-summary a{
+  font-weight: 800;
+  text-decoration: none;
+}
+.ticket-edit-page .ticket-summary a:hover{
+  text-decoration: underline;
+}
+
+/* Chips en el resumen: que ocupen el bloque completo y se vean centrados */
+.ticket-edit-page .ticket-summary .chip{
+  width: 100%;
+  justify-content: center;
+  padding: .55rem .9rem;
+  border-radius: 999px;
+  box-shadow: 0 10px 22px rgba(0,0,0,.06);
+}
+
+/* Comentarios: separarlos visualmente del grid */
+.ticket-edit-page .ticket-summary .col-12{
+  padding: 1rem 1.1rem;
+  border-radius: 16px;
+  background: rgba(255,255,255,.72);
+  border: 1px dashed rgba(0,0,0,.10);
+  line-height: 1.55;
+}
+
+/* En pantallas grandes, que el resumen se vea “más aireado” */
+@media (min-width: 992px){
+  .ticket-edit-page .ticket-summary{
+    padding: 1.1rem !important;
+  }
+  .ticket-edit-page .ticket-summary .row.g-3{
+    row-gap: 1rem !important;
+  }
+}
+
+/* En móvil: quitar sombras excesivas y mejorar lectura */
+@media (max-width: 768px){
+  .ticket-edit-page .ticket-summary .row.g-3 > div{
+    box-shadow: 0 6px 14px rgba(0,0,0,.06);
+    padding: .75rem .9rem;
+  }
+  .ticket-edit-page .ticket-summary .chip{
+    justify-content: flex-start;
+  }
+}
+
 /* Texto */
 .ticket-edit-page b{
   color: var(--text);

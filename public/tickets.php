@@ -123,7 +123,9 @@ $stmt = $pdo->prepare("
     t.priority,
     t.status,
     t.created_at,
-    u.full_name AS assigned_name
+    u.full_name AS assigned_name,
+    t.ticket_url,
+    t.attachment_path
   $fromSql
   $whereSql
   ORDER BY t.id_ticket DESC
@@ -267,7 +269,10 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
                     $stClass = ui_status_class($uiStatus);
 
                     $assigned = $t['assigned_name'] ?: '—';
-                  ?>
+                  
+                    $ticketUrl = trim((string)($t['ticket_url'] ?? ''));
+                    $evidence = trim((string)($t['attachment_path'] ?? ''));
+?>
                     <tr>
                       <td class="th-center fw-bold"><?= esc($idTxt) ?></td>
                       <td><?= esc($t['area']) ?></td>
@@ -286,13 +291,38 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
 
                       <td><?= esc($assigned) ?></td>
 
+                      
                       <td class="th-center">
-                        <a class="icon-action text-decoration-none"
-                           href="ticket_edit.php?id=<?= (int)$t['id_ticket'] ?>"
-                           title="Asignar / Editar">
-                          <i class="fa-regular fa-pen-to-square"></i>
-                        </a>
+                        <div class="action-wrap">
+                          <a class="icon-action text-decoration-none"
+                             href="ticket_edit.php?id=<?= (int)$t['id_ticket'] ?>"
+                             title="Asignar / Editar">
+                            <i class="fa-regular fa-pen-to-square"></i>
+                          </a>
+
+                          <?php if ($ticketUrl !== ''): ?>
+                            <a class="icon-action text-decoration-none"
+                               href="<?= esc($ticketUrl) ?>"
+                               target="_blank" rel="noopener"
+                               title="Abrir URL">
+                              <i class="fa-solid fa-link"></i>
+                            </a>
+                          <?php endif; ?>
+
+                          <?php if ($evidence !== ''): ?>
+                            <button type="button"
+                                    class="icon-action evidence-btn"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#evidenceModal"
+                                    data-file="<?= esc($evidence) ?>"
+                                    data-ticket="<?= esc($idTxt) ?>"
+                                    title="Ver evidencia">
+                              <i class="fa-solid fa-paperclip"></i>
+                            </button>
+                          <?php endif; ?>
+                        </div>
                       </td>
+
                     </tr>
                   <?php endforeach; ?>
                 <?php endif; ?>
@@ -339,5 +369,100 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- ===== Modal Evidencia ===== -->
+  <div class="modal fade" id="evidenceModal" tabindex="-1" aria-labelledby="evidenceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="evidenceModalLabel">
+            Evidencia del Ticket <span id="evTicketCode" class="fw-bold"></span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div id="evBody" class="text-center" style="min-height: 220px;"></div>
+        </div>
+        <div class="modal-footer">
+          <a id="evOpenNew" class="btn btn-outline-secondary" href="#" target="_blank" rel="noopener">
+            Abrir en nueva pestaña
+          </a>
+          <a id="evDownload" class="btn btn-primary" href="#" download>
+            Descargar
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const modalEl = document.getElementById('evidenceModal');
+      const evBody = document.getElementById('evBody');
+      const evTicketCode = document.getElementById('evTicketCode');
+      const evOpenNew = document.getElementById('evOpenNew');
+      const evDownload = document.getElementById('evDownload');
+
+      function safePath(p){
+        if(!p) return '';
+        if(p.includes('..')) return '';
+        return p.replaceAll('\\\\','/');
+      }
+
+      modalEl.addEventListener('show.bs.modal', function (event) {
+        const btn = event.relatedTarget;
+        const rawFile = btn?.getAttribute('data-file') || '';
+        const ticket = btn?.getAttribute('data-ticket') || '';
+        const file = safePath(rawFile);
+
+        evTicketCode.textContent = ticket ? ('#' + ticket) : '';
+        evBody.innerHTML = '';
+
+        if(!file){
+          evBody.innerHTML = '<div class="alert alert-warning mb-0">No se encontró la evidencia.</div>';
+          evOpenNew.href = '#';
+          evDownload.href = '#';
+          return;
+        }
+
+        const url = file;
+        evOpenNew.href = url;
+        evDownload.href = url;
+
+        const ext = (url.split('.').pop() || '').toLowerCase();
+
+        if(['png','jpg','jpeg','webp','gif'].includes(ext)){
+          const img = document.createElement('img');
+          img.src = url;
+          img.alt = 'Evidencia';
+          img.style.maxWidth = '100%';
+          img.style.height = 'auto';
+          img.style.borderRadius = '12px';
+          evBody.appendChild(img);
+        } else if(ext === 'pdf'){
+          const iframe = document.createElement('iframe');
+          iframe.src = url;
+          iframe.style.width = '100%';
+          iframe.style.height = '70vh';
+          iframe.style.border = '0';
+          iframe.style.borderRadius = '12px';
+          evBody.appendChild(iframe);
+        } else {
+          evBody.innerHTML = `
+            <div class="alert alert-info">
+              Vista previa no disponible para <b>.${ext || 'archivo'}</b>. Puedes abrirlo o descargarlo.
+            </div>
+          `;
+        }
+      });
+
+      modalEl.addEventListener('hidden.bs.modal', function(){
+        evBody.innerHTML = '';
+        evTicketCode.textContent = '';
+      });
+    })();
+  </script>
+
+
 </body>
 </html>

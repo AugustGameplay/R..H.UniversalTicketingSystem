@@ -281,3 +281,27 @@
 .panel.card.tickets-panel .avatar-btn{
   display: none !important;
 }
+
+/* ===== FIX definitivo: acciones en línea y a la derecha ===== */
+.tickets-table td.th-center{
+  text-align: right !important;
+  white-space: nowrap !important;
+  padding-right: 18px !important;
+}
+
+.tickets-table td.th-center .icon-action{
+  display: inline-grid !important;  /* clave: que NO sea block */
+  vertical-align: middle;
+}
+
+.tickets-table td.th-center .icon-action + .icon-action{
+  margin-left: 12px; /* separación */
+}
+
+/* Si el clip es <button class="icon-action">, quita estilo nativo del button */
+.tickets-table td.th-center button.icon-action{
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
