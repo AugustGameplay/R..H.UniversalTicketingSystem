@@ -91,7 +91,59 @@ if (!$errors) {
       // Ejemplo recomendado de columnas:
       // tickets(id, user_id, category, type, area, comments, status, created_at)
 
-      $user_id = $_SESSION['id_user'] ?? $_SESSION['user_id'] ?? null; // por si tu sesión usa uno u otro
+      // ====== Usuario creador (robusto) ======
+// En algunos módulos la sesión viene como:
+//   $_SESSION['id_user']
+//   $_SESSION['user_id']
+//   $_SESSION['user']['id_user']
+//   $_SESSION['user']['user_id']
+// etc.
+$sessionUser = $_SESSION['user'] ?? null;
+
+$user_id = null;
+$creator_name = null;
+$creator_email = null;
+
+if (is_array($sessionUser)) {
+  $user_id = $sessionUser['id_user'] ?? $sessionUser['user_id'] ?? $sessionUser['id'] ?? $sessionUser['uid'] ?? null;
+  $creator_name = $sessionUser['full_name'] ?? $sessionUser['name'] ?? $sessionUser['username'] ?? null;
+  $creator_email = $sessionUser['email'] ?? null;
+}
+
+$user_id = $user_id ?? ($_SESSION['id_user'] ?? $_SESSION['user_id'] ?? $_SESSION['id'] ?? $_SESSION['uid'] ?? null);
+$creator_name = $creator_name ?? ($_SESSION['full_name'] ?? $_SESSION['name'] ?? null);
+$creator_email = $creator_email ?? ($_SESSION['email'] ?? null);
+
+// Normaliza id
+if ($user_id !== null && $user_id !== '' && is_numeric($user_id)) {
+  $user_id = (int)$user_id;
+} else {
+  $user_id = null;
+}
+
+// Fallback: si hay email en sesión, buscar el id en BD
+if (!$user_id && $creator_email) {
+  $stmtU = $pdo->prepare("SELECT id_user, full_name FROM users WHERE email = :email LIMIT 1");
+  $stmtU->execute([':email' => $creator_email]);
+  $urow = $stmtU->fetch(PDO::FETCH_ASSOC);
+  if ($urow) {
+    $user_id = (int)$urow['id_user'];
+    if (!$creator_name) $creator_name = $urow['full_name'] ?? null;
+  }
+}
+
+// Fallback: si hay id pero no nombre, trae full_name
+if ($user_id && !$creator_name) {
+  $stmtU2 = $pdo->prepare("SELECT full_name FROM users WHERE id_user = :id LIMIT 1");
+  $stmtU2->execute([':id' => $user_id]);
+  $creator_name = (string)($stmtU2->fetchColumn() ?: '');
+}
+
+// Si todavía no hay usuario, mejor fallar con mensaje claro (evita tickets sin creador)
+if (!$user_id) {
+  throw new Exception("No se pudo identificar el usuario creador del ticket. Cierra sesión e inicia sesión de nuevo.");
+}
+
 
 $stmt = $pdo->prepare("
   INSERT INTO tickets (id_user, category, type, area, comments, ticket_url, attachment_path, status, created_at)

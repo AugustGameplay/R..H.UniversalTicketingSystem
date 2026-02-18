@@ -110,7 +110,80 @@ function ui_prio_class($prio){
 // ===============================
 // FROM base (lo reutilizamos para que el filtro por nombre funcione en TOTAL y DATA)
 // ===============================
+// Detectar cómo se guarda el creador del ticket (ID o texto)
+// - Si existe un campo ID (INT) se hace JOIN a users para mostrar el nombre real.
+// - Si existe un campo texto (VARCHAR/TEXT) se usa directo.
+// - Si existen ambos, se prioriza el JOIN y se hace fallback al texto con COALESCE.
+$creatorIdCol = null;
+$creatorNameCol = null;
+
+try {
+  $colsInfo = $pdo->query("SHOW COLUMNS FROM tickets")->fetchAll(PDO::FETCH_ASSOC);
+  $typeByField = [];
+  foreach ($colsInfo as $c) {
+    $typeByField[$c['Field']] = strtolower((string)$c['Type']);
+  }
+
+  $idCandidates = [
+    'created_by_user_id',
+    'created_user_id',
+    'creator_user_id',
+    'created_by_id',
+    'created_by_id_user',
+    'id_user_creator',
+    'user_creator_id',
+    'user_id_creator',
+    'created_by',  // a veces lo guardan como INT
+    'id_user',     // creator id (tu esquema actual)
+    'user_id'      // fallback común
+  ];
+
+  $nameCandidates = [
+    'created_by_name',
+    'created_by_full_name',
+    'creator_name',
+    'created_by_user',
+    'created_by_email',
+    'created_by',       // a veces lo guardan como texto
+    'created_user',
+    'creator',
+    'created_by_text'
+  ];
+
+  foreach ($idCandidates as $c) {
+    if (isset($typeByField[$c]) && preg_match('/\b(int|bigint|smallint|mediumint|tinyint)\b/', $typeByField[$c])) {
+      $creatorIdCol = $c;
+      break;
+    }
+  }
+
+  foreach ($nameCandidates as $c) {
+    if (isset($typeByField[$c]) && !preg_match('/\b(int|bigint|smallint|mediumint|tinyint)\b/', $typeByField[$c])) {
+      $creatorNameCol = $c;
+      break;
+    }
+  }
+} catch (Throwable $e) {
+  $creatorIdCol = null;
+  $creatorNameCol = null;
+}
+
 $fromSql = "FROM tickets t LEFT JOIN users u ON u.id_user = t.assigned_user_id";
+if ($creatorIdCol) {
+  $fromSql .= " LEFT JOIN users uc ON uc.id_user = t.$creatorIdCol";
+}
+
+if ($creatorIdCol && $creatorNameCol) {
+  $selectCreator = ", COALESCE(NULLIF(uc.full_name,''), NULLIF(t.$creatorNameCol,'')) AS created_by_name";
+} elseif ($creatorIdCol) {
+  $selectCreator = ", NULLIF(uc.full_name,'') AS created_by_name";
+} elseif ($creatorNameCol) {
+  $selectCreator = ", NULLIF(t.$creatorNameCol,'') AS created_by_name";
+} else {
+  $selectCreator = ", NULL AS created_by_name";
+}
+
+
 
 // ===============================
 // WHERE dinámico
@@ -122,8 +195,22 @@ $params = [];
 if ($q !== '') {
   // Buscar por: ID (id_ticket), Área (area) y Nombre del asignado (users.full_name)
   // Nota: CAST para poder usar LIKE sobre un entero.
-  $where[] = "(CAST(t.id_ticket AS CHAR) LIKE :q OR t.area LIKE :q OR u.full_name LIKE :q)";
+    // Buscar por: ID (id_ticket), Área (area), Nombre del asignado y Nombre del creador (si existe)
+  // Nota: CAST para poder usar LIKE sobre un entero.
+    $searchParts = [
+    "CAST(t.id_ticket AS CHAR) LIKE :q",
+    "t.area LIKE :q",
+    "u.full_name LIKE :q",
+  ];
+  if ($creatorIdCol) {
+    $searchParts[] = "uc.full_name LIKE :q";
+  }
+  if ($creatorNameCol) {
+    $searchParts[] = "t.$creatorNameCol LIKE :q";
+  }
+  $where[] = "(" . implode(" OR ", $searchParts) . ")";
   $params[':q'] = "%{$q}%";
+
 }
 
 // State (UI)
@@ -159,7 +246,8 @@ $stmt = $pdo->prepare("
     t.priority,
     t.status,
     t.created_at,
-    u.full_name AS assigned_name,
+    u.full_name AS assigned_name
+    $selectCreator,
     t.ticket_url,
     t.attachment_path
   $fromSql
@@ -280,6 +368,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
                 <tr>
                   <th class="th-center">ID</th>
                   <th>Creado</th>
+                  <th>Creado por</th>
                   <th>Area</th>
                   <th>Priority</th>
                   <th>Status</th>
@@ -291,7 +380,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
               <tbody>
                 <?php if (!$tickets): ?>
                   <tr>
-                    <td colspan="7" class="text-center py-4" style="color: rgba(0,0,0,.55); font-weight:800;">
+                    <td colspan="8" class="text-center py-4" style="color: rgba(0,0,0,.55); font-weight:800;">
                       No hay tickets para mostrar.
                     </td>
                   </tr>
@@ -306,6 +395,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
                     $stClass = ui_status_class($uiStatus);
 
                     $assigned = $t['assigned_name'] ?: '—';
+                    $createdBy = $t['created_by_name'] ?: '—';
                   
                     $ticketUrl = trim((string)($t['ticket_url'] ?? ''));
                     $evidence = trim((string)($t['attachment_path'] ?? ''));
@@ -314,6 +404,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
                       <td class="th-center fw-bold td-id"><?= esc($idTxt) ?></td>
 
                      <td><?= $t['created_at'] ? date('d/m/Y H:i', strtotime($t['created_at'])) : '—' ?></td>
+                      <td class="td-createdby"><span class="cell-ellipsis" title="<?= esc($createdBy) ?>"><?= esc($createdBy) ?></span></td>
                       
                       <td><?= esc($t['area']) ?></td>
                       

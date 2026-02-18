@@ -584,3 +584,24 @@
   .tickets-page main.main{ padding: 16px 12px 26px; }
   .panel.card.tickets-panel{ min-height: auto; }
 }
+
+/* =========================
+   1080p: aprovechar altura + nueva columna "Creado por"
+   ========================= */
+.tickets-page .layout{ min-height: 100vh; }
+.tickets-page main.main{ min-height: 100vh; }
+
+/* Columna 3 = Creado por */
+.tickets-table th:nth-child(3),
+.tickets-table td:nth-child(3){
+  white-space: nowrap;
+}
+
+/* Recorte elegante de nombres largos (sin romper tabla) */
+.tickets-page .cell-ellipsis{
+  display: block;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
