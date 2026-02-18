@@ -127,7 +127,7 @@ $stmt->execute([
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 
   <!-- Tu CSS (NO TOCADO) -->
-  <link rel="stylesheet" href="./assets/css/generarTickets.css">
+  <link rel="stylesheet" href="./assets/css/generarTickets.css?v=<?= filemtime(__DIR__ . '/assets/css/generarTickets.css') ?>">
   <link rel="stylesheet" href="./assets/css/menu.css">
   <link rel="stylesheet" href="./assets/css/movil.css">
   <script defer src="./assets/js/sidebar.js"></script>
@@ -212,16 +212,72 @@ $stmt->execute([
             <input type="hidden" name="area" id="area">
           </div>
           <!-- URL (opcional) -->
-          <div>
-            <label class="label" for="ticket_url">URL (optional)</label>
-            <input class="input" type="url" id="ticket_url" name="ticket_url" value="<?= htmlspecialchars($_POST['ticket_url'] ?? '') ?>" placeholder="Paste a link (Drive, SharePoint, etc.)">
+          <!-- URL (opcional) -->
+          <div class="field">
+            <div class="field__row">
+              <label class="field__label" for="ticket_url">URL (opcional)</label>
+              <span class="field__counter">Opcional</span>
+            </div>
+
+            <div class="tc-urlwrap">
+              <i class="fa-solid fa-link" aria-hidden="true"></i>
+              <input
+                class="tc-urlinput"
+                type="url"
+                id="ticket_url"
+                name="ticket_url"
+                value="<?= htmlspecialchars($_POST['ticket_url'] ?? '') ?>"
+                placeholder="Pega un enlace (Drive, SharePoint, etc.)">
+            </div>
+
+            <div class="field__hint">Tip: si pegas sin http/https, lo normalizamos automáticamente.</div>
+            <div id="urlError" class="tc-inline-error" hidden>
+              <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+              La URL no es válida.
+            </div>
           </div>
 
-          <!-- Attachment / Evidence (opcional) -->
-          <div>
-            <label class="label" for="attachment">Attachment / Evidence (optional)</label>
-            <input class="input" type="file" id="attachment" name="attachment" accept=".png,.jpg,.jpeg,.pdf,.doc,.docx,.xlsx,.xls,.txt">
-            <small class="hint">Max 10MB. Allowed: images, PDF, Office docs, txt.</small>
+          <!-- Adjunto / Evidencia (opcional) -->
+          <div class="field">
+            <div class="field__row">
+              <label class="field__label" for="attachment">Adjunto / Evidencia (opcional)</label>
+              <span class="field__counter">Máx. 10MB</span>
+            </div>
+
+            <input
+              type="file"
+              id="attachment"
+              name="attachment"
+              accept=".png,.jpg,.jpeg,.pdf,.doc,.docx,.xlsx,.xls,.txt"
+              hidden>
+
+            <label for="attachment" class="tc-dropzone" id="dropzone">
+              <div class="tc-dropzone__icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+              <div class="tc-dropzone__text">
+                <strong>Arrastra tu archivo aquí</strong>
+                <span>o haz clic para seleccionar</span>
+              </div>
+              <div class="tc-dropzone__meta">Permitidos: PNG/JPG/PDF/DOC/XLS/TXT</div>
+            </label>
+
+            <div class="tc-fileinfo" id="fileInfo" hidden>
+              <div class="tc-fileinfo__left">
+                <img id="filePreview" class="tc-fileinfo__preview" alt="Vista previa" hidden>
+                <div id="fileIcon" class="tc-fileinfo__icon" aria-hidden="true">
+                  <i class="fa-regular fa-file"></i>
+                </div>
+                <div class="tc-fileinfo__txt">
+                  <div class="tc-fileinfo__name" id="fileName">archivo</div>
+                  <div class="tc-fileinfo__size" id="fileSize">0 KB</div>
+                </div>
+              </div>
+
+              <button type="button" class="tc-fileinfo__remove" id="fileRemove" title="Quitar archivo">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <div class="field__hint">Consejo: si es imagen, verás una vista previa en pequeño.</div>
           </div>
 
 
@@ -232,7 +288,7 @@ $stmt->execute([
             <textarea class="textarea" id="comments" name="comments" rows="6" required placeholder="Describe your problem"></textarea>
           </div>
 
-          <button class="btn-send" type="submit">Send</button>
+          <button class="btn-send" type="submit">Enviar ticket</button>
         </form>
 
       </section>
@@ -310,6 +366,156 @@ $stmt->execute([
         alert("Completa todos los campos para enviar el ticket.");
       }
     });
+    // ===== URL: normalizar y validación ligera (solo UX) =====
+    const urlInput = document.getElementById("ticket_url");
+    const urlError = document.getElementById("urlError");
+
+    function normalizeUrl(val){
+      const v = (val || "").trim();
+      if (!v) return "";
+      if (/^https?:\/\//i.test(v)) return v;
+      // si parece dominio/ruta, le agregamos https://
+      return "https://" + v;
+    }
+
+    function isValidUrl(val){
+      try{
+        // URL() requiere esquema; por eso normalizamos
+        new URL(normalizeUrl(val));
+        return true;
+      }catch(e){
+        return false;
+      }
+    }
+
+    urlInput?.addEventListener("blur", () => {
+      if (!urlInput.value.trim()){
+        urlError && (urlError.hidden = true);
+        return;
+      }
+      urlInput.value = normalizeUrl(urlInput.value);
+      const ok = isValidUrl(urlInput.value);
+      if (urlError) urlError.hidden = ok;
+    });
+
+    urlInput?.addEventListener("input", () => {
+      if (urlError) urlError.hidden = true;
+    });
+
+    // ===== Evidencia: nombre, tamaño, preview y quitar =====
+    const fileInput  = document.getElementById("attachment");
+    const dropzone   = document.getElementById("dropzone");
+    const fileInfo   = document.getElementById("fileInfo");
+    const fileNameEl = document.getElementById("fileName");
+    const fileSizeEl = document.getElementById("fileSize");
+    const filePrev   = document.getElementById("filePreview");
+    const fileIcon   = document.getElementById("fileIcon");
+    const fileRemove = document.getElementById("fileRemove");
+
+    function humanSize(bytes){
+      const units = ["B","KB","MB","GB"];
+      let n = bytes || 0;
+      let i = 0;
+      while(n >= 1024 && i < units.length-1){
+        n /= 1024; i++;
+      }
+      return (i === 0 ? Math.round(n) : n.toFixed(1)) + " " + units[i];
+    }
+
+    function setFileUi(file){
+      if (!file) return;
+      if (fileInfo) fileInfo.hidden = false;
+      if (fileNameEl) fileNameEl.textContent = file.name;
+      if (fileSizeEl) fileSizeEl.textContent = humanSize(file.size);
+
+      const name = (file.name || "").toLowerCase();
+      const isImg = /^image\//.test(file.type) || /\.(png|jpe?g|gif|webp)$/i.test(name);
+
+      // reset
+      if (filePrev){
+        filePrev.hidden = true;
+        filePrev.src = "";
+      }
+      if (fileIcon){
+        fileIcon.style.display = "grid";
+        fileIcon.innerHTML = '<i class="fa-regular fa-file"></i>';
+      }
+
+      if (isImg && filePrev){
+        const url = URL.createObjectURL(file);
+        filePrev.src = url;
+        filePrev.hidden = false;
+        if (fileIcon) fileIcon.style.display = "none";
+      } else {
+        // icon por extensión
+        let ico = "fa-regular fa-file";
+        if (/\.(pdf)$/i.test(name)) ico = "fa-regular fa-file-pdf";
+        else if (/\.(doc|docx)$/i.test(name)) ico = "fa-regular fa-file-word";
+        else if (/\.(xls|xlsx)$/i.test(name)) ico = "fa-regular fa-file-excel";
+        else if (/\.(txt)$/i.test(name)) ico = "fa-regular fa-file-lines";
+        if (fileIcon) fileIcon.innerHTML = '<i class="'+ico+'"></i>';
+      }
+    }
+
+    function clearFile(){
+      if (!fileInput) return;
+      fileInput.value = "";
+      if (fileInfo) fileInfo.hidden = true;
+      if (filePrev){
+        filePrev.hidden = true;
+        filePrev.src = "";
+      }
+      if (fileIcon){
+        fileIcon.style.display = "grid";
+        fileIcon.innerHTML = '<i class="fa-regular fa-file"></i>';
+      }
+    }
+
+    fileInput?.addEventListener("change", () => {
+      const f = fileInput.files && fileInput.files[0];
+      if (!f){
+        clearFile();
+        return;
+      }
+      setFileUi(f);
+    });
+
+    fileRemove?.addEventListener("click", () => clearFile());
+
+    // drag & drop (opcional)
+    ["dragenter","dragover"].forEach(ev => {
+      dropzone?.addEventListener(ev, (e) => {
+        e.preventDefault();
+        dropzone.classList.add("is-over");
+      });
+    });
+    ["dragleave","drop"].forEach(ev => {
+      dropzone?.addEventListener(ev, (e) => {
+        e.preventDefault();
+        dropzone.classList.remove("is-over");
+      });
+    });
+
+    dropzone?.addEventListener("drop", (e) => {
+      const dt = e.dataTransfer;
+      if (!dt || !fileInput) return;
+      if (dt.files && dt.files.length){
+        const f = dt.files[0];
+
+        // Algunos navegadores no permiten asignar fileInput.files directamente.
+        // Usamos DataTransfer para mantener compatibilidad.
+        try{
+          const dt2 = new DataTransfer();
+          dt2.items.add(f);
+          fileInput.files = dt2.files;
+        }catch(_e){
+          // fallback: al menos mostramos UI aunque no podamos setear files
+        }
+
+        setFileUi(f);
+      }
+    });
+
   </script>
 
 </body>

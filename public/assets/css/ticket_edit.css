@@ -300,3 +300,132 @@
     flex-direction: column;
   }
 }
+/* ================================
+   Evidencia en modal (estético + zoom)
+   ================================ */
+.ticket-edit-page .evidence-modal .modal-content{
+  border-radius: 18px;
+  border: 1px solid rgba(0,0,0,.08);
+  overflow: hidden;
+}
+
+.ticket-edit-page .evidence-modal .modal-header{
+  background: rgba(255,255,255,.92);
+}
+
+.ticket-edit-page .evidence-toolbar{
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.ticket-edit-page .evidence-canvas {
+  position: relative;
+  width: 100%;
+  max-width: min(90vw, 800px);  /* Limita a 90% del ancho de la ventana o 800px, lo que sea menor */
+  height: min(70vh, 520px);
+  border-radius: 16px;
+  border: 1px solid rgba(0,0,0,.10);
+  background: rgba(15,23,42,.04);
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ticket-edit-page .evidence-canvas img {
+  width: 100%;
+  height: 100%;
+  max-width: 800px;  /* Limita el ancho máximo de la imagen */
+  max-height: 520px; /* Limita el alto máximo, alineado con el contenedor */
+  object-fit: contain;
+  object-position: center;
+  transform-origin: center center;
+  transition: transform .12s ease;
+  border-radius: 12px;
+  box-shadow: 0 14px 40px rgba(0,0,0,.12);
+  display: block;
+}
+
+.ticket-edit-page .evidence-canvas iframe{
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: none;
+  border-radius: 12px;
+}
+
+/* ===== EVIDENCIA: que NO se salga del modal ===== */
+.ticket-edit-page .evidence-modal{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: none;               /* tu JS la prende */
+  z-index: 2000;
+  padding: 24px;
+}
+
+/* caja del modal */
+.ticket-edit-page .evidence-modal__dialog{
+  width: min(1100px, 96vw);
+  max-height: 90vh;            /* <- clave */
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;            /* <- evita que algo se salga */
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  display: flex;
+  flex-direction: column;
+}
+
+/* header + toolbar se quedan fijos, el visor se adapta */
+.ticket-edit-page .evidence-modal__header{
+  padding: 14px 18px;
+  border-bottom: 1px solid #e9eef4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ticket-edit-page .evidence-toolbar{
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ESTE ES EL VISOR (IMPORTANTE) */
+.ticket-edit-page .evidence-canvas{
+  flex: 1;                     /* <- ocupa el resto del modal */
+  min-height: 280px;
+  padding: 16px 18px 22px;
+  overflow: hidden;            /* <- NO se sale */
+  display: grid;
+  place-items: center;         /* <- centra */
+  background: #ffffff;
+}
+
+/* la imagen ya no "empuja" el modal */
+.ticket-edit-page .evidence-canvas img{
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 12px;
+  box-shadow: 0 14px 40px rgba(0,0,0,.12);
+  display: block;
+}
+
+/* si haces zoom, que el visor permita ver sin romper el modal */
+.ticket-edit-page .evidence-canvas.is-zoomed{
+  overflow: auto;              /* <- solo con zoom */
+  place-items: start center;
+}
+
+/* opcional: quitar scroll del fondo cuando está abierto */
+body.evidence-open{
+  overflow: hidden;
+}

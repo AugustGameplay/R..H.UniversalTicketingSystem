@@ -261,7 +261,7 @@ body.sidebar-open{
   }
 
   .tickets-table table{
-    min-width: 720px; /* asegura que las columnas no se aplasten */
+    min-width: 860px; /* +1 columna (Creado) para que no se aplasten */
   }
 
   .tickets-table thead th,
@@ -374,11 +374,15 @@ body.sidebar-open{
     letter-spacing: .2px;
   }
 
-  /* Etiquetas automáticas por columna (sin tocar PHP) */
+  /* Etiquetas automáticas por columna (sin tocar PHP)
+     NUEVO ORDEN:
+     1 ID | 2 Creado | 3 Área | 4 Prioridad | 5 Estado | 6 Asignado | 7 Action
+  */
   .tickets-table tbody td:nth-child(2),
   .tickets-table tbody td:nth-child(3),
   .tickets-table tbody td:nth-child(4),
-  .tickets-table tbody td:nth-child(5){
+  .tickets-table tbody td:nth-child(5),
+  .tickets-table tbody td:nth-child(6){
     position: relative;
     padding-left: 96px !important; /* espacio para la etiqueta */
   }
@@ -386,7 +390,8 @@ body.sidebar-open{
   .tickets-table tbody td:nth-child(2)::before,
   .tickets-table tbody td:nth-child(3)::before,
   .tickets-table tbody td:nth-child(4)::before,
-  .tickets-table tbody td:nth-child(5)::before{
+  .tickets-table tbody td:nth-child(5)::before,
+  .tickets-table tbody td:nth-child(6)::before{
     position: absolute;
     left: 0;
     top: 10px;
@@ -398,20 +403,22 @@ body.sidebar-open{
     letter-spacing: .2px;
   }
 
-  .tickets-table tbody td:nth-child(2)::before{ content: "Área"; }
-  .tickets-table tbody td:nth-child(3)::before{ content: "Prioridad"; }
-  .tickets-table tbody td:nth-child(4)::before{ content: "Estado"; }
-  .tickets-table tbody td:nth-child(5)::before{ content: "Asignado"; }
+  .tickets-table tbody td:nth-child(2)::before{ content: "Creado"; }
+  .tickets-table tbody td:nth-child(3)::before{ content: "Área"; }
+  .tickets-table tbody td:nth-child(4)::before{ content: "Prioridad"; }
+  .tickets-table tbody td:nth-child(5)::before{ content: "Estado"; }
+  .tickets-table tbody td:nth-child(6)::before{ content: "Asignado"; }
 
   /* Acción: separado y alineado a la derecha */
-  .tickets-table tbody td:nth-child(6){
+  .tickets-table tbody td:nth-child(7){
     padding-top: 12px !important;
     border-top: 1px solid rgba(0,0,0,.08) !important;
     display: flex;
     justify-content: flex-end;
+    gap: 10px;
   }
 
-  .tickets-table tbody td:nth-child(6) .icon-action{
+  .tickets-table tbody td:nth-child(7) .icon-action{
     width: 42px !important;
     height: 42px !important;
     border-radius: 14px !important;

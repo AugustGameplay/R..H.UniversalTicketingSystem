@@ -131,6 +131,19 @@ $ticketCode = str_pad((string)$ticket['id_ticket'], 3, '0', STR_PAD_LEFT);
 $assignedName = '—';
 $ticketUrl = trim((string)($ticket['ticket_url'] ?? ''));
 $ticketEvidence = trim((string)($ticket['attachment_path'] ?? ''));
+// Base path para construir URLs locales (evita /uploads/... que apunta a la raíz)
+$basePath = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])); // ej: /ticketsystem/public
+$basePath = rtrim($basePath, '/');
+if ($basePath === '/') { $basePath = ''; }
+
+// Helper: construir href local
+function localHref(string $path, string $basePath): string {
+  $path = trim($path);
+  if ($path === '') return '';
+  if (preg_match('~^https?://~i', $path)) return $path;     // externo
+  if (strpos($path, '/') === 0) return $path;               // absoluto desde root (ya viene bien)
+  return $basePath . '/' . ltrim($path, '/');               // relativo al proyecto
+}
 
 if (!empty($ticket['assigned_user_id'])) {
   foreach ($itUsers as $u) {
@@ -158,7 +171,7 @@ if (!empty($ticket['assigned_user_id'])) {
   <link rel="stylesheet" href="./assets/css/movil.css">
 
   <!-- CSS SOLO para esta vista -->
-  <link rel="stylesheet" href="./assets/css/ticket_edit.css">
+  <link rel="stylesheet" href="assets/css/ticket_edit.css?v=<?= filemtime(__DIR__ . '/assets/css/ticket_edit.css') ?>">
 
   <script defer src="./assets/js/sidebar.js"></script>
 </head>
@@ -202,7 +215,48 @@ if (!empty($ticket['assigned_user_id'])) {
               <div class="col-md-3"><b>Categoría:</b> <?= esc($ticket['category']) ?></div>
               <div class="col-md-3"><b>Tipo:</b> <?= esc($ticket['type']) ?></div>
 
-              <div class="col-md-4">
+              
+
+              <div class="col-md-6">
+                <b>URL:</b>
+                <?php if (!empty($ticketUrl)): ?>
+                  <?php
+                    $urlHref = $ticketUrl;
+                    if (!preg_match('~^https?://~i', $urlHref)) {
+                      $urlHref = 'https://' . $urlHref;
+                    }
+                  ?>
+                  <a href="<?= esc($urlHref) ?>" target="_blank" rel="noopener noreferrer">
+                    <?= esc($ticketUrl) ?>
+                  </a>
+                <?php else: ?>
+                  <span class="text-muted">Sin URL</span>
+                <?php endif; ?>
+              </div>
+
+              <div class="col-md-6">
+                <b>Evidencia:</b>
+                <?php if (!empty($ticketEvidence)): ?>
+                  <?php
+                    $evHref = localHref($ticketEvidence, $basePath);
+                    $ext = strtolower(pathinfo($ticketEvidence, PATHINFO_EXTENSION));
+                    $evType = ($ext === 'pdf') ? 'pdf' : 'img';
+                    $evName = basename($ticketEvidence);
+                  ?>
+                  <a href="#" 
+                     class="evidence-link"
+                     data-bs-toggle="modal"
+                     data-bs-target="#evidenceModal"
+                     data-ev-src="<?= esc($evHref) ?>"
+                     data-ev-type="<?= esc($evType) ?>"
+                     data-ev-name="<?= esc($evName) ?>">
+                    <i class="fa-solid fa-paperclip"></i> Ver evidencia
+                  </a>
+                <?php else: ?>
+                  <span class="text-muted">Sin evidencia</span>
+                <?php endif; ?>
+              </div>
+<div class="col-md-4">
                 <span class="chip brand">
                   <i class="fa-solid fa-user-check"></i>
                   <span><b>Asignado:</b> <?= esc($assignedName) ?></span>
@@ -288,6 +342,137 @@ if (!empty($ticket['assigned_user_id'])) {
 
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- ====== MODAL: Evidencia ====== -->
+  <div class="modal fade evidence-modal" id="evidenceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="evidenceTitle">Evidencia</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="evidence-toolbar">
+            <div class="btn-group" role="group" aria-label="Zoom">
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="evZoomOut" title="Alejar">
+                <i class="fa-solid fa-magnifying-glass-minus"></i>
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="evZoomReset" title="Restablecer">
+                <i class="fa-solid fa-rotate-left"></i>
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-sm" id="evZoomIn" title="Acercar">
+                <i class="fa-solid fa-magnifying-glass-plus"></i>
+              </button>
+            </div>
+
+            <a class="btn btn-outline-primary btn-sm ms-auto" id="evOpenNewTab" href="#" target="_blank" rel="noopener noreferrer">
+              <i class="fa-solid fa-up-right-from-square me-1"></i>Abrir
+            </a>
+          </div>
+
+          <div class="evidence-canvas mt-3" id="evCanvas">
+            <img id="evImg" alt="Evidencia" />
+            <iframe id="evPdf" title="Evidencia PDF"></iframe>
+          </div>
+
+          <div class="evidence-hint mt-2 text-muted small">
+            Tip: usa los botones para zoom (imágenes). En PDF puedes usar el zoom del navegador.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    (function(){
+      const modalEl = document.getElementById('evidenceModal');
+      if(!modalEl) return;
+
+      const titleEl = document.getElementById('evidenceTitle');
+      const imgEl   = document.getElementById('evImg');
+      const pdfEl   = document.getElementById('evPdf');
+      const openEl  = document.getElementById('evOpenNewTab');
+
+      const zoomInBtn    = document.getElementById('evZoomIn');
+      const zoomOutBtn   = document.getElementById('evZoomOut');
+      const zoomResetBtn = document.getElementById('evZoomReset');
+
+      let scale = 1;
+
+      function applyScale(){
+        imgEl.style.transform = 'scale(' + scale.toFixed(2) + ')';
+      }
+
+      function reset(){
+        scale = 1;
+        applyScale();
+      }
+
+      modalEl.addEventListener('show.bs.modal', function (event) {
+        const trigger = event.relatedTarget;
+        if(!trigger) return;
+
+        const src  = trigger.getAttribute('data-ev-src') || '';
+        const type = trigger.getAttribute('data-ev-type') || 'img';
+        const name = trigger.getAttribute('data-ev-name') || 'Evidencia';
+
+        titleEl.textContent = 'Evidencia: ' + name;
+        openEl.href = src;
+
+        // reset zoom
+        reset();
+
+        if(type === 'pdf'){
+          imgEl.style.display = 'none';
+          pdfEl.style.display = 'block';
+          pdfEl.src = src;
+          // deshabilitar zoom botones (no aplica al iframe)
+          zoomInBtn.disabled = true;
+          zoomOutBtn.disabled = true;
+          zoomResetBtn.disabled = true;
+        } else {
+          pdfEl.style.display = 'none';
+          pdfEl.src = '';
+          imgEl.style.display = 'block';
+          imgEl.src = src;
+          zoomInBtn.disabled = false;
+          zoomOutBtn.disabled = false;
+          zoomResetBtn.disabled = false;
+        }
+      });
+
+      modalEl.addEventListener('hidden.bs.modal', function(){
+        // limpiar fuentes
+        imgEl.src = '';
+        pdfEl.src = '';
+        reset();
+      });
+
+      zoomInBtn.addEventListener('click', function(){
+        scale = Math.min(4, scale + 0.15);
+        applyScale();
+      });
+
+      zoomOutBtn.addEventListener('click', function(){
+        scale = Math.max(0.4, scale - 0.15);
+        applyScale();
+      });
+
+      zoomResetBtn.addEventListener('click', reset);
+
+      // zoom con rueda (solo imagen)
+      const canvas = document.getElementById('evCanvas');
+      canvas.addEventListener('wheel', function(e){
+        if(imgEl.style.display === 'none') return;
+        e.preventDefault();
+        const delta = Math.sign(e.deltaY);
+        scale = delta > 0 ? Math.max(0.4, scale - 0.10) : Math.min(4, scale + 0.10);
+        applyScale();
+      }, { passive:false });
+    })();
+  </script>
+
 </body>
 </html>

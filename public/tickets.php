@@ -4,6 +4,42 @@ $active = 'tickets';
 
 require __DIR__ . '/config/db.php'; // Ajusta si tu db.php está en otra ruta
 
+
+// ===============================
+// Eliminar Ticket (desde tickets.php)
+// ===============================
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_ticket') {
+  $delId = (int)($_POST['id_ticket'] ?? 0);
+
+  if ($delId > 0) {
+    // Obtener evidencia para borrarla (si existe)
+    $stmtEv = $pdo->prepare("SELECT attachment_path FROM tickets WHERE id_ticket = :id LIMIT 1");
+    $stmtEv->execute([':id' => $delId]);
+    $att = (string)($stmtEv->fetchColumn() ?: '');
+
+    // Borrar ticket
+    $stmtDel = $pdo->prepare("DELETE FROM tickets WHERE id_ticket = :id");
+    $stmtDel->execute([':id' => $delId]);
+
+    // Intentar borrar archivo físico (solo si está dentro de /uploads)
+    if ($att !== '') {
+      $rel = str_replace('\\', '/', $att);
+      $rel = ltrim($rel, '/');
+      if (strpos($rel, 'public/') === 0) $rel = substr($rel, 7); // por si guardaron "public/uploads/..."
+      if (strpos($rel, '..') === false && (strpos($rel, 'uploads/') === 0)) {
+        $baseUploads = realpath(__DIR__ . '/uploads');
+        $full = realpath(__DIR__ . '/' . $rel);
+        if ($baseUploads && $full && strpos($full, $baseUploads) === 0 && is_file($full)) {
+          @unlink($full);
+        }
+      }
+    }
+  }
+
+  header('Location: tickets.php?deleted=1');
+  exit;
+}
+
 // ===============================
 // Parámetros GET
 // ===============================
@@ -156,21 +192,21 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
   <script defer src="./assets/js/sidebar.js"></script>
 
   <!-- Tickets original -->
-  <link rel="stylesheet" href="./assets/css/tickets.css">
-  <link rel="stylesheet" href="./assets/css/tickets.css?v=20260212_1">
+
+  <link rel="stylesheet" href="./assets/css/tickets.css?v=<?= filemtime(__DIR__ . '/assets/css/tickets.css') ?>">
 
   <!-- NUEVO: estilo moderno (scopeado) -->
 </head>
 
-<body>
+<body class="tickets-page">
   <div class="layout d-flex">
 
     <!-- SIDEBAR -->
     <?php include __DIR__ . '/partials/menu.php'; ?>
 
     <!-- MAIN -->
-    <main class="main flex-grow-1 d-flex justify-content-center align-items-start">
-      <div class="tickets-page" style="width:100%; max-width: 1100px;">
+    <main class="main flex-grow-1 d-flex justify-content-center align-items-stretch">
+      <div class="tickets-page tickets-wrap">
 
         <section class="panel card tickets-panel">
 
@@ -243,18 +279,19 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
               <thead>
                 <tr>
                   <th class="th-center">ID</th>
+                  <th>Creado</th>
                   <th>Area</th>
                   <th>Priority</th>
                   <th>Status</th>
                   <th>Assigned to</th>
-                  <th class="th-center">Action</th>
+                  <th class="th-center th-actions">Action</th>
                 </tr>
               </thead>
 
               <tbody>
                 <?php if (!$tickets): ?>
                   <tr>
-                    <td colspan="6" class="text-center py-4" style="color: rgba(0,0,0,.55); font-weight:800;">
+                    <td colspan="7" class="text-center py-4" style="color: rgba(0,0,0,.55); font-weight:800;">
                       No hay tickets para mostrar.
                     </td>
                   </tr>
@@ -274,8 +311,12 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
                     $evidence = trim((string)($t['attachment_path'] ?? ''));
 ?>
                     <tr>
-                      <td class="th-center fw-bold"><?= esc($idTxt) ?></td>
+                      <td class="th-center fw-bold td-id"><?= esc($idTxt) ?></td>
+
+                     <td><?= $t['created_at'] ? date('d/m/Y H:i', strtotime($t['created_at'])) : '—' ?></td>
+                      
                       <td><?= esc($t['area']) ?></td>
+                      
 
                       <td>
                         <span class="badge badge-prio <?= esc($prioClass) ?>">
@@ -292,7 +333,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
                       <td><?= esc($assigned) ?></td>
 
                       
-                      <td class="th-center">
+                      <td class="th-center td-actions">
                         <div class="action-wrap">
                           <a class="icon-action text-decoration-none"
                              href="ticket_edit.php?id=<?= (int)$t['id_ticket'] ?>"
@@ -311,7 +352,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
 
                           <?php if ($evidence !== ''): ?>
                             <button type="button"
-                                    class="icon-action evidence-btn"
+                                    class="icon-action icon-evidence evidence-btn"
                                     data-bs-toggle="modal"
                                     data-bs-target="#evidenceModal"
                                     data-file="<?= esc($evidence) ?>"
@@ -320,6 +361,15 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
                               <i class="fa-solid fa-paperclip"></i>
                             </button>
                           <?php endif; ?>
+                          <button type="button"
+                                    class="icon-action icon-delete delete-btn"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#deleteModal"
+                                    data-id="<?= (int)$t['id_ticket'] ?>"
+                                    data-ticket="<?= esc($idTxt) ?>"
+                                    title="Eliminar ticket">
+                              <i class="fa-regular fa-trash-can"></i>
+                          </button>
                         </div>
                       </td>
 
@@ -370,26 +420,81 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- ===== Modal Evidencia ===== -->
-  <div class="modal fade" id="evidenceModal" tabindex="-1" aria-labelledby="evidenceModalLabel" aria-hidden="true">
+  <!-- ===== Modal Evidencia (PRO) ===== -->
+  <div class="modal fade evidence-modal" id="evidenceModal" tabindex="-1" aria-labelledby="evidenceModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl">
       <div class="modal-content">
+        <div class="modal-header align-items-center">
+          <div class="d-flex flex-column">
+            <h5 class="modal-title mb-0" id="evidenceModalLabel">
+              Evidencia: <span id="evFilename" class="fw-bold"></span>
+            </h5>
+            <div class="small text-muted">
+              Ticket <span id="evTicketCode" class="fw-bold"></span>
+            </div>
+          </div>
+
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+            <div class="evidence-toolbar">
+              <button type="button" class="btn btn-light ev-toolbtn" id="evZoomOut" title="Zoom -">
+                <i class="fa-solid fa-magnifying-glass-minus"></i>
+              </button>
+              <button type="button" class="btn btn-light ev-toolbtn" id="evReset" title="Reiniciar zoom">
+                <i class="fa-solid fa-rotate-left"></i>
+              </button>
+              <button type="button" class="btn btn-light ev-toolbtn" id="evZoomIn" title="Zoom +">
+                <i class="fa-solid fa-magnifying-glass-plus"></i>
+              </button>
+            </div>
+
+            <div class="d-flex gap-2">
+              <a id="evOpenNew" class="btn btn-outline-primary ev-open" href="#" target="_blank" rel="noopener" title="Abrir en nueva pestaña">
+                <i class="fa-solid fa-up-right-from-square me-2"></i>Abrir
+              </a>
+              <a id="evDownload" class="btn btn-outline-secondary ev-open" href="#" download title="Descargar">
+                <i class="fa-solid fa-download me-2"></i>Descargar
+              </a>
+            </div>
+          </div>
+
+          <div class="evidence-canvas" id="evCanvas">
+            <!-- IMG/IFRAME dinámico -->
+          </div>
+          <div class="evidence-tip mt-2">
+            Tip: usa los botones para hacer zoom en imágenes. En PDF puedes usar el zoom del navegador.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Modal Eliminar Ticket ===== -->
+  <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content delete-modal">
         <div class="modal-header">
-          <h5 class="modal-title" id="evidenceModalLabel">
-            Evidencia del Ticket <span id="evTicketCode" class="fw-bold"></span>
+          <h5 class="modal-title" id="deleteModalLabel">
+            <i class="fa-regular fa-trash-can me-2"></i>Eliminar ticket <span id="delTicketCode" class="fw-bold"></span>
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body">
-          <div id="evBody" class="text-center" style="min-height: 220px;"></div>
+          ¿Seguro que quieres eliminar este ticket? Esta acción no se puede deshacer.
         </div>
         <div class="modal-footer">
-          <a id="evOpenNew" class="btn btn-outline-secondary" href="#" target="_blank" rel="noopener">
-            Abrir en nueva pestaña
-          </a>
-          <a id="evDownload" class="btn btn-primary" href="#" download>
-            Descargar
-          </a>
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+
+          <form method="POST" class="m-0">
+            <input type="hidden" name="action" value="delete_ticket">
+            <input type="hidden" name="id_ticket" id="delTicketId" value="">
+            <button type="submit" class="btn btn-danger">
+              <i class="fa-regular fa-trash-can me-2"></i>Eliminar
+            </button>
+          </form>
         </div>
       </div>
     </div>
@@ -397,69 +502,141 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
 
   <script>
     (function(){
+      // ========= Evidencia Viewer (igual al de ticket_edit) =========
       const modalEl = document.getElementById('evidenceModal');
-      const evBody = document.getElementById('evBody');
+      const evCanvas = document.getElementById('evCanvas');
       const evTicketCode = document.getElementById('evTicketCode');
+      const evFilename = document.getElementById('evFilename');
       const evOpenNew = document.getElementById('evOpenNew');
       const evDownload = document.getElementById('evDownload');
+
+      const btnZoomOut = document.getElementById('evZoomOut');
+      const btnZoomIn  = document.getElementById('evZoomIn');
+      const btnReset   = document.getElementById('evReset');
+
+      let imgEl = null;
+      let iframeEl = null;
+      let scale = 1;
 
       function safePath(p){
         if(!p) return '';
         if(p.includes('..')) return '';
-        return p.replaceAll('\\\\','/');
+        p = p.replaceAll('\\\\','/');
+        p = p.replace(/^\/+/, '');          // quita "/" inicial para evitar /uploads (root)
+        if(p.startsWith('public/')) p = p.slice(7);
+        return p;
       }
 
-      modalEl.addEventListener('show.bs.modal', function (event) {
+      function filenameFrom(url){
+        try { return decodeURIComponent(url.split('/').pop() || url); }
+        catch(e){ return (url.split('/').pop() || url); }
+      }
+
+      function setZoomControls(enabled){
+        [btnZoomOut, btnZoomIn, btnReset].forEach(b => b.disabled = !enabled);
+      }
+
+      function applyScale(){
+        if(!imgEl) return;
+        imgEl.style.transform = 'scale(' + scale + ')';
+      }
+
+      function resetZoom(){
+        scale = 1;
+        applyScale();
+        if(evCanvas) evCanvas.classList.remove('is-zoomed');
+      }
+
+      function zoom(delta){
+        if(!imgEl) return;
+        scale = Math.max(1, Math.min(4, +(scale + delta).toFixed(2)));
+        applyScale();
+        if(scale > 1) evCanvas.classList.add('is-zoomed');
+        else evCanvas.classList.remove('is-zoomed');
+      }
+
+      btnZoomOut?.addEventListener('click', () => zoom(-0.25));
+      btnZoomIn?.addEventListener('click',  () => zoom(+0.25));
+      btnReset?.addEventListener('click', resetZoom);
+
+      modalEl?.addEventListener('show.bs.modal', function (event) {
         const btn = event.relatedTarget;
         const rawFile = btn?.getAttribute('data-file') || '';
         const ticket = btn?.getAttribute('data-ticket') || '';
         const file = safePath(rawFile);
 
         evTicketCode.textContent = ticket ? ('#' + ticket) : '';
-        evBody.innerHTML = '';
+        evCanvas.innerHTML = '';
+        imgEl = null;
+        iframeEl = null;
+        resetZoom();
 
         if(!file){
-          evBody.innerHTML = '<div class="alert alert-warning mb-0">No se encontró la evidencia.</div>';
+          evFilename.textContent = '';
+          evCanvas.innerHTML = '<div class="alert alert-warning mb-0">No se encontró la evidencia.</div>';
           evOpenNew.href = '#';
           evDownload.href = '#';
+          setZoomControls(false);
           return;
         }
 
         const url = file;
+        evFilename.textContent = filenameFrom(url);
         evOpenNew.href = url;
         evDownload.href = url;
 
         const ext = (url.split('.').pop() || '').toLowerCase();
 
         if(['png','jpg','jpeg','webp','gif'].includes(ext)){
-          const img = document.createElement('img');
-          img.src = url;
-          img.alt = 'Evidencia';
-          img.style.maxWidth = '100%';
-          img.style.height = 'auto';
-          img.style.borderRadius = '12px';
-          evBody.appendChild(img);
+          imgEl = document.createElement('img');
+          imgEl.src = url;
+          imgEl.alt = 'Evidencia';
+          evCanvas.appendChild(imgEl);
+          setZoomControls(true);
+
+          imgEl.addEventListener('load', resetZoom);
         } else if(ext === 'pdf'){
-          const iframe = document.createElement('iframe');
-          iframe.src = url;
-          iframe.style.width = '100%';
-          iframe.style.height = '70vh';
-          iframe.style.border = '0';
-          iframe.style.borderRadius = '12px';
-          evBody.appendChild(iframe);
+          iframeEl = document.createElement('iframe');
+          iframeEl.src = url;
+          evCanvas.appendChild(iframeEl);
+          setZoomControls(false);
         } else {
-          evBody.innerHTML = `
-            <div class="alert alert-info">
+          setZoomControls(false);
+          evCanvas.innerHTML = `
+            <div class="alert alert-info mb-0">
               Vista previa no disponible para <b>.${ext || 'archivo'}</b>. Puedes abrirlo o descargarlo.
             </div>
           `;
         }
       });
 
-      modalEl.addEventListener('hidden.bs.modal', function(){
-        evBody.innerHTML = '';
+      modalEl?.addEventListener('hidden.bs.modal', function(){
+        evCanvas.innerHTML = '';
         evTicketCode.textContent = '';
+        evFilename.textContent = '';
+        imgEl = null;
+        iframeEl = null;
+        scale = 1;
       });
+
+      // ========= Delete modal =========
+      const deleteModal = document.getElementById('deleteModal');
+      const delTicketId = document.getElementById('delTicketId');
+      const delTicketCode = document.getElementById('delTicketCode');
+
+      deleteModal?.addEventListener('show.bs.modal', function(event){
+        const btn = event.relatedTarget;
+        const id = btn?.getAttribute('data-id') || '';
+        const code = btn?.getAttribute('data-ticket') || '';
+        if(delTicketId) delTicketId.value = id;
+        if(delTicketCode) delTicketCode.textContent = code ? ('#' + code) : '';
+      });
+
+      deleteModal?.addEventListener('hidden.bs.modal', function(){
+        if(delTicketId) delTicketId.value = '';
+        if(delTicketCode) delTicketCode.textContent = '';
+      });
+
     })();
   </script>
 

@@ -382,3 +382,193 @@ body.intro-play .panel{   animation: rhrPanelIn   .70s cubic-bezier(.2,.9,.2,1) 
   transform: translateY(1px);
   box-shadow: 0 8px 16px rgba(0,0,0,.20);
 }
+
+/* =========================================================
+   UX: URL + Evidencia (estilo pro, consistente con Select PRO)
+   ========================================================= */
+.tc-urlwrap{
+  position: relative;
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  background: rgba(255,255,255,.92);
+  border: 1px solid rgba(17,17,17,.12);
+  border-radius: 14px;
+  padding: 0 14px;
+  height: 50px;
+  box-shadow: 0 10px 22px rgba(0,0,0,.08);
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.tc-urlwrap i{
+  opacity: .75;
+}
+.tc-urlinput{
+  width: 100%;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 15px;
+}
+.tc-urlinput::placeholder{ color: rgba(17,17,17,.45); }
+
+.tc-urlwrap:focus-within{
+  border-color: rgba(13,110,253,.45);
+  box-shadow: 0 0 0 .22rem rgba(13,110,253,.12), 0 14px 26px rgba(0,0,0,.10);
+  transform: translateY(-1px);
+}
+
+.tc-inline-error{
+  margin-top: 10px;
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(220,53,69,.08);
+  border: 1px solid rgba(220,53,69,.18);
+  color: #b02a37;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ===== Dropzone ===== */
+.tc-dropzone{
+  width: 100%;
+  border: 1.5px dashed rgba(17,17,17,.22);
+  border-radius: 16px;
+  padding: 16px 16px;
+  background: rgba(13,110,253,.04);
+  cursor: pointer;
+  user-select: none;
+  display:flex;
+  align-items:center;
+  gap: 14px;
+  transition: background .15s ease, border-color .15s ease, transform .15s ease;
+}
+.tc-dropzone:hover{
+  border-color: rgba(13,110,253,.45);
+  background: rgba(13,110,253,.06);
+  transform: translateY(-1px);
+}
+.tc-dropzone.is-over{
+  border-color: rgba(13,110,253,.55);
+  background: rgba(13,110,253,.10);
+}
+.tc-dropzone__icon{
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  display:grid;
+  place-items:center;
+  background: rgba(255,255,255,.78);
+  border: 1px solid rgba(17,17,17,.10);
+  box-shadow: 0 8px 18px rgba(0,0,0,.10);
+}
+.tc-dropzone__icon i{ font-size: 18px; opacity: .85; }
+
+.tc-dropzone__text{
+  display:grid;
+  gap: 2px;
+}
+.tc-dropzone__text strong{
+  font-size: 14px;
+  font-weight: 900;
+  color: rgba(17,17,17,.86);
+}
+.tc-dropzone__text span{
+  font-size: 13px;
+  color: rgba(17,17,17,.65);
+  font-weight: 700;
+}
+.tc-dropzone__meta{
+  margin-left: auto;
+  font-size: 12px;
+  color: rgba(17,17,17,.55);
+  font-weight: 800;
+  text-align: right;
+}
+
+/* ===== File selected card ===== */
+.tc-fileinfo{
+  margin-top: 12px;
+  border: 1px solid rgba(17,17,17,.10);
+  border-radius: 16px;
+  background: rgba(255,255,255,.80);
+  box-shadow: 0 10px 22px rgba(0,0,0,.06);
+  padding: 10px 12px;
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.tc-fileinfo__left{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+  min-width: 0;
+}
+.tc-fileinfo__preview{
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 1px solid rgba(17,17,17,.10);
+  box-shadow: 0 8px 18px rgba(0,0,0,.10);
+}
+.tc-fileinfo__icon{
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display:grid;
+  place-items:center;
+  background: rgba(13,110,253,.06);
+  border: 1px solid rgba(17,17,17,.10);
+}
+.tc-fileinfo__icon i{ font-size: 20px; opacity: .85; }
+
+.tc-fileinfo__txt{ min-width: 0; }
+.tc-fileinfo__name{
+  font-size: 13px;
+  font-weight: 900;
+  color: rgba(17,17,17,.86);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 360px;
+}
+.tc-fileinfo__size{
+  font-size: 12px;
+  color: rgba(17,17,17,.60);
+  font-weight: 800;
+}
+
+.tc-fileinfo__remove{
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  border: 1px solid rgba(17,17,17,.14);
+  background: #fff;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+}
+.tc-fileinfo__remove:hover{
+  transform: translateY(-1px);
+  border-color: rgba(220,53,69,.28);
+  box-shadow: 0 10px 18px rgba(0,0,0,.12);
+}
+.tc-fileinfo__remove i{ opacity: .85; }
+
+@media (max-width: 520px){
+  .tc-dropzone{
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .tc-dropzone__meta{
+    margin-left: 0;
+    text-align: left;
+  }
+  .tc-fileinfo__name{ max-width: 220px; }
+}
