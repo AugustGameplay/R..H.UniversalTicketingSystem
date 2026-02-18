@@ -1,0 +1,302 @@
+/* ================================
+   Tickets - Modern UI (match ticket_edit)
+   Scopeado a .tickets-page
+   ================================ */
+
+.tickets-page{
+  --text: #0f172a;
+  --muted: rgba(15,23,42,.62);
+  --line: rgba(2, 6, 23, .08);
+
+  --brand: #0b3a57;
+  --brand2: #0f4a6d;
+  --accent: #ff6a00;
+  --accent2: #ff8a3d;
+
+  --r: 22px;
+  --shadow: 0 18px 50px rgba(0,0,0,.10);
+  --shadow2: 0 10px 26px rgba(0,0,0,.08);
+}
+
+/* Panel base (blanco limpio) */
+.tickets-page .panel.card{
+  border: 1px solid var(--line) !important;
+  border-radius: 26px !important;
+  background: rgba(255,255,255,.92) !important;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  padding: 28px !important;
+}
+
+.tickets-page .panel__title{
+  color: var(--text);
+  font-weight: 900;
+  letter-spacing: -0.6px;
+  font-size: clamp(34px, 4vw, 56px);
+  margin: 0;
+}
+
+/* Header: search + avatar */
+.tickets-page .tickets-head{
+  display:flex;
+  justify-content: space-between;
+  align-items:center;
+  gap: 16px;
+}
+
+/* Search box */
+.tickets-page .search-wrap{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(0,0,0,.10);
+  background: #fff;
+  box-shadow: 0 10px 22px rgba(0,0,0,.08);
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+  min-width: min(420px, 64vw);
+}
+
+.tickets-page .search-wrap:hover{
+  transform: translateY(-1px);
+  border-color: rgba(255,106,0,.45);
+  box-shadow: 0 16px 30px rgba(0,0,0,.12);
+}
+
+.tickets-page .search-wrap:focus-within{
+  border-color: rgba(255,106,0,.75);
+  box-shadow: 0 0 0 4px rgba(255,106,0,.16), 0 18px 34px rgba(0,0,0,.12);
+  transform: translateY(-1px);
+}
+
+.tickets-page .search-input{
+  width: 100%;
+  border: 0 !important;
+  outline: none !important;
+  background: transparent !important;
+  font-weight: 700;
+  color: rgba(15,23,42,.82);
+}
+
+/* Avatar pill */
+.tickets-page .avatar-btn{
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,.10);
+  background: #fff;
+  box-shadow: 0 10px 22px rgba(0,0,0,.08);
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+
+.tickets-page .avatar-btn:hover{
+  transform: translateY(-1px);
+  border-color: rgba(11,58,87,.35);
+  box-shadow: 0 16px 30px rgba(0,0,0,.12);
+}
+
+/* Filtros */
+.tickets-page .filters{
+  margin-top: 18px;
+  align-items: center;
+}
+
+.tickets-page .filter-select{
+  border-radius: 16px !important;
+  border: 1px solid rgba(0,0,0,.10) !important;
+  background: #fff !important;
+  box-shadow: 0 8px 18px rgba(0,0,0,.07);
+  padding: 12px 14px !important;
+  font-weight: 800;
+  color: rgba(15,23,42,.82);
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+
+.tickets-page .filter-select:hover{
+  transform: translateY(-1px);
+  border-color: rgba(255,106,0,.45) !important;
+  box-shadow: 0 14px 26px rgba(0,0,0,.10);
+}
+
+.tickets-page .filter-select:focus{
+  border-color: rgba(255,106,0,.75) !important;
+  box-shadow: 0 0 0 4px rgba(255,106,0,.16), 0 16px 30px rgba(0,0,0,.10) !important;
+}
+
+/* Botón New Ticket */
+.tickets-page .btn-pro{
+  border-radius: 16px !important;
+  font-weight: 900;
+  padding: 12px 18px;
+  background: linear-gradient(135deg, var(--brand), var(--brand2));
+  border: none !important;
+  color: #fff !important;
+  box-shadow: 0 14px 28px rgba(0,0,0,.14);
+  transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+  white-space: nowrap;
+}
+
+.tickets-page .btn-pro:hover{
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow: 0 20px 38px rgba(0,0,0,.18);
+}
+
+.tickets-page .btn-pro:active{
+  transform: translateY(0) scale(.98);
+}
+
+/* Tabla contenedor */
+.tickets-page .tickets-table{
+  margin-top: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(0,0,0,.08);
+  background: rgba(255,255,255,.90);
+  box-shadow: var(--shadow2);
+  overflow: hidden;
+}
+
+/* Encabezado tabla */
+.tickets-page table thead th{
+  padding: 16px 18px !important;
+  color: rgba(15,23,42,.78);
+  font-weight: 900;
+  border-bottom: 1px solid rgba(0,0,0,.06) !important;
+}
+
+/* Filas */
+.tickets-page table tbody tr{
+  transition: transform .16s ease, background .16s ease;
+}
+
+.tickets-page table tbody tr:hover{
+  background:
+    radial-gradient(900px 240px at 12% 0%, rgba(255,106,0,.08), transparent 60%),
+    radial-gradient(900px 240px at 88% 0%, rgba(11,58,87,.08), transparent 60%);
+  transform: translateY(-1px);
+}
+
+.tickets-page table td{
+  padding: 18px 18px !important;
+  border-top: 1px solid rgba(0,0,0,.05) !important;
+  color: rgba(15,23,42,.86);
+  font-weight: 700;
+}
+
+.tickets-page .th-center{
+  text-align: center;
+}
+
+/* Badges: base */
+.tickets-page .badge{
+  border-radius: 999px !important;
+  padding: .52rem .90rem !important;
+  font-weight: 900 !important;
+  border: 1px solid rgba(0,0,0,.08);
+  box-shadow: 0 10px 18px rgba(0,0,0,.06);
+}
+
+/* ===== PRIORITY (lo que pediste: colores por prioridad) ===== */
+.tickets-page .badge-prio.prio-low{
+  background: rgba(56,189,248,.18) !important;   /* azul suave */
+  border-color: rgba(56,189,248,.35) !important;
+  color: rgba(15,23,42,.88) !important;
+}
+.tickets-page .badge-prio.prio-medium{
+  background: rgba(245,158,11,.18) !important;  /* ámbar suave */
+  border-color: rgba(245,158,11,.35) !important;
+  color: rgba(15,23,42,.90) !important;
+}
+.tickets-page .badge-prio.prio-high{
+  background: rgba(255,106,0,.18) !important;   /* naranja RH */
+  border-color: rgba(255,106,0,.40) !important;
+  color: rgba(15,23,42,.92) !important;
+}
+.tickets-page .badge-prio.prio-urgent{
+  background: rgba(239,68,68,.16) !important;   /* rojo suave */
+  border-color: rgba(239,68,68,.35) !important;
+  color: rgba(15,23,42,.92) !important;
+}
+
+/* ===== STATUS ===== */
+.tickets-page .badge-status.st-open{
+  background: rgba(56,189,248,.18) !important;
+  border-color: rgba(56,189,248,.35) !important;
+}
+.tickets-page .badge-status.st-progress{
+  background: rgba(34,197,94,.16) !important;
+  border-color: rgba(34,197,94,.32) !important;
+}
+.tickets-page .badge-status.st-wait{
+  background: rgba(148,163,184,.20) !important;
+  border-color: rgba(148,163,184,.35) !important;
+}
+.tickets-page .badge-status.st-done{
+  background: rgba(34,197,94,.16) !important;
+  border-color: rgba(34,197,94,.32) !important;
+}
+.tickets-page .badge-status.st-cancel{
+  background: rgba(239,68,68,.14) !important;
+  border-color: rgba(239,68,68,.28) !important;
+}
+
+/* Acción lápiz */
+.tickets-page .icon-action{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  border: 2px solid rgba(255,106,0,.70);
+  background: #fff;
+  color: rgba(255,106,0,.98);
+  box-shadow: 0 12px 22px rgba(0,0,0,.10);
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease, border-color .16s ease;
+}
+
+.tickets-page .icon-action:hover{
+  transform: translateY(-1px) rotate(-2deg);
+  background: rgba(255,106,0,.10);
+  border-color: rgba(255,106,0,.92);
+  box-shadow: 0 18px 32px rgba(0,0,0,.14);
+}
+
+.tickets-page .icon-action:active{
+  transform: translateY(0) scale(.97);
+}
+
+/* Footer + paginación */
+.tickets-page .foot-text{
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.tickets-page .pagination .page-link{
+  border-radius: 12px !important;
+  border: 1px solid rgba(0,0,0,.10) !important;
+  box-shadow: 0 8px 16px rgba(0,0,0,.08);
+  transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease, background .14s ease;
+}
+
+.tickets-page .pagination .page-link:hover{
+  transform: translateY(-1px);
+  border-color: rgba(255,106,0,.45) !important;
+  box-shadow: 0 14px 24px rgba(0,0,0,.12);
+  background: rgba(255,106,0,.08);
+}
+
+.tickets-page .pagination .page-item.active .page-link{
+  background: linear-gradient(135deg, var(--accent), var(--accent2)) !important;
+  border: none !important;
+  color: #fff !important;
+}
+
+/* Responsive */
+@media (max-width: 768px){
+  .tickets-page .panel.card{ padding: 18px !important; }
+  .tickets-page .tickets-head{ flex-direction: column; align-items: stretch; }
+  .tickets-page .search-wrap{ min-width: 100%; width: 100%; }
+  .tickets-page .btn-pro{ width: 100%; justify-content: center; }
+}

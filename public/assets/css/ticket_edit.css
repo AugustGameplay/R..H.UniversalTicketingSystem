@@ -1,0 +1,431 @@
+/* ================================
+   Ticket Edit - Modern UI
+   Scopeado a .ticket-edit-page
+   ================================ */
+
+.ticket-edit-page{
+  --bg: rgba(255,255,255,.72);
+  --card: rgba(255,255,255,.86);
+  --line: rgba(0,0,0,.08);
+  --text: #0f172a;
+  --muted: rgba(15,23,42,.65);
+
+  --brand: #0b3a57;      /* azul RH */
+  --brand2: #0f4a6d;
+  --accent: #ff6a00;     /* naranja RH */
+  --accent2: #ff8a3d;
+
+  --ok: #16a34a;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+
+  --r: 18px;
+  --shadow: 0 16px 50px rgba(0,0,0,.10);
+  --shadow2: 0 10px 24px rgba(0,0,0,.10);
+}
+
+/* Encabezado */
+.ticket-edit-page .panel__title{
+  letter-spacing: -0.5px;
+  color: var(--text);
+}
+
+/* Cards dentro del edit */
+.ticket-edit-page .card{
+  border: 1px solid var(--line) !important;
+  border-radius: var(--r) !important;
+  background: var(--card) !important;
+  box-shadow: var(--shadow2);
+  overflow: hidden;
+}
+
+.ticket-edit-page .card.p-3{
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.ticket-edit-page .card.p-3:hover{
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+  border-color: rgba(0,0,0,.12) !important;
+}
+
+/* “Resumen del ticket” (la card de arriba) */
+.ticket-edit-page .ticket-summary{
+  position: relative;
+}
+
+.ticket-edit-page .ticket-summary::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: radial-gradient(1200px 220px at 10% 0%, rgba(255,106,0,.12), transparent 55%),
+              radial-gradient(1200px 220px at 90% 0%, rgba(11,58,87,.12), transparent 55%);
+  pointer-events:none;
+}
+
+
+/* ====== Resumen (mejor disposición) ====== */
+.ticket-edit-page .ticket-summary .row.g-3{
+  align-items: stretch;
+}
+
+/* “Bloques” de información (ID / Area / Categoría / Tipo / URL / Evidencia, etc.) */
+.ticket-edit-page .ticket-summary .row.g-3 > div{
+  position: relative;
+  padding: .85rem 1rem;
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: 16px;
+  background: rgba(255,255,255,.75);
+  box-shadow: 0 10px 22px rgba(0,0,0,.06);
+}
+
+/* Labels arriba, valor abajo (sin tocar HTML) */
+.ticket-edit-page .ticket-summary .row.g-3 > div > b{
+  display:block;
+  font-size: .78rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: .15rem;
+}
+
+/* Que links (URL / evidencia) se vean “clickeables” pero limpios */
+.ticket-edit-page .ticket-summary a{
+  font-weight: 800;
+  text-decoration: none;
+}
+.ticket-edit-page .ticket-summary a:hover{
+  text-decoration: underline;
+}
+
+/* Chips en el resumen: que ocupen el bloque completo y se vean centrados */
+.ticket-edit-page .ticket-summary .chip{
+  width: 100%;
+  justify-content: center;
+  padding: .55rem .9rem;
+  border-radius: 999px;
+  box-shadow: 0 10px 22px rgba(0,0,0,.06);
+}
+
+/* Comentarios: separarlos visualmente del grid */
+.ticket-edit-page .ticket-summary .col-12{
+  padding: 1rem 1.1rem;
+  border-radius: 16px;
+  background: rgba(255,255,255,.72);
+  border: 1px dashed rgba(0,0,0,.10);
+  line-height: 1.55;
+}
+
+/* En pantallas grandes, que el resumen se vea “más aireado” */
+@media (min-width: 992px){
+  .ticket-edit-page .ticket-summary{
+    padding: 1.1rem !important;
+  }
+  .ticket-edit-page .ticket-summary .row.g-3{
+    row-gap: 1rem !important;
+  }
+}
+
+/* En móvil: quitar sombras excesivas y mejorar lectura */
+@media (max-width: 768px){
+  .ticket-edit-page .ticket-summary .row.g-3 > div{
+    box-shadow: 0 6px 14px rgba(0,0,0,.06);
+    padding: .75rem .9rem;
+  }
+  .ticket-edit-page .ticket-summary .chip{
+    justify-content: flex-start;
+  }
+}
+
+/* Texto */
+.ticket-edit-page b{
+  color: var(--text);
+}
+
+.ticket-edit-page .text-muted,
+.ticket-edit-page small{
+  color: var(--muted) !important;
+}
+
+/* Labels */
+.ticket-edit-page .form-label{
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: .35rem;
+}
+
+/* Inputs / selects (hover que sí se note) */
+.ticket-edit-page .form-select,
+.ticket-edit-page .form-control,
+.ticket-edit-page textarea{
+  border-radius: 14px !important;
+  border: 1px solid rgba(0,0,0,.10) !important;
+  background: rgba(255,255,255,.92) !important;
+  box-shadow: 0 6px 16px rgba(0,0,0,.06);
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
+}
+
+.ticket-edit-page .form-select:hover,
+.ticket-edit-page .form-control:hover,
+.ticket-edit-page textarea:hover{
+  transform: translateY(-1px);
+  border-color: rgba(255,106,0,.45) !important;
+  box-shadow: 0 10px 22px rgba(0,0,0,.10);
+  background: #fff !important;
+}
+
+.ticket-edit-page .form-select:focus,
+.ticket-edit-page .form-control:focus,
+.ticket-edit-page textarea:focus{
+  outline: none !important;
+  border-color: rgba(255,106,0,.75) !important;
+  box-shadow: 0 0 0 4px rgba(255,106,0,.18), 0 14px 30px rgba(0,0,0,.12);
+  transform: translateY(-1px);
+}
+
+/* Botones: se notan, modernos, intuitivos */
+.ticket-edit-page .btn{
+  border-radius: 14px !important;
+  font-weight: 800;
+  padding: .62rem 1rem;
+  transition: transform .16s ease, box-shadow .16s ease, filter .16s ease, background .16s ease, border-color .16s ease;
+}
+
+.ticket-edit-page .btn:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(0,0,0,.14);
+}
+
+.ticket-edit-page .btn:active{
+  transform: translateY(0px) scale(.98);
+  box-shadow: 0 10px 18px rgba(0,0,0,.10);
+}
+
+/* Botón primario */
+.ticket-edit-page .btn-primary{
+  background: linear-gradient(135deg, var(--brand), var(--brand2)) !important;
+  border: none !important;
+}
+
+.ticket-edit-page .btn-primary:hover{
+  filter: brightness(1.06);
+}
+
+.ticket-edit-page .btn-primary:focus{
+  box-shadow: 0 0 0 4px rgba(11,58,87,.22), 0 14px 30px rgba(0,0,0,.14) !important;
+}
+
+/* Botón outline */
+.ticket-edit-page .btn-outline-secondary{
+  border: 1px solid rgba(0,0,0,.18) !important;
+  background: rgba(255,255,255,.70) !important;
+  color: rgba(0,0,0,.72) !important;
+}
+
+.ticket-edit-page .btn-outline-secondary:hover{
+  border-color: rgba(255,106,0,.55) !important;
+  color: var(--text) !important;
+  background: rgba(255,106,0,.08) !important;
+}
+
+/* Botón “Volver” arriba (si lo usas) */
+.ticket-edit-page a.btn.btn-outline-secondary.btn-sm{
+  border-radius: 12px !important;
+  padding: .45rem .75rem;
+}
+
+/* Alertas con look más pro */
+.ticket-edit-page .alert{
+  border-radius: 16px;
+  border: 1px solid rgba(0,0,0,.10);
+  box-shadow: 0 10px 24px rgba(0,0,0,.10);
+}
+
+.ticket-edit-page .alert-danger{
+  background: rgba(239,68,68,.08);
+  border-color: rgba(239,68,68,.22);
+}
+
+.ticket-edit-page .alert-success{
+  background: rgba(22,163,74,.08);
+  border-color: rgba(22,163,74,.22);
+}
+
+/* “Chips” para status/priority (por si los muestras aquí) */
+.ticket-edit-page .chip{
+  display:inline-flex;
+  align-items:center;
+  gap:.45rem;
+  padding:.35rem .7rem;
+  border-radius: 999px;
+  font-weight: 800;
+  border: 1px solid rgba(0,0,0,.10);
+  background: rgba(255,255,255,.85);
+}
+
+.ticket-edit-page .chip i{
+  font-size: .9rem;
+  opacity: .9;
+}
+
+.ticket-edit-page .chip.ok{ border-color: rgba(22,163,74,.25); background: rgba(22,163,74,.10); }
+.ticket-edit-page .chip.warn{ border-color: rgba(245,158,11,.25); background: rgba(245,158,11,.10); }
+.ticket-edit-page .chip.danger{ border-color: rgba(239,68,68,.25); background: rgba(239,68,68,.10); }
+.ticket-edit-page .chip.brand{ border-color: rgba(11,58,87,.25); background: rgba(11,58,87,.08); }
+
+/* Select “Assigned to” más intuitivo (visual) */
+.ticket-edit-page select[name="assigned_user_id"]{
+  background-image:
+    linear-gradient(135deg, rgba(255,106,0,.12), rgba(11,58,87,.10));
+}
+
+/* Microanimación para iconos en botones */
+.ticket-edit-page .btn i{
+  transition: transform .16s ease;
+}
+
+.ticket-edit-page .btn:hover i{
+  transform: translateX(2px);
+}
+
+/* Responsivo: que se vea bien en móvil */
+@media (max-width: 768px){
+  .ticket-edit-page .panel{
+    padding: 16px !important;
+  }
+  .ticket-edit-page .btn{
+    width: 100%;
+  }
+  .ticket-edit-page .d-flex.justify-content-end{
+    flex-direction: column;
+  }
+}
+/* ================================
+   Evidencia en modal (estético + zoom)
+   ================================ */
+.ticket-edit-page .evidence-modal .modal-content{
+  border-radius: 18px;
+  border: 1px solid rgba(0,0,0,.08);
+  overflow: hidden;
+}
+
+.ticket-edit-page .evidence-modal .modal-header{
+  background: rgba(255,255,255,.92);
+}
+
+.ticket-edit-page .evidence-toolbar{
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.ticket-edit-page .evidence-canvas {
+  position: relative;
+  width: 100%;
+  max-width: min(90vw, 800px);  /* Limita a 90% del ancho de la ventana o 800px, lo que sea menor */
+  height: min(70vh, 520px);
+  border-radius: 16px;
+  border: 1px solid rgba(0,0,0,.10);
+  background: rgba(15,23,42,.04);
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ticket-edit-page .evidence-canvas img {
+  width: 100%;
+  height: 100%;
+  max-width: 800px;  /* Limita el ancho máximo de la imagen */
+  max-height: 520px; /* Limita el alto máximo, alineado con el contenedor */
+  object-fit: contain;
+  object-position: center;
+  transform-origin: center center;
+  transition: transform .12s ease;
+  border-radius: 12px;
+  box-shadow: 0 14px 40px rgba(0,0,0,.12);
+  display: block;
+}
+
+.ticket-edit-page .evidence-canvas iframe{
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: none;
+  border-radius: 12px;
+}
+
+/* ===== EVIDENCIA: que NO se salga del modal ===== */
+.ticket-edit-page .evidence-modal{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  display: none;               /* tu JS la prende */
+  z-index: 2000;
+  padding: 24px;
+}
+
+/* caja del modal */
+.ticket-edit-page .evidence-modal__dialog{
+  width: min(1100px, 96vw);
+  max-height: 90vh;            /* <- clave */
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;            /* <- evita que algo se salga */
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  display: flex;
+  flex-direction: column;
+}
+
+/* header + toolbar se quedan fijos, el visor se adapta */
+.ticket-edit-page .evidence-modal__header{
+  padding: 14px 18px;
+  border-bottom: 1px solid #e9eef4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ticket-edit-page .evidence-toolbar{
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ESTE ES EL VISOR (IMPORTANTE) */
+.ticket-edit-page .evidence-canvas{
+  flex: 1;                     /* <- ocupa el resto del modal */
+  min-height: 280px;
+  padding: 16px 18px 22px;
+  overflow: hidden;            /* <- NO se sale */
+  display: grid;
+  place-items: center;         /* <- centra */
+  background: #ffffff;
+}
+
+/* la imagen ya no "empuja" el modal */
+.ticket-edit-page .evidence-canvas img{
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 12px;
+  box-shadow: 0 14px 40px rgba(0,0,0,.12);
+  display: block;
+}
+
+/* si haces zoom, que el visor permita ver sin romper el modal */
+.ticket-edit-page .evidence-canvas.is-zoomed{
+  overflow: auto;              /* <- solo con zoom */
+  place-items: start center;
+}
+
+/* opcional: quitar scroll del fondo cuando está abierto */
+body.evidence-open{
+  overflow: hidden;
+}
