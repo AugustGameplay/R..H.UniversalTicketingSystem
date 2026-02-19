@@ -307,7 +307,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
               <!-- Search -->
               <form class="search-wrap d-flex align-items-center gap-2 px-3" method="GET" action="tickets.php">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input class="search-input border-0 bg-transparent" name="q" type="search" placeholder="Buscar por ID, nombre o área..." value="<?= esc($q) ?>">
+                <input class="search-input border-0 bg-transparent" name="q" type="search" placeholder="Search by ID, name or area..." value="<?= esc($q) ?>">
                 <?php if($stateUI!==''): ?><input type="hidden" name="state" value="<?= esc($stateUI) ?>"><?php endif; ?>
                 <?php if($priority!==''): ?><input type="hidden" name="priority" value="<?= esc($priority) ?>"><?php endif; ?>
               </form>
@@ -367,8 +367,8 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
               <thead>
                 <tr>
                   <th class="th-center">ID</th>
-                  <th>Creado</th>
-                  <th>Creado por</th>
+                  <th>Created</th>
+                  <th>Created by</th>
                   <th>Area</th>
                   <th>Priority</th>
                   <th>Status</th>

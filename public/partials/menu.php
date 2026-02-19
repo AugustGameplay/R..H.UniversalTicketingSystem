@@ -89,7 +89,7 @@ if (!empty($photo)) {
 
   <nav class="menu nav flex-column mt-3">
     <a class="menu__item nav-link <?php echo ($active === 'generarTickets') ? 'active' : ''; ?>" href="./generarTickets.php">
-      Generar Ticket
+      Generate Ticket
     </a>
 
     <a class="menu__item nav-link <?php echo ($active === 'tickets') ? 'active' : ''; ?>" href="./tickets.php">

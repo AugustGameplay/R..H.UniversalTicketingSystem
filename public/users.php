@@ -19,6 +19,40 @@ function roleClass($rol) {
   return 'role-user';
 }
 
+function detectOrEnsurePhoneColumn(PDO $pdo): ?string {
+  // Intentamos detectar una columna existente para teléfono.
+  $candidates = ['phone', 'telefono', 'phone_number', 'mobile', 'cellphone', 'tel', 'telephone'];
+  try {
+    $q = $pdo->prepare("
+      SELECT COLUMN_NAME
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'users'
+        AND COLUMN_NAME = :col
+      LIMIT 1
+    ");
+
+    foreach ($candidates as $col) {
+      $q->execute([':col' => $col]);
+      $found = $q->fetchColumn();
+      if ($found) return (string)$found;
+    }
+
+    // Si no existe ninguna, intentamos crear 'phone' (seguro en local).
+    try {
+      $pdo->exec("ALTER TABLE users ADD COLUMN phone VARCHAR(20) NULL DEFAULT NULL AFTER email");
+      return 'phone';
+    } catch (Throwable $t) {
+      // Si no hay permisos o ya existe, simplemente regresamos null.
+      return null;
+    }
+
+  } catch (Throwable $t) {
+    return null;
+  }
+}
+
+
 function generateStrongPassword(int $length = 12): string {
   // Asegura al menos: 1 mayúscula, 1 minúscula, 1 número, 1 símbolo
   $upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -102,6 +136,9 @@ $flashUpdated   = isset($_GET['updated']);
 $rolesStmt = $pdo->query("SELECT id_role, name FROM roles ORDER BY id_role");
 $roles = $rolesStmt->fetchAll();
 
+// Columna teléfono (detecta o crea si hace falta)
+$phoneCol = detectOrEnsurePhoneColumn($pdo);
+
 // ============================
 // CREATE USER (POST)
 // ============================
@@ -110,6 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
   $email     = trim($_POST['email'] ?? '');
   $area      = trim($_POST['area'] ?? '');
   $id_role   = (int)($_POST['id_role'] ?? 0);
+  $phone     = trim($_POST['phone'] ?? '');
 
   // Foto (opcional)
   $profilePhotoPath = null;
@@ -122,6 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
   if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) $createErrors[] = "Email inválido.";
   if (!in_array($area, ['IT Support', 'Operaciones', 'Marketing'], true)) $createErrors[] = "Área inválida.";
   if ($id_role <= 0) $createErrors[] = "Rol inválido.";
+  if ($phone !== '' && !preg_match('/^[0-9+\-\s()]{7,20}$/', $phone)) $createErrors[] = "Teléfono inválido.";
 
   if ($plain_pass === '') {
     $plain_pass = 'RHR-' . generateStrongPassword(10);
@@ -140,18 +179,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
     try {
       $hash = password_hash($plain_pass, PASSWORD_BCRYPT);
 
-      $ins = $pdo->prepare("
-        INSERT INTO users (full_name, email, area, id_role, password_hash, profile_photo)
-        VALUES (:full_name, :email, :area, :id_role, :password_hash, :profile_photo)
-      ");
-      $ins->execute([
+      $sql = "
+        INSERT INTO users (full_name, email, area, id_role, password_hash, profile_photo" . ($phoneCol ? (", `" . $phoneCol . "`") : "") . ")
+        VALUES (:full_name, :email, :area, :id_role, :password_hash, :profile_photo" . ($phoneCol ? ", :phone" : "") . ")
+      ";
+      $ins = $pdo->prepare($sql);
+      $params = [
         ':full_name' => $full_name,
         ':email' => $email,
         ':area' => $area,
         ':id_role' => $id_role,
         ':password_hash' => $hash,
         ':profile_photo' => $profilePhotoPath,
-      ]);
+      ];
+      if ($phoneCol) {
+        $params[':phone'] = ($phone !== '') ? $phone : null;
+      }
+      $ins->execute($params);
 
       $newId = (int)$pdo->lastInsertId();
 
@@ -186,6 +230,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
   $email     = trim($_POST['email'] ?? '');
   $area      = trim($_POST['area'] ?? '');
   $id_role   = (int)($_POST['id_role'] ?? 0);
+  $phone     = trim($_POST['phone'] ?? '');
+  $phone     = trim($_POST['phone'] ?? '');
 
   $editErrors = [];
 
@@ -194,6 +240,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
   if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) $editErrors[] = "Email inválido.";
   if (!in_array($area, ['IT Support', 'Operaciones', 'Marketing'], true)) $editErrors[] = "Área inválida.";
   if ($id_role <= 0) $editErrors[] = "Rol inválido.";
+  if ($phone !== '' && !preg_match('/^[0-9+\-\s()]{7,20}$/', $phone)) $editErrors[] = "Teléfono inválido.";
 
   // Obtener foto actual para conservar o reemplazar
   $currentPhoto = null;
@@ -218,26 +265,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
     try {
       $pdo->beginTransaction();
 
-      $up = $pdo->prepare("
+      $sql = "
         UPDATE users
         SET full_name = :full_name,
             email = :email,
             area = :area,
             id_role = :id_role,
-            profile_photo = :profile_photo
+            profile_photo = :profile_photo" . ($phoneCol ? (",
+            `" . $phoneCol . "` = :phone") : "") . "
         WHERE id_user = :id_user
-      ");
+      ";
+      $up = $pdo->prepare($sql);
 
       $finalPhoto = $hasNewPhoto ? $newPhotoPath : $currentPhoto;
 
-      $up->execute([
+      $params = [
         ':full_name' => $full_name,
         ':email' => $email,
         ':area' => $area,
         ':id_role' => $id_role,
         ':profile_photo' => $finalPhoto,
         ':id_user' => $id_user
-      ]);
+      ];
+      if ($phoneCol) {
+        $params[':phone'] = ($phone !== '') ? $phone : null;
+      }
+      $up->execute($params);
 
       $pdo->commit();
 
@@ -324,6 +377,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
 }
 
 // ============================
+// BÚSQUEDA (por nombre)
+// ============================
+$q = trim($_GET['q'] ?? '');
+$hasQ = ($q !== '');
+
+// ============================
 // PAGINACIÓN (5 por página)
 // ============================
 $limit = 5;
@@ -331,7 +390,13 @@ $limit = 5;
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) $page = 1;
 
-$totalUsers = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
+if ($hasQ) {
+  $countStmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE full_name LIKE :q");
+  $countStmt->execute([':q' => '%' . $q . '%']);
+  $totalUsers = (int)$countStmt->fetchColumn();
+} else {
+  $totalUsers = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
+}
 $totalPages = (int)ceil($totalUsers / $limit);
 if ($totalPages < 1) $totalPages = 1;
 
@@ -340,9 +405,13 @@ if ($page > $totalPages) $page = $totalPages;
 $offset = ($page - 1) * $limit;
 
 // ============================
-// LISTADO USERS (con LIMIT/OFFSET)
+// LISTADO USERS (con LIMIT/OFFSET + búsqueda + teléfono)
 // ============================
-$stmt = $pdo->prepare("
+$phoneSelect = $phoneCol ? ("u.`" . $phoneCol . "` AS phone") : "NULL AS phone";
+
+$whereSql = $hasQ ? "WHERE u.full_name LIKE :q" : "";
+
+$sql = "
   SELECT
     u.id_user,
     u.full_name,
@@ -350,14 +419,21 @@ $stmt = $pdo->prepare("
     u.id_role,
     u.area,
     u.email,
+    $phoneSelect,
     r.name AS rol
   FROM users u
   JOIN roles r ON r.id_role = u.id_role
+  $whereSql
   ORDER BY u.id_user DESC
   LIMIT :limit OFFSET :offset
-");
+";
+
+$stmt = $pdo->prepare($sql);
 $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+if ($hasQ) {
+  $stmt->bindValue(':q', '%' . $q . '%', PDO::PARAM_STR);
+}
 $stmt->execute();
 $users = $stmt->fetchAll();
 ?>
@@ -379,7 +455,7 @@ $users = $stmt->fetchAll();
   <script defer src="./assets/js/sidebar.js"></script>
 
   <!-- Users -->
-  <link rel="stylesheet" href="./assets/css/users.css?v=1">
+  <link rel="stylesheet" href="./assets/css/users.css?v=2">
 </head>
 
 <body>
@@ -442,7 +518,27 @@ $users = $stmt->fetchAll();
 
         <!-- Header panel -->
         <div class="users-head">
-          <h1 class="panel__title m-0">Users</h1>
+          <div class="users-head__left">
+            <h1 class="panel__title m-0">Users</h1>
+
+            <form class="users-search" method="GET" action="users.php" autocomplete="off">
+              <div class="users-search__group">
+                <i class="fa-solid fa-magnifying-glass users-search__icon" aria-hidden="true"></i>
+                <input
+                  class="form-control pro-input users-search__input"
+                  type="text"
+                  name="q"
+                  value="<?= e($q) ?>"
+                  placeholder="Buscar por nombre..."
+                >
+                <?php if ($hasQ): ?>
+                  <a class="users-search__clear" href="users.php" title="Limpiar búsqueda">
+                    <i class="fa-solid fa-xmark"></i>
+                  </a>
+                <?php endif; ?>
+              </div>
+            </form>
+          </div>
 
           <div class="users-actions">
             <button class="btn-pro" type="button" data-bs-toggle="modal" data-bs-target="#createUserModal">
@@ -460,6 +556,7 @@ $users = $stmt->fetchAll();
                 <th>Usuario</th>
                 <th>Area</th>
                 <th>Email</th>
+                <th>Teléfono</th>
                 <th>Rol</th>
                 <th class="th-center">Actions</th>
               </tr>
@@ -468,7 +565,7 @@ $users = $stmt->fetchAll();
             <tbody>
               <?php if (empty($users)): ?>
                 <tr>
-                  <td colspan="5" class="text-center text-muted py-4">No hay usuarios.</td>
+                  <td colspan="6" class="text-center text-muted py-4">No hay usuarios.</td>
                 </tr>
               <?php else: ?>
                 <?php foreach ($users as $u): ?>
@@ -488,7 +585,8 @@ $users = $stmt->fetchAll();
                       </div>
                     </td>
                     <td><?= e($u['area']) ?></td>
-                    <td><?= e($u['email']) ?></td>
+                    <td class="col-email"><?= e($u['email']) ?></td>
+                    <td class="col-phone"><?= e($u['phone'] ?? '—') ?></td>
 
                     <td>
                       <span class="badge role-badge <?= e(roleClass($u['rol'])) ?>">
@@ -507,6 +605,7 @@ $users = $stmt->fetchAll();
                           data-user-id="<?= e($u['id_user']) ?>"
                           data-user-name="<?= e($u['full_name']) ?>"
                           data-user-email="<?= e($u['email']) ?>"
+                          data-user-phone="<?= e($u['phone'] ?? '') ?>"
                           data-user-area="<?= e($u['area']) ?>"
                           data-user-role="<?= e($u['id_role']) ?>"
                           data-user-photo="<?= e($u['profile_photo'] ?? '') ?>"
@@ -561,17 +660,17 @@ $users = $stmt->fetchAll();
             <nav aria-label="Paginación">
               <ul class="pagination pagination-sm mb-0">
                 <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
-                  <a class="page-link" href="?page=<?= $page - 1 ?>">Anterior</a>
+                  <a class="page-link" href="?page=<?= $page - 1 ?><?= $hasQ ? '&q=' . urlencode($q) : '' ?>">Anterior</a>
                 </li>
 
                 <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                   <li class="page-item <?= ($i === $page) ? 'active' : '' ?>">
-                    <a class="page-link" href="?page=<?= $i ?>"><?= $i ?></a>
+                    <a class="page-link" href="?page=<?= $i ?><?= $hasQ ? '&q=' . urlencode($q) : '' ?>"><?= $i ?></a>
                   </li>
                 <?php endfor; ?>
 
                 <li class="page-item <?= ($page >= $totalPages) ? 'disabled' : '' ?>">
-                  <a class="page-link" href="?page=<?= $page + 1 ?>">Siguiente</a>
+                  <a class="page-link" href="?page=<?= $page + 1 ?><?= $hasQ ? '&q=' . urlencode($q) : '' ?>">Siguiente</a>
                 </li>
               </ul>
             </nav>
@@ -635,6 +734,11 @@ $users = $stmt->fetchAll();
               <div class="col-12">
                 <label class="form-label">Email</label>
                 <input class="form-control pro-input" name="email" type="email" placeholder="correo@dominio.com" required>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Teléfono</label>
+                <input class="form-control pro-input" name="phone" type="text" placeholder="Ej. +52 999 123 4567">
               </div>
 
               <div class="col-12">
@@ -720,6 +824,11 @@ $users = $stmt->fetchAll();
               <div class="col-12">
                 <label class="form-label">Email</label>
                 <input class="form-control pro-input" id="editEmail" name="email" type="email" placeholder="correo@dominio.com" required>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Teléfono</label>
+                <input class="form-control pro-input" id="editPhone" name="phone" type="text" placeholder="Ej. +52 999 123 4567">
               </div>
 
               <div class="col-12">
@@ -963,6 +1072,7 @@ $users = $stmt->fetchAll();
           const id = btn?.getAttribute('data-user-id') || '';
           const name = btn?.getAttribute('data-user-name') || '';
           const email = btn?.getAttribute('data-user-email') || '';
+          const phone = btn?.getAttribute('data-user-phone') || '';
           const area = btn?.getAttribute('data-user-area') || '';
           const role = btn?.getAttribute('data-user-role') || '';
           const photo = btn?.getAttribute('data-user-photo') || '';
@@ -970,6 +1080,7 @@ $users = $stmt->fetchAll();
           const editUserId = document.getElementById('editUserId');
           const editFullName = document.getElementById('editFullName');
           const editEmail = document.getElementById('editEmail');
+          const editPhone = document.getElementById('editPhone');
           const editArea = document.getElementById('editArea');
           const editRole = document.getElementById('editRole');
           const editUserTitleName = document.getElementById('editUserTitleName');
@@ -977,6 +1088,7 @@ $users = $stmt->fetchAll();
           if (editUserId) editUserId.value = id;
           if (editFullName) editFullName.value = name;
           if (editEmail) editEmail.value = email;
+          if (editPhone) editPhone.value = phone;
           if (editUserTitleName) editUserTitleName.textContent = name ? `(${name})` : '';
 
           // Set selects
