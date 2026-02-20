@@ -101,7 +101,7 @@ if (!$closedField){
     foreach ($updatedCandidates as $u){
       if (isset($ticketCols[strtolower($u)])){
         try {
-          $pdo->exec("UPDATE tickets SET closed_at = {$u} WHERE status='Resuelto' AND closed_at IS NULL AND {$u} IS NOT NULL");
+          $pdo->exec("UPDATE tickets SET closed_at = {$u} WHERE (status='Cerrado' OR status='Closed') AND closed_at IS NULL AND {$u} IS NOT NULL");
         } catch (Throwable $e) {}
         break;
       }
@@ -118,10 +118,10 @@ if (!$closedField){
         BEFORE UPDATE ON tickets
         FOR EACH ROW
         BEGIN
-          IF NEW.status = 'Resuelto' AND (OLD.status <> 'Resuelto' OR OLD.status IS NULL) THEN
+          IF (NEW.status = 'Cerrado' OR NEW.status = 'Closed') AND (OLD.status <> 'Cerrado' AND OLD.status <> 'Closed') THEN
             SET NEW.closed_at = IFNULL(NEW.closed_at, NOW());
           END IF;
-          IF NEW.status <> 'Resuelto' AND OLD.status = 'Resuelto' THEN
+          IF (NEW.status <> 'Cerrado' AND NEW.status <> 'Closed') AND (OLD.status = 'Cerrado' OR OLD.status = 'Closed') THEN
             SET NEW.closed_at = NULL;
           END IF;
         END
@@ -130,6 +130,46 @@ if (!$closedField){
   } catch (Throwable $e) {
     // si falla, lo dejamos como NULL
     $closedField = null;
+  }
+}
+
+
+// Asegurar trigger correcto para "Cerrado/Closed" (por si quedó uno viejo)
+if ($closedField){
+  try {
+    // Backfill suave para tickets ya cerrados
+    $updatedCandidates = ['updated_at','modified_at','last_updated_at','last_update'];
+    foreach ($updatedCandidates as $u){
+      if (isset($ticketCols[strtolower($u)])){
+        try {
+          $pdo->exec("UPDATE tickets SET {$closedField} = IFNULL({$closedField}, {$u}) WHERE (status='Cerrado' OR status='Closed') AND {$closedField} IS NULL AND {$u} IS NOT NULL");
+        } catch (Throwable $e) {}
+        break;
+      }
+    }
+
+    // Re-crear trigger con la lógica correcta
+    $trgName = 'tickets_set_closed_at';
+    try { $pdo->exec("DROP TRIGGER IF EXISTS {$trgName}"); } catch (Throwable $e) {}
+
+    $pdo->exec("
+      CREATE TRIGGER {$trgName}
+      BEFORE UPDATE ON tickets
+      FOR EACH ROW
+      BEGIN
+        IF (NEW.status = 'Cerrado' OR NEW.status = 'Closed')
+           AND (OLD.status <> 'Cerrado' AND OLD.status <> 'Closed') THEN
+          SET NEW.{$closedField} = IFNULL(NEW.{$closedField}, NOW());
+        END IF;
+
+        IF (NEW.status <> 'Cerrado' AND NEW.status <> 'Closed')
+           AND (OLD.status = 'Cerrado' OR OLD.status = 'Closed') THEN
+          SET NEW.{$closedField} = NULL;
+        END IF;
+      END
+    ");
+  } catch (Throwable $e) {
+    // ignora si no hay permisos o no aplica
   }
 }
 
@@ -211,7 +251,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'mods'){
 // Filtros: vista (cards) + creador
 // =====================================================
 $view = strtolower(trim($_GET['view'] ?? 'total'));
-$allowedViews = ['total','assigned','unassigned','inprogress','done'];
+$allowedViews = ['total','assigned','unassigned','inprogress','done','closed'];
 if (!in_array($view, $allowedViews, true)) $view = 'total';
 
 $creatorId = trim($_GET['creator'] ?? '');
@@ -233,6 +273,7 @@ if (isset($_GET['download']) && $_GET['download'] == '1') {
   if ($view === 'unassigned') $extraWhere = " AND t.assigned_user_id IS NULL";
   if ($view === 'inprogress') $extraWhere = " AND t.status = 'En Proceso'";
   if ($view === 'done')       $extraWhere = " AND t.status = 'Resuelto'";
+  if ($view === 'closed')     $extraWhere = " AND (t.status = 'Cerrado' OR t.status = 'Closed')";
 
   header('Content-Type: text/csv; charset=utf-8');
   header('Content-Disposition: attachment; filename="tickets_history_'.$start.'_to_'.$end.'_'.$view.'.csv"');
@@ -290,6 +331,7 @@ $assigned   = count_where($pdo, "$whereBase AND t.assigned_user_id IS NOT NULL",
 $unassigned = count_where($pdo, "$whereBase AND t.assigned_user_id IS NULL", $params);
 $inprogress = count_where($pdo, "$whereBase AND t.status = 'En Proceso'", $params);
 $done       = count_where($pdo, "$whereBase AND t.status = 'Resuelto'", $params);
+$closed     = count_where($pdo, "$whereBase AND (t.status = 'Cerrado' OR t.status = 'Closed')", $params);
 
 // =====================================================
 // Lista
@@ -300,6 +342,7 @@ if ($view === 'assigned')   { $extraWhere = " AND t.assigned_user_id IS NOT NULL
 if ($view === 'unassigned') { $extraWhere = " AND t.assigned_user_id IS NULL";     $viewLabel="Unassigned"; }
 if ($view === 'inprogress') { $extraWhere = " AND t.status = 'En Proceso'";        $viewLabel="In progress"; }
 if ($view === 'done')       { $extraWhere = " AND t.status = 'Resuelto'";          $viewLabel="Done"; }
+if ($view === 'closed')     { $extraWhere = " AND (t.status = 'Cerrado' OR t.status = 'Closed')"; $viewLabel="Closed"; }
 
 $rows = [];
 try {
@@ -453,6 +496,12 @@ $fieldLabels = [
                 <div class="stat-num"><?= (int)$done ?></div>
                 <div class="stat-label">Done</div>
               </a>
+
+              <a class="stat-card stat-closed <?= $view==='closed'?'is-active':'' ?>" href="history.php?<?= esc($qsBase) ?>&view=closed">
+                <div class="stat-num"><?= (int)$closed ?></div>
+                <div class="stat-label">Closed</div>
+              </a>
+
 
             </div>
 

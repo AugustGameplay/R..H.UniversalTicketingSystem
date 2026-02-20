@@ -337,7 +337,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
 
             <div class="col-12 col-md-4">
               <select class="form-select filter-select" name="state" onchange="this.form.submit()">
-                <option <?= $stateUI==='' ? 'selected':''; ?>>Filter by state</option>
+                <option <?= $stateUI==='' ? 'selected':''; ?>>Filter by status</option>
                 <?php foreach (['Abierto','En proceso','En espera','Resuelto','Cancelado'] as $opt): ?>
                   <option value="<?= esc($opt) ?>" <?= $stateUI===$opt ? 'selected':''; ?>><?= esc($opt) ?></option>
                 <?php endforeach; ?>

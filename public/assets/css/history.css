@@ -121,7 +121,7 @@
   cursor: pointer;
 }
 
-/* Grid: 3 arriba, 2 abajo */
+/* Grid: 3 arriba, 3 abajo */
 .history-grid{
   margin-top: 18px;
   display:grid;
@@ -177,6 +177,7 @@
 .stat-unassigned{ background: #ffd85a; }
 .stat-inprogress{ background: #f0601e; }
 .stat-done{ background: #f04d4d; }
+.stat-closed{ background: #747474; }
 
 /* ===== Derecha ===== */
 .history-right{

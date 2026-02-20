@@ -429,3 +429,56 @@
 body.evidence-open{
   overflow: hidden;
 }
+/* =========================
+   1080p FULL-WIDTH (igual vibe que tickets.php)
+   - Aprovecha alto/ancho de cualquier pantalla
+   - No toca tu HTML, solo acomoda contenedor y panel
+   ========================= */
+body.ticket-edit-page main.main{
+  padding: 26px 26px 40px !important;
+  align-items: stretch !important;      /* evita que quede “muy arriba” */
+  justify-content: center !important;
+  min-height: 100vh;
+}
+
+/* Wrapper interno (tienes un div.ticket-edit-page con inline styles) */
+body.ticket-edit-page main.main > .ticket-edit-page{
+  width: 100% !important;
+  max-width: 1500px !important;        /* mismo tope que Tickets */
+  padding: 0 8px !important;
+  margin: 0 auto !important;
+}
+
+/* Panel principal: ocupa el ancho y “llena” pantalla */
+body.ticket-edit-page main.main > .ticket-edit-page > .panel.card{
+  width: 100% !important;
+  max-width: clamp(980px, 78vw, 1500px) !important;
+  margin: 0 auto !important;
+
+  display: flex;
+  flex-direction: column;
+
+  min-height: clamp(640px, 86vh, 920px);
+  padding: 26px 28px 22px;             /* mismo padding que Tickets */
+}
+
+/* En pantallas muy grandes, deja crecer un poco más */
+@media (min-width: 1600px){
+  body.ticket-edit-page main.main > .ticket-edit-page{
+    max-width: 1600px !important;
+  }
+  body.ticket-edit-page main.main > .ticket-edit-page > .panel.card{
+    max-width: 1600px !important;
+  }
+}
+
+/* Móvil / tablet: padding más compacto */
+@media (max-width: 991.98px){
+  body.ticket-edit-page main.main{
+    padding: 16px 12px 26px !important;
+  }
+  body.ticket-edit-page main.main > .ticket-edit-page > .panel.card{
+    min-height: auto;
+    padding: 18px 16px 16px;
+  }
+}

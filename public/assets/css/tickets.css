@@ -605,3 +605,24 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* =========================
+   FIX: Colores por acción (Evidencia azul / Eliminar rojo)
+   Nota: se deja al final para ganar la cascada aunque exista un border naranja general
+   ========================= */
+.tickets-table td.td-actions .icon-action.icon-evidence{
+  border: 2px solid rgba(13,110,253,.60) !important;
+  color: rgba(13,110,253,.98) !important;
+}
+.tickets-table td.td-actions .icon-action.icon-evidence:hover{
+  background: rgba(13,110,253,.10) !important;
+  border-color: rgba(13,110,253,.85) !important;
+}
+
+.tickets-table td.td-actions .icon-action.icon-delete{
+  border: 2px solid rgba(220,53,69,.60) !important;
+  color: rgba(220,53,69,.98) !important;
+}
+.tickets-table td.td-actions .icon-action.icon-delete:hover{
+  background: rgba(220,53,69,.10) !important;
+  border-color: rgba(220,53,69,.85) !important;
+}
