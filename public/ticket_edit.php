@@ -54,6 +54,48 @@ $ticketOriginal = [
 // Asegurar tablas auxiliares (auditoría + comentarios internos)
 $modsOkInit = ensureTicketModsTable($pdo);
 $commentsOk = ensureTicketCommentsTable($pdo);
+
+// AJAX: comentarios internos en "tiempo real" (sin refresh)
+if (isset($_GET['ajax']) && $_GET['ajax'] === 'comments') {
+  $after = (int)($_GET['after'] ?? 0);
+
+  $rows = [];
+  if (!empty($commentsOk)) {
+    try {
+      $cs = $pdo->prepare("
+        SELECT 
+          c.id,
+          c.comment,
+          c.created_at,
+          c.created_by_user_id,
+          COALESCE(u.full_name, c.created_by_name, CONCAT('Usuario #', c.created_by_user_id)) AS author
+        FROM ticket_comments c
+        LEFT JOIN users u ON u.id_user = c.created_by_user_id
+        WHERE c.ticket_id = :id AND c.id > :after
+        ORDER BY c.id ASC
+      ");
+      $cs->execute([':id' => $ticketId, ':after' => $after]);
+      $rows = $cs->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Throwable $e) {
+      $rows = [];
+    }
+  }
+
+  $items = [];
+  foreach ($rows as $r) {
+    $items[] = [
+      'id' => (int)($r['id'] ?? 0),
+      'author' => (string)($r['author'] ?? ''),
+      'created_at' => (string)fmtDT($r['created_at'] ?? ''),
+      'comment_html' => (string)nl2br(esc((string)($r['comment'] ?? '')))
+    ];
+  }
+
+  header('Content-Type: application/json; charset=utf-8');
+  echo json_encode(['ok' => true, 'items' => $items], JSON_UNESCAPED_UNICODE);
+  exit;
+}
+
 // 2) Lista SOLO IT Support (activos)
 $itStmt = $pdo->query("
   SELECT id_user, full_name, email
@@ -566,6 +608,13 @@ if (!empty($commentsOk)) {
   }
 }
 
+
+$lastInternalId = 0;
+if (!empty($internalComments)) {
+  $tmpLast = end($internalComments);
+  $lastInternalId = (int)($tmpLast['id'] ?? 0);
+}
+
 $creatorName = userNameById($pdo, (int)($ticket['id_user'] ?? 0));
 
 ?>
@@ -736,7 +785,7 @@ $creatorName = userNameById($pdo, (int)($ticket['id_user'] ?? 0));
                   <span class="text-muted small">Historial interno (solo en Edit)</span>
                 </div>
 
-                <div class="mt-2" style="display:flex;flex-direction:column;gap:10px;">
+                <div class="mt-2 comment-thread" id="commentThread" data-ticket-id="<?= (int)$ticketId ?>" data-last-id="<?= (int)$lastInternalId ?>" style="display:flex;flex-direction:column;gap:10px;max-height:520px;overflow-y:auto;padding-right:6px;">
                   <!-- Comentario original -->
                   <div style="background:rgba(13,110,253,.06);border:1px solid rgba(13,110,253,.18);border-radius:16px;padding:12px 14px;box-shadow:0 10px 22px rgba(0,0,0,.06);">
                     <div class="text-muted small d-flex justify-content-between" style="gap:10px;">
@@ -1046,6 +1095,77 @@ $creatorName = userNameById($pdo, (int)($ticket['id_user'] ?? 0));
       });
     }
   });
+</script>
+
+
+<script>
+(function(){
+  const thread = document.getElementById('commentThread');
+  if(!thread) return;
+
+  let lastId = parseInt(thread.dataset.lastId || "0", 10) || 0;
+  const ticketId = parseInt(thread.dataset.ticketId || "0", 10) || 0;
+  const urlBase = new URL(window.location.href);
+  // Mantén la URL actual (id=...), solo agrega ajax params
+  function buildUrl(after){
+    const u = new URL(urlBase.origin + urlBase.pathname);
+    // conserva ?id=...
+    u.searchParams.set('id', String(ticketId));
+    u.searchParams.set('ajax', 'comments');
+    u.searchParams.set('after', String(after || 0));
+    return u.toString();
+  }
+
+  function nearBottom(el){
+    return (el.scrollHeight - el.scrollTop - el.clientHeight) < 90;
+  }
+
+  async function poll(){
+    try{
+      const wasBottom = nearBottom(thread);
+      const res = await fetch(buildUrl(lastId), {headers: {'Accept':'application/json'}});
+      if(!res.ok) return;
+      const data = await res.json();
+      if(!data || !data.items || !data.items.length) return;
+
+      for(const it of data.items){
+        const id = parseInt(it.id, 10) || 0;
+        if(id <= lastId) continue;
+
+        const card = document.createElement('div');
+        card.style.cssText = "background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:16px;padding:12px 14px;box-shadow:0 10px 22px rgba(0,0,0,.06);";
+        card.innerHTML = `
+          <div class="text-muted small d-flex justify-content-between" style="gap:10px;">
+            <span><b>${escapeHtml(it.author || '')}</b></span>
+            <span>${escapeHtml(it.created_at || '')}</span>
+          </div>
+          <div style="margin-top:6px;">${it.comment_html || ''}</div>
+        `;
+        thread.appendChild(card);
+        lastId = id;
+      }
+
+      thread.dataset.lastId = String(lastId);
+      if(wasBottom){
+        thread.scrollTop = thread.scrollHeight;
+      }
+    }catch(e){
+      // silencioso
+    }
+  }
+
+  function escapeHtml(str){
+    return String(str)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  // Poll cada 1s (se siente tipo chat sin sobrecargar)
+  setInterval(poll, 1000);
+})();
 </script>
 
 </body>

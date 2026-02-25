@@ -382,6 +382,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
 $q = trim($_GET['q'] ?? '');
 $hasQ = ($q !== '');
 
+
+// ============================
+// SORT (igual que tickets.php)
+// ============================
+$CURRENT_SORT  = $_GET['sort'] ?? 'id';
+$CURRENT_DIRIN = strtolower($_GET['dir'] ?? 'desc');
+if (!in_array($CURRENT_DIRIN, ['asc','desc'], true)) { $CURRENT_DIRIN = 'desc'; }
+
+// Expresión segura para teléfono (si no existe, ordena por email como fallback)
+$phoneExpr = $phoneCol ? ('u.`' . $phoneCol . '`') : 'u.email';
+
+// Whitelist columnas (evita SQL Injection)
+$sortMap = [
+  'id'    => 'u.id_user',
+  'name'  => 'u.full_name',
+  'area'  => 'u.area',
+  'email' => 'u.email',
+  'phone' => $phoneExpr,
+  'role'  => 'r.name',
+];
+
+$sortExpr  = $sortMap[$CURRENT_SORT] ?? $sortMap['id'];
+$orderBySql = $sortExpr . ' ' . strtoupper($CURRENT_DIRIN);
+
+function sort_url(string $col): string {
+  global $CURRENT_SORT, $CURRENT_DIRIN;
+  $params = $_GET;
+
+  $currentSort = $CURRENT_SORT ?? ($params['sort'] ?? '');
+  $currentDir  = strtolower($CURRENT_DIRIN ?? ($params['dir'] ?? 'desc'));
+
+  $nextDir = ($currentSort === $col && $currentDir === 'asc') ? 'desc' : 'asc';
+
+  $params['sort'] = $col;
+  $params['dir']  = $nextDir;
+
+  unset($params['page']);
+  return 'users.php?' . http_build_query($params);
+}
+
+function sort_icon(string $col): string {
+  global $CURRENT_SORT, $CURRENT_DIRIN;
+  $currentSort = $CURRENT_SORT ?? ($_GET['sort'] ?? '');
+  $currentDir  = strtolower($CURRENT_DIRIN ?? ($_GET['dir'] ?? 'desc'));
+
+  if ($currentSort !== $col) {
+    return '<span class="sort-ico"><i class="fa-solid fa-sort text-muted" aria-hidden="true"></i></span>';
+  }
+  if ($currentDir === 'asc') {
+    return '<span class="sort-ico"><i class="fa-solid fa-sort-up" aria-hidden="true"></i></span>';
+  }
+  return '<span class="sort-ico"><i class="fa-solid fa-sort-down" aria-hidden="true"></i></span>';
+}
+
 // ============================
 // PAGINACIÓN (5 por página)
 // ============================
@@ -424,7 +478,7 @@ $sql = "
   FROM users u
   JOIN roles r ON r.id_role = u.id_role
   $whereSql
-  ORDER BY u.id_user DESC
+  ORDER BY $orderBySql
   LIMIT :limit OFFSET :offset
 ";
 
@@ -553,11 +607,11 @@ $users = $stmt->fetchAll();
           <table class="table table-borderless align-middle mb-0">
             <thead>
               <tr>
-                <th>Usuario</th>
+                <th><a class="th-sort" href="<?= sort_url('name') ?>">Usuario <?= sort_icon('name') ?></a></th>
                 <th>Area</th>
                 <th>Email</th>
-                <th>Teléfono</th>
-                <th>Rol</th>
+                <th>Phone</th>
+                <th>Role</th>
                 <th class="th-center">Actions</th>
               </tr>
             </thead>

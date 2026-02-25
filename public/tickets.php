@@ -44,9 +44,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
 // Parámetros GET
 // ===============================
 $q        = trim($_GET['q'] ?? '');
-$stateUI  = trim($_GET['state'] ?? '');    // lo que selecciona el usuario en el UI
+$stateUI  = trim($_GET['state'] ?? '');    
+// Ignorar placeholders del select (para que no filtren)
+if ($stateUI === 'Filter by status') { $stateUI = ''; }
+// lo que selecciona el usuario en el UI
 $priority = trim($_GET['priority'] ?? '');
 
+
+// Ignorar placeholder
+if ($priority === 'Priority') { $priority = ''; }
 $page = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 5;
 $offset = ($page - 1) * $perPage;
@@ -236,6 +242,103 @@ $stmtTotal->execute($params);
 $total = (int)$stmtTotal->fetchColumn();
 $totalPages = max(1, (int)ceil($total / $perPage));
 
+
+// ===============================
+// SORT (Excel-like por encabezado)
+// ===============================
+$SORT_MAP = [
+  'id'         => 't.id_ticket',
+  'created'    => 't.created_at',
+  'created_by' => 'created_by_name',
+  'area'       => 't.area',
+  'priority'   => 't.priority',
+  'status'     => 't.status',
+  'assigned'   => 'assigned_name',
+];
+
+$order = $_GET['order'] ?? '';
+$order = is_string($order) ? $order : '';
+
+/**
+ * Orden (dropdown tipo “Excel”):
+ * - id_desc / id_asc
+ * - date_desc / date_asc
+ * - area_asc / area_desc
+ * - creator_asc / creator_desc
+ */
+$orderMap = [
+  'id_desc'     => ['id', 'desc'],
+  'id_asc'      => ['id', 'asc'],
+  'date_desc'   => ['created', 'desc'],
+  'date_asc'    => ['created', 'asc'],
+  'area_asc'    => ['area', 'asc'],
+  'area_desc'   => ['area', 'desc'],
+  'creator_asc' => ['created_by', 'asc'],
+  'creator_desc'=> ['created_by', 'desc'],
+];
+
+if ($order !== '' && isset($orderMap[$order])) {
+  [$sort, $dirIn] = $orderMap[$order];
+} else {
+  $sort = $_GET['sort'] ?? 'id';
+  $dirIn = strtolower($_GET['dir'] ?? 'desc');
+}
+if (!isset($SORT_MAP[$sort])) $sort = 'id';
+$dir = ($dirIn === 'asc') ? 'ASC' : 'DESC';
+$orderBySql = $SORT_MAP[$sort] . ' ' . $dir;
+
+
+
+
+// Valores actuales (para íconos y toggles, funcionen también con dropdown \"order\")
+$CURRENT_SORT = $sort;
+$CURRENT_DIRIN = strtolower((string)$dirIn);
+// Si no viene "order" en URL, dedúcelo del sort/dir actual para marcar el option correcto
+if ($order === '') {
+  $key = $sort . '_' . strtolower($dirIn);
+  $deduce = [
+    'id_desc'         => 'id_desc',
+    'id_asc'          => 'id_asc',
+    'created_desc'    => 'date_desc',
+    'created_asc'     => 'date_asc',
+    'area_asc'        => 'area_asc',
+    'area_desc'       => 'area_desc',
+    'created_by_asc'  => 'creator_asc',
+    'created_by_desc' => 'creator_desc',
+  ];
+  $order = $deduce[$key] ?? 'id_desc';
+}
+function sort_url(string $col): string {
+  global $CURRENT_SORT, $CURRENT_DIRIN;
+  $params = $_GET;
+
+  // Al ordenar por encabezado, quitamos el dropdown "order" para que sí cambie el ORDER BY
+  unset($params['order']);
+
+  $currentSort = $CURRENT_SORT ?? ($params['sort'] ?? '');
+  $currentDir  = strtolower($CURRENT_DIRIN ?? ($params['dir'] ?? 'desc'));
+
+  $nextDir = ($currentSort === $col && $currentDir === 'asc') ? 'desc' : 'asc';
+
+  $params['sort'] = $col;
+  $params['dir']  = $nextDir;
+
+  unset($params['page']);
+  return '?' . http_build_query($params);
+}
+function sort_icon(string $col): string {
+  global $CURRENT_SORT, $CURRENT_DIRIN;
+  $currentSort = $CURRENT_SORT ?? ($_GET['sort'] ?? '');
+  $currentDir  = strtolower($CURRENT_DIRIN ?? ($_GET['dir'] ?? 'desc'));
+
+  if ($currentSort !== $col) {
+    return '<span class="sort-ico"><i class="fa-solid fa-sort text-muted" aria-hidden="true"></i></span>';
+  }
+  if ($currentDir === 'asc') {
+    return '<span class="sort-ico"><i class="fa-solid fa-sort-up" aria-hidden="true"></i></span>';
+  }
+  return '<span class="sort-ico"><i class="fa-solid fa-sort-down" aria-hidden="true"></i></span>';
+}
 // ===============================
 // DATA
 // ===============================
@@ -252,7 +355,7 @@ $stmt = $pdo->prepare("
     t.attachment_path
   $fromSql
   $whereSql
-  ORDER BY t.id_ticket DESC
+  ORDER BY $orderBySql
   LIMIT $perPage OFFSET $offset
 ");
 $stmt->execute($params);
@@ -284,6 +387,14 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
   <link rel="stylesheet" href="./assets/css/tickets.css?v=<?= filemtime(__DIR__ . '/assets/css/tickets.css') ?>">
 
   <!-- NUEVO: estilo moderno (scopeado) -->
+
+  <style>
+    .th-sort{color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-weight:800;}
+    .th-sort:hover{text-decoration:underline;}
+    th.th-center .th-sort{justify-content:center;width:100%;}
+    .th-sort i{font-size:12px;opacity:.85;}
+  </style>
+
 </head>
 
 <body class="tickets-page">
@@ -310,7 +421,8 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
                 <input class="search-input border-0 bg-transparent" name="q" type="search" placeholder="Search by ID, name or area..." value="<?= esc($q) ?>">
                 <?php if($stateUI!==''): ?><input type="hidden" name="state" value="<?= esc($stateUI) ?>"><?php endif; ?>
                 <?php if($priority!==''): ?><input type="hidden" name="priority" value="<?= esc($priority) ?>"><?php endif; ?>
-              </form>
+              <?php if($order!==''): ?><input type="hidden" name="order" value="<?= esc($order) ?>"><?php endif; ?>
+</form>
 
               <button class="avatar-btn" type="button" title="Perfil">
                 <span class="avatar-dot"></span>
@@ -335,25 +447,38 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
           <form class="filters row g-2 mt-3" method="GET" action="tickets.php">
             <input type="hidden" name="q" value="<?= esc($q) ?>">
 
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-3">
               <select class="form-select filter-select" name="state" onchange="this.form.submit()">
-                <option <?= $stateUI==='' ? 'selected':''; ?>>Filter by status</option>
+                <option value="" <?= $stateUI==='' ? 'selected':''; ?> disabled hidden>Filter by status</option>
                 <?php foreach (['Abierto','En proceso','En espera','Resuelto','Cancelado'] as $opt): ?>
                   <option value="<?= esc($opt) ?>" <?= $stateUI===$opt ? 'selected':''; ?>><?= esc($opt) ?></option>
                 <?php endforeach; ?>
               </select>
             </div>
 
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-3">
               <select class="form-select filter-select" name="priority" onchange="this.form.submit()">
-                <option <?= $priority==='' ? 'selected':''; ?>>Priority</option>
+                <option value="" <?= $priority==='' ? 'selected':''; ?> disabled hidden>Priority</option>
                 <?php foreach (['Baja','Media','Alta','Urgente'] as $opt): ?>
                   <option value="<?= esc($opt) ?>" <?= $priority===$opt ? 'selected':''; ?>><?= esc($opt) ?></option>
                 <?php endforeach; ?>
               </select>
             </div>
 
-            <div class="col-12 col-md-4 d-flex justify-content-md-end">
+            <div class="col-12 col-md-3">
+              <select class="form-select filter-select" name="order" onchange="this.form.submit()">
+                <option value="id_desc" <?= $order==='id_desc' ? 'selected':''; ?>>ID: mayor a menor</option>
+                <option value="id_asc" <?= $order==='id_asc' ? 'selected':''; ?>>ID: menor a mayor</option>
+                <option value="date_desc" <?= $order==='date_desc' ? 'selected':''; ?>>Fecha: más reciente</option>
+                <option value="date_asc" <?= $order==='date_asc' ? 'selected':''; ?>>Fecha: más antiguo primero</option>
+                <option value="area_asc" <?= $order==='area_asc' ? 'selected':''; ?>>Alfabeto (Área): A–Z</option>
+                <option value="area_desc" <?= $order==='area_desc' ? 'selected':''; ?>>Alfabeto (Área): Z–A</option>
+                <option value="creator_asc" <?= $order==='creator_asc' ? 'selected':''; ?>>Alfabeto (Creador): A–Z</option>
+                <option value="creator_desc" <?= $order==='creator_desc' ? 'selected':''; ?>>Alfabeto (Creador): Z–A</option>
+              </select>
+            </div>
+
+            <div class="col-12 col-md-3 d-flex justify-content-md-end">
               <a class="btn-pro d-inline-flex align-items-center justify-content-center text-decoration-none"
                  href="generarTickets.php">
                 <i class="fa-solid fa-plus me-2"></i>New Ticket
@@ -366,13 +491,13 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
             <table class="table table-borderless align-middle mb-0">
               <thead>
                 <tr>
-                  <th class="th-center">ID</th>
-                  <th>Created</th>
-                  <th>Created by</th>
+                  <th class="th-center"><a class="th-sort" href="<?= sort_url('id') ?>">ID <?= sort_icon('id') ?></a></th>
+                  <th><a class="th-sort" href="<?= sort_url('created') ?>">Created <?= sort_icon('created') ?></a></th>
+                  <th>Created By</th>
                   <th>Area</th>
-                  <th>Priority</th>
-                  <th>Status</th>
-                  <th>Assigned to</th>
+                  <th><a class="th-sort" href="<?= sort_url('priority') ?>">Priority <?= sort_icon('priority') ?></a></th>
+                  <th><a class="th-sort" href="<?= sort_url('status') ?>">Status <?= sort_icon('status') ?></a></th>
+                  <th>Assigned To</th>
                   <th class="th-center th-actions">Action</th>
                 </tr>
               </thead>

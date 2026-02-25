@@ -257,6 +257,9 @@ if (!in_array($view, $allowedViews, true)) $view = 'total';
 $creatorId = trim($_GET['creator'] ?? '');
 $creatorId = ($creatorIdField && $creatorId !== '' && ctype_digit($creatorId)) ? (int)$creatorId : 0;
 
+
+$cat = trim($_GET['cat'] ?? '');
+$cat = ($cat !== '') ? trim($cat) : '';
 $creatorFilterSQL = "";
 $params = $paramsRange;
 if ($creatorIdField && $creatorId > 0){
@@ -269,6 +272,12 @@ if ($creatorIdField && $creatorId > 0){
 // =====================================================
 if (isset($_GET['download']) && $_GET['download'] == '1') {
   $extraWhere = "";
+
+// Filtro por categoría (cards de Categorías)
+if ($cat !== '') {
+  $extraWhere .= " AND COALESCE(NULLIF(TRIM(t.category), ''), 'Sin categoría') = :cat";
+  $params[':cat'] = $cat;
+}
   if ($view === 'assigned')   $extraWhere = " AND t.assigned_user_id IS NOT NULL";
   if ($view === 'unassigned') $extraWhere = " AND t.assigned_user_id IS NULL";
   if ($view === 'inprogress') $extraWhere = " AND t.status = 'En Proceso'";
@@ -343,6 +352,63 @@ if ($view === 'unassigned') { $extraWhere = " AND t.assigned_user_id IS NULL";  
 if ($view === 'inprogress') { $extraWhere = " AND t.status = 'En Proceso'";        $viewLabel="In progress"; }
 if ($view === 'done')       { $extraWhere = " AND t.status = 'Resuelto'";          $viewLabel="Done"; }
 if ($view === 'closed')     { $extraWhere = " AND (t.status = 'Cerrado' OR t.status = 'Closed')"; $viewLabel="Closed"; }
+
+
+// =====================================================
+// Categorías (cards) + Alerta "Posible falla general"
+// - Cards por categoría respetan: rango + creador + view actual
+// - Alerta se calcula por: día + categoría + type (rango + creador)
+// =====================================================
+$categoryCounts = [];
+try {
+  $stmtCat = $pdo->prepare("
+    SELECT
+      COALESCE(NULLIF(TRIM(t.category), ''), 'Sin categoría') AS category,
+      COUNT(*) AS total
+    FROM tickets t
+    WHERE $whereBase $extraWhere
+    GROUP BY COALESCE(NULLIF(TRIM(t.category), ''), 'Sin categoría')
+    ORDER BY total DESC, category ASC
+  ");
+  $stmtCat->execute($params);
+  $categoryCounts = $stmtCat->fetchAll(PDO::FETCH_ASSOC) ?: [];
+} catch (Throwable $e) {
+  $categoryCounts = [];
+}
+
+// ---- Alerta: muchos tickets misma falla (type) en mismo día y categoría
+$ALERT_THRESHOLD = 5;      // mínimo de tickets para disparar alerta
+$ALERT_MIN_USERS = 3;      // mínimo de reportantes distintos (id_user)
+$alertsByCategory = [];    // ['Network' => ['dia'=>..,'type'=>..,'total'=>..,'reportantes'=>..], ...]
+
+try {
+  $stmtAlert = $pdo->prepare("
+    SELECT
+      DATE(t.created_at) AS dia,
+      COALESCE(NULLIF(TRIM(t.category), ''), 'Sin categoría') AS category,
+      COALESCE(NULLIF(TRIM(t.type), ''), 'Sin tipo') AS type,
+      COUNT(*) AS total,
+      COUNT(DISTINCT t.id_user) AS reportantes
+    FROM tickets t
+    WHERE $whereBase
+    GROUP BY DATE(t.created_at),
+             COALESCE(NULLIF(TRIM(t.category), ''), 'Sin categoría'),
+             COALESCE(NULLIF(TRIM(t.type), ''), 'Sin tipo')
+    HAVING COUNT(*) >= :thr AND COUNT(DISTINCT t.id_user) >= :minu
+    ORDER BY total DESC, reportantes DESC
+  ");
+  $stmtAlert->execute($params + [':thr' => $ALERT_THRESHOLD, ':minu' => $ALERT_MIN_USERS]);
+
+  while ($r = $stmtAlert->fetch(PDO::FETCH_ASSOC)) {
+    $cat = $r['category'] ?? 'Sin categoría';
+    // guardar solo el "top" por categoría (el de mayor total)
+    if (!isset($alertsByCategory[$cat])) {
+      $alertsByCategory[$cat] = $r;
+    }
+  }
+} catch (Throwable $e) {
+  $alertsByCategory = [];
+}
 
 $rows = [];
 try {
@@ -501,6 +567,41 @@ $fieldLabels = [
                 <div class="stat-num"><?= (int)$closed ?></div>
                 <div class="stat-label">Closed</div>
               </a>
+            <!-- CATEGORÍAS -->
+            <?php if (!empty($categoryCounts)): ?>
+              <div class="history-cat-section">
+                <div class="history-cat-head">
+                  <div class="history-cat-title">Categorías</div>
+                  <div class="history-cat-sub">Conteo por categoría (mismo filtro actual)</div>
+                </div>
+
+                <div class="history-cat-grid">
+                  <?php foreach ($categoryCounts as $cc):
+                    $catName = $cc['category'] ?? 'Sin categoría';
+                    $catTotal = (int)($cc['total'] ?? 0);
+                    $alert = $alertsByCategory[$catName] ?? null;
+                    $hasAlert = !empty($alert);
+                  ?>
+                    <div class="stat-card stat-total stat-cat <?= $hasAlert ? 'stat-cat--warn' : '' ?>" role="group" aria-label="<?= esc($catName) ?>">
+                      <div class="stat-num"><?= $catTotal ?></div>
+                      <div class="stat-label"><?= esc($catName) ?></div>
+
+                      <?php if ($hasAlert): ?>
+                        <div class="cat-warn">
+                          <i class="fa-solid fa-triangle-exclamation"></i>
+                          <span>
+                            Posible falla general: <b><?= esc($alert['type'] ?? '') ?></b>
+                            <span class="muted">(<?= (int)($alert['total'] ?? 0) ?>)</span>
+                            <span class="muted"><?= esc($alert['dia'] ?? '') ?></span>
+                          </span>
+                        </div>
+                      <?php endif; ?>
+                    </div>
+                  <?php endforeach; ?>
+                </div>
+              </div>
+            <?php endif; ?>
+
 
 
             </div>
