@@ -44,9 +44,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
 // Parámetros GET
 // ===============================
 $q        = trim($_GET['q'] ?? '');
-$stateUI  = trim($_GET['state'] ?? '');    // lo que selecciona el usuario en el UI
+$stateUI  = trim($_GET['state'] ?? '');    
+// Ignorar placeholders del select (para que no filtren)
+if ($stateUI === 'Filter by status') { $stateUI = ''; }
+// lo que selecciona el usuario en el UI
 $priority = trim($_GET['priority'] ?? '');
 
+
+// Ignorar placeholder
+if ($priority === 'Priority') { $priority = ''; }
 $page = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 5;
 $offset = ($page - 1) * $perPage;
@@ -110,7 +116,80 @@ function ui_prio_class($prio){
 // ===============================
 // FROM base (lo reutilizamos para que el filtro por nombre funcione en TOTAL y DATA)
 // ===============================
+// Detectar cómo se guarda el creador del ticket (ID o texto)
+// - Si existe un campo ID (INT) se hace JOIN a users para mostrar el nombre real.
+// - Si existe un campo texto (VARCHAR/TEXT) se usa directo.
+// - Si existen ambos, se prioriza el JOIN y se hace fallback al texto con COALESCE.
+$creatorIdCol = null;
+$creatorNameCol = null;
+
+try {
+  $colsInfo = $pdo->query("SHOW COLUMNS FROM tickets")->fetchAll(PDO::FETCH_ASSOC);
+  $typeByField = [];
+  foreach ($colsInfo as $c) {
+    $typeByField[$c['Field']] = strtolower((string)$c['Type']);
+  }
+
+  $idCandidates = [
+    'created_by_user_id',
+    'created_user_id',
+    'creator_user_id',
+    'created_by_id',
+    'created_by_id_user',
+    'id_user_creator',
+    'user_creator_id',
+    'user_id_creator',
+    'created_by',  // a veces lo guardan como INT
+    'id_user',     // creator id (tu esquema actual)
+    'user_id'      // fallback común
+  ];
+
+  $nameCandidates = [
+    'created_by_name',
+    'created_by_full_name',
+    'creator_name',
+    'created_by_user',
+    'created_by_email',
+    'created_by',       // a veces lo guardan como texto
+    'created_user',
+    'creator',
+    'created_by_text'
+  ];
+
+  foreach ($idCandidates as $c) {
+    if (isset($typeByField[$c]) && preg_match('/\b(int|bigint|smallint|mediumint|tinyint)\b/', $typeByField[$c])) {
+      $creatorIdCol = $c;
+      break;
+    }
+  }
+
+  foreach ($nameCandidates as $c) {
+    if (isset($typeByField[$c]) && !preg_match('/\b(int|bigint|smallint|mediumint|tinyint)\b/', $typeByField[$c])) {
+      $creatorNameCol = $c;
+      break;
+    }
+  }
+} catch (Throwable $e) {
+  $creatorIdCol = null;
+  $creatorNameCol = null;
+}
+
 $fromSql = "FROM tickets t LEFT JOIN users u ON u.id_user = t.assigned_user_id";
+if ($creatorIdCol) {
+  $fromSql .= " LEFT JOIN users uc ON uc.id_user = t.$creatorIdCol";
+}
+
+if ($creatorIdCol && $creatorNameCol) {
+  $selectCreator = ", COALESCE(NULLIF(uc.full_name,''), NULLIF(t.$creatorNameCol,'')) AS created_by_name";
+} elseif ($creatorIdCol) {
+  $selectCreator = ", NULLIF(uc.full_name,'') AS created_by_name";
+} elseif ($creatorNameCol) {
+  $selectCreator = ", NULLIF(t.$creatorNameCol,'') AS created_by_name";
+} else {
+  $selectCreator = ", NULL AS created_by_name";
+}
+
+
 
 // ===============================
 // WHERE dinámico
@@ -122,8 +201,22 @@ $params = [];
 if ($q !== '') {
   // Buscar por: ID (id_ticket), Área (area) y Nombre del asignado (users.full_name)
   // Nota: CAST para poder usar LIKE sobre un entero.
-  $where[] = "(CAST(t.id_ticket AS CHAR) LIKE :q OR t.area LIKE :q OR u.full_name LIKE :q)";
+    // Buscar por: ID (id_ticket), Área (area), Nombre del asignado y Nombre del creador (si existe)
+  // Nota: CAST para poder usar LIKE sobre un entero.
+    $searchParts = [
+    "CAST(t.id_ticket AS CHAR) LIKE :q",
+    "t.area LIKE :q",
+    "u.full_name LIKE :q",
+  ];
+  if ($creatorIdCol) {
+    $searchParts[] = "uc.full_name LIKE :q";
+  }
+  if ($creatorNameCol) {
+    $searchParts[] = "t.$creatorNameCol LIKE :q";
+  }
+  $where[] = "(" . implode(" OR ", $searchParts) . ")";
   $params[':q'] = "%{$q}%";
+
 }
 
 // State (UI)
@@ -149,6 +242,103 @@ $stmtTotal->execute($params);
 $total = (int)$stmtTotal->fetchColumn();
 $totalPages = max(1, (int)ceil($total / $perPage));
 
+
+// ===============================
+// SORT (Excel-like por encabezado)
+// ===============================
+$SORT_MAP = [
+  'id'         => 't.id_ticket',
+  'created'    => 't.created_at',
+  'created_by' => 'created_by_name',
+  'area'       => 't.area',
+  'priority'   => 't.priority',
+  'status'     => 't.status',
+  'assigned'   => 'assigned_name',
+];
+
+$order = $_GET['order'] ?? '';
+$order = is_string($order) ? $order : '';
+
+/**
+ * Orden (dropdown tipo “Excel”):
+ * - id_desc / id_asc
+ * - date_desc / date_asc
+ * - area_asc / area_desc
+ * - creator_asc / creator_desc
+ */
+$orderMap = [
+  'id_desc'     => ['id', 'desc'],
+  'id_asc'      => ['id', 'asc'],
+  'date_desc'   => ['created', 'desc'],
+  'date_asc'    => ['created', 'asc'],
+  'area_asc'    => ['area', 'asc'],
+  'area_desc'   => ['area', 'desc'],
+  'creator_asc' => ['created_by', 'asc'],
+  'creator_desc'=> ['created_by', 'desc'],
+];
+
+if ($order !== '' && isset($orderMap[$order])) {
+  [$sort, $dirIn] = $orderMap[$order];
+} else {
+  $sort = $_GET['sort'] ?? 'id';
+  $dirIn = strtolower($_GET['dir'] ?? 'desc');
+}
+if (!isset($SORT_MAP[$sort])) $sort = 'id';
+$dir = ($dirIn === 'asc') ? 'ASC' : 'DESC';
+$orderBySql = $SORT_MAP[$sort] . ' ' . $dir;
+
+
+
+
+// Valores actuales (para íconos y toggles, funcionen también con dropdown \"order\")
+$CURRENT_SORT = $sort;
+$CURRENT_DIRIN = strtolower((string)$dirIn);
+// Si no viene "order" en URL, dedúcelo del sort/dir actual para marcar el option correcto
+if ($order === '') {
+  $key = $sort . '_' . strtolower($dirIn);
+  $deduce = [
+    'id_desc'         => 'id_desc',
+    'id_asc'          => 'id_asc',
+    'created_desc'    => 'date_desc',
+    'created_asc'     => 'date_asc',
+    'area_asc'        => 'area_asc',
+    'area_desc'       => 'area_desc',
+    'created_by_asc'  => 'creator_asc',
+    'created_by_desc' => 'creator_desc',
+  ];
+  $order = $deduce[$key] ?? 'id_desc';
+}
+function sort_url(string $col): string {
+  global $CURRENT_SORT, $CURRENT_DIRIN;
+  $params = $_GET;
+
+  // Al ordenar por encabezado, quitamos el dropdown "order" para que sí cambie el ORDER BY
+  unset($params['order']);
+
+  $currentSort = $CURRENT_SORT ?? ($params['sort'] ?? '');
+  $currentDir  = strtolower($CURRENT_DIRIN ?? ($params['dir'] ?? 'desc'));
+
+  $nextDir = ($currentSort === $col && $currentDir === 'asc') ? 'desc' : 'asc';
+
+  $params['sort'] = $col;
+  $params['dir']  = $nextDir;
+
+  unset($params['page']);
+  return '?' . http_build_query($params);
+}
+function sort_icon(string $col): string {
+  global $CURRENT_SORT, $CURRENT_DIRIN;
+  $currentSort = $CURRENT_SORT ?? ($_GET['sort'] ?? '');
+  $currentDir  = strtolower($CURRENT_DIRIN ?? ($_GET['dir'] ?? 'desc'));
+
+  if ($currentSort !== $col) {
+    return '<span class="sort-ico"><i class="fa-solid fa-sort text-muted" aria-hidden="true"></i></span>';
+  }
+  if ($currentDir === 'asc') {
+    return '<span class="sort-ico"><i class="fa-solid fa-sort-up" aria-hidden="true"></i></span>';
+  }
+  return '<span class="sort-ico"><i class="fa-solid fa-sort-down" aria-hidden="true"></i></span>';
+}
 // ===============================
 // DATA
 // ===============================
@@ -159,12 +349,13 @@ $stmt = $pdo->prepare("
     t.priority,
     t.status,
     t.created_at,
-    u.full_name AS assigned_name,
+    u.full_name AS assigned_name
+    $selectCreator,
     t.ticket_url,
     t.attachment_path
   $fromSql
   $whereSql
-  ORDER BY t.id_ticket DESC
+  ORDER BY $orderBySql
   LIMIT $perPage OFFSET $offset
 ");
 $stmt->execute($params);
@@ -196,6 +387,14 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
   <link rel="stylesheet" href="./assets/css/tickets.css?v=<?= filemtime(__DIR__ . '/assets/css/tickets.css') ?>">
 
   <!-- NUEVO: estilo moderno (scopeado) -->
+
+  <style>
+    .th-sort{color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-weight:800;}
+    .th-sort:hover{text-decoration:underline;}
+    th.th-center .th-sort{justify-content:center;width:100%;}
+    .th-sort i{font-size:12px;opacity:.85;}
+  </style>
+
 </head>
 
 <body class="tickets-page">
@@ -219,10 +418,11 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
               <!-- Search -->
               <form class="search-wrap d-flex align-items-center gap-2 px-3" method="GET" action="tickets.php">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input class="search-input border-0 bg-transparent" name="q" type="search" placeholder="Buscar por ID, nombre o área..." value="<?= esc($q) ?>">
+                <input class="search-input border-0 bg-transparent" name="q" type="search" placeholder="Search by ID, name or area..." value="<?= esc($q) ?>">
                 <?php if($stateUI!==''): ?><input type="hidden" name="state" value="<?= esc($stateUI) ?>"><?php endif; ?>
                 <?php if($priority!==''): ?><input type="hidden" name="priority" value="<?= esc($priority) ?>"><?php endif; ?>
-              </form>
+              <?php if($order!==''): ?><input type="hidden" name="order" value="<?= esc($order) ?>"><?php endif; ?>
+</form>
 
               <button class="avatar-btn" type="button" title="Perfil">
                 <span class="avatar-dot"></span>
@@ -247,25 +447,38 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
           <form class="filters row g-2 mt-3" method="GET" action="tickets.php">
             <input type="hidden" name="q" value="<?= esc($q) ?>">
 
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-3">
               <select class="form-select filter-select" name="state" onchange="this.form.submit()">
-                <option <?= $stateUI==='' ? 'selected':''; ?>>Filter by state</option>
+                <option value="" <?= $stateUI==='' ? 'selected':''; ?> disabled hidden>Filter by status</option>
                 <?php foreach (['Abierto','En proceso','En espera','Resuelto','Cancelado'] as $opt): ?>
                   <option value="<?= esc($opt) ?>" <?= $stateUI===$opt ? 'selected':''; ?>><?= esc($opt) ?></option>
                 <?php endforeach; ?>
               </select>
             </div>
 
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-3">
               <select class="form-select filter-select" name="priority" onchange="this.form.submit()">
-                <option <?= $priority==='' ? 'selected':''; ?>>Priority</option>
+                <option value="" <?= $priority==='' ? 'selected':''; ?> disabled hidden>Priority</option>
                 <?php foreach (['Baja','Media','Alta','Urgente'] as $opt): ?>
                   <option value="<?= esc($opt) ?>" <?= $priority===$opt ? 'selected':''; ?>><?= esc($opt) ?></option>
                 <?php endforeach; ?>
               </select>
             </div>
 
-            <div class="col-12 col-md-4 d-flex justify-content-md-end">
+            <div class="col-12 col-md-3">
+              <select class="form-select filter-select" name="order" onchange="this.form.submit()">
+                <option value="id_desc" <?= $order==='id_desc' ? 'selected':''; ?>>ID: mayor a menor</option>
+                <option value="id_asc" <?= $order==='id_asc' ? 'selected':''; ?>>ID: menor a mayor</option>
+                <option value="date_desc" <?= $order==='date_desc' ? 'selected':''; ?>>Fecha: más reciente</option>
+                <option value="date_asc" <?= $order==='date_asc' ? 'selected':''; ?>>Fecha: más antiguo primero</option>
+                <option value="area_asc" <?= $order==='area_asc' ? 'selected':''; ?>>Alfabeto (Área): A–Z</option>
+                <option value="area_desc" <?= $order==='area_desc' ? 'selected':''; ?>>Alfabeto (Área): Z–A</option>
+                <option value="creator_asc" <?= $order==='creator_asc' ? 'selected':''; ?>>Alfabeto (Creador): A–Z</option>
+                <option value="creator_desc" <?= $order==='creator_desc' ? 'selected':''; ?>>Alfabeto (Creador): Z–A</option>
+              </select>
+            </div>
+
+            <div class="col-12 col-md-3 d-flex justify-content-md-end">
               <a class="btn-pro d-inline-flex align-items-center justify-content-center text-decoration-none"
                  href="generarTickets.php">
                 <i class="fa-solid fa-plus me-2"></i>New Ticket
@@ -278,12 +491,13 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
             <table class="table table-borderless align-middle mb-0">
               <thead>
                 <tr>
-                  <th class="th-center">ID</th>
-                  <th>Creado</th>
+                  <th class="th-center"><a class="th-sort" href="<?= sort_url('id') ?>">ID <?= sort_icon('id') ?></a></th>
+                  <th><a class="th-sort" href="<?= sort_url('created') ?>">Created <?= sort_icon('created') ?></a></th>
+                  <th>Created By</th>
                   <th>Area</th>
-                  <th>Priority</th>
-                  <th>Status</th>
-                  <th>Assigned to</th>
+                  <th><a class="th-sort" href="<?= sort_url('priority') ?>">Priority <?= sort_icon('priority') ?></a></th>
+                  <th><a class="th-sort" href="<?= sort_url('status') ?>">Status <?= sort_icon('status') ?></a></th>
+                  <th>Assigned To</th>
                   <th class="th-center th-actions">Action</th>
                 </tr>
               </thead>
@@ -291,7 +505,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
               <tbody>
                 <?php if (!$tickets): ?>
                   <tr>
-                    <td colspan="7" class="text-center py-4" style="color: rgba(0,0,0,.55); font-weight:800;">
+                    <td colspan="8" class="text-center py-4" style="color: rgba(0,0,0,.55); font-weight:800;">
                       No hay tickets para mostrar.
                     </td>
                   </tr>
@@ -306,6 +520,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
                     $stClass = ui_status_class($uiStatus);
 
                     $assigned = $t['assigned_name'] ?: '—';
+                    $createdBy = $t['created_by_name'] ?: '—';
                   
                     $ticketUrl = trim((string)($t['ticket_url'] ?? ''));
                     $evidence = trim((string)($t['attachment_path'] ?? ''));
@@ -314,6 +529,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
                       <td class="th-center fw-bold td-id"><?= esc($idTxt) ?></td>
 
                      <td><?= $t['created_at'] ? date('d/m/Y H:i', strtotime($t['created_at'])) : '—' ?></td>
+                      <td class="td-createdby"><span class="cell-ellipsis" title="<?= esc($createdBy) ?>"><?= esc($createdBy) ?></span></td>
                       
                       <td><?= esc($t['area']) ?></td>
                       

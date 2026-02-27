@@ -452,3 +452,63 @@ body.sidebar-open{
   .dropdown-pro .dropdown-item{ font-size: 16px; }
   .btn-send{ width: 100%; height: 50px; }
 }
+/* ==========================================================
+   1080p GLOBAL (DESKTOP/TABLET) – “full width” en TODAS vistas
+   - Mantiene tu móvil (drawer + topbar) tal cual
+   - En >=768px hace que los paneles aprovechen el ancho/alto
+   - Misma vibra que Tickets (clamp + max 1500/1600)
+   ========================================================== */
+@media (min-width: 768px){
+
+  /* Espaciado general del contenido */
+  .main{
+    padding: 26px 26px 40px !important;
+    min-height: 100vh;
+  }
+
+  /* Wrappers típicos (si existen) */
+  .main > .tickets-page,
+  .main > .users-page,
+  .main > .history-page,
+  .main > .generate-page,
+  .main > .ticket-edit-page,
+  .main > .page,
+  .main > .page-wrap{
+    width: 100% !important;
+    max-width: 1500px !important;
+    margin: 0 auto !important;
+  }
+
+  /* Paneles (global): ocupan el ancho como tu vista de Tickets */
+  .main .panel.card,
+  .main .panel{
+    width: 100% !important;
+    max-width: clamp(980px, 78vw, 1500px) !important;
+    margin: 0 auto !important;
+  }
+}
+
+/* Pantallas grandes */
+@media (min-width: 1600px){
+  .main > .tickets-page,
+  .main > .users-page,
+  .main > .history-page,
+  .main > .generate-page,
+  .main > .ticket-edit-page,
+  .main > .page,
+  .main > .page-wrap{
+    max-width: 1600px !important;
+  }
+
+  .main .panel.card,
+  .main .panel{
+    max-width: 1600px !important;
+  }
+}
+
+/* Tablet: un poco menos padding */
+@media (min-width: 768px) and (max-width: 991.98px){
+  .main{
+    padding: 18px 16px 26px !important;
+  }
+}

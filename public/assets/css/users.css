@@ -280,3 +280,135 @@ select.form-select.pro-input option:checked{ background: var(--rhr-orange-dark);
   .icon-action{ width: 40px; height: 40px; border-radius: 14px; }
   .user-avatar{ width: 40px; height: 40px; }
 }
+
+/* =========================
+   1080p BASE + SEARCH + TELÉFONO
+   (override al final)
+   ========================= */
+
+/* Aprovecha la pantalla en 1080p */
+.main{
+  padding: 26px 26px 38px !important;
+  align-items: stretch !important;
+}
+
+.users-panel{
+  width: clamp(980px, 92vw, 1500px);
+  max-width: none !important;
+  min-height: calc(100vh - 110px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header: título + búsqueda */
+.users-head__left{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 340px;
+}
+
+.users-search{
+  width: clamp(320px, 46vw, 620px);
+}
+
+.users-search__group{
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.users-search__icon{
+  position: absolute;
+  left: 14px;
+  color: rgba(0,0,0,.55);
+  pointer-events: none;
+}
+
+.users-search__input{
+  padding-left: 40px !important;
+}
+
+.users-search__clear{
+  position: absolute;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,.10);
+  background: rgba(255,255,255,.65);
+  display: grid;
+  place-items: center;
+  color: rgba(0,0,0,.62);
+  text-decoration: none;
+  box-shadow: 0 10px 18px rgba(0,0,0,.08);
+}
+
+.users-search__clear:hover{
+  background: rgba(255,255,255,.85);
+}
+
+/* Tabla: que llene y haga scroll interno (pro) */
+.users-table{
+  flex: 1;
+  overflow: auto;           /* override: antes hidden */
+  max-height: calc(100vh - 285px);
+}
+
+/* Encabezado sticky */
+.users-table thead th{
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(255,255,255,.70);
+  backdrop-filter: blur(10px);
+}
+
+/* Columnas nuevas */
+.users-table td.col-phone{
+  white-space: nowrap;
+  font-weight: 800;
+  color: rgba(0,0,0,.78);
+}
+
+/* Acciones: ancho fijo para que no se mueva */
+.users-table thead th:last-child,
+.users-table tbody td:last-child{
+  width: 190px;
+}
+
+@media (max-width: 992px){
+  .users-panel{
+    width: 96vw;
+    min-height: auto;
+  }
+  .users-search{
+    width: 100%;
+  }
+  .users-table{
+    max-height: none;
+  }
+}
+/* =========================
+   SORT en encabezados (igual que tickets.php)
+   Nota: solo se AGREGA, no modifica reglas previas
+   ========================= */
+.th-sort{
+  color: inherit;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+}
+.th-sort:hover{
+  text-decoration: underline;
+}
+th.th-center .th-sort{
+  justify-content: center;
+  width: 100%;
+}
+.th-sort i{
+  font-size: 12px;
+  opacity: .85;
+}

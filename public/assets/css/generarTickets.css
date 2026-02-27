@@ -572,3 +572,55 @@ body.intro-play .panel{   animation: rhrPanelIn   .70s cubic-bezier(.2,.9,.2,1) 
   }
   .tc-fileinfo__name{ max-width: 220px; }
 }
+/* ==========================================================
+   1080p FULL-WIDTH (Generate Ticket)
+   - Ocupa el ancho/alto como ticket_edit (panel grande, centrado)
+   - No cambia tu HTML
+   ========================================================== */
+@media (min-width: 768px){
+
+  /* Main: mismo padding “1080p” */
+  .page-generate .main{
+    padding: 26px 26px 40px !important;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+  }
+
+  /* Panel: full width con clamp (igual vibe tickets/ticket_edit) */
+  .page-generate .panel{
+    width: 100% !important;
+    max-width: clamp(980px, 78vw, 1500px) !important;
+    margin: 0 auto !important;
+
+    display: flex;
+    flex-direction: column;
+
+    min-height: clamp(640px, 86vh, 920px);
+    padding: 26px 28px 22px !important;
+  }
+
+  /* Form: que no quede mini en pantallas grandes */
+  .page-generate .form-wrap,
+  .page-generate .ticket-form{
+    width: min(720px, 100%) !important;
+  }
+}
+
+/* Pantallas grandes */
+@media (min-width: 1600px){
+  .page-generate .panel{
+    max-width: 1600px !important;
+  }
+}
+
+/* Tablet: padding un poco más compacto */
+@media (min-width: 768px) and (max-width: 991.98px){
+  .page-generate .main{
+    padding: 18px 16px 26px !important;
+  }
+  .page-generate .panel{
+    min-height: auto;
+  }
+}
