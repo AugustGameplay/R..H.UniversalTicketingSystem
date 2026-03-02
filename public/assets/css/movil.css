@@ -8,7 +8,7 @@
   right: 0;
   height: 56px;
   width: 100%;
-  z-index: 200;
+  z-index: 1310;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -40,7 +40,7 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity .2s ease;
-  z-index: 1090;
+  z-index: 1290;
 }
 
 /* Bloqueo de scroll solo cuando abierto */
@@ -64,11 +64,11 @@ body.sidebar-open{
   /* Sidebar tipo drawer (fuera del flujo) */
   .sidebar{
     position: fixed !important;
-    top: 0;
+    top: 56px; /* deja visible la topbar */
     left: 0;
     width: 280px;
-    height: 100dvh;
-    z-index: 1200;
+    height: calc(100dvh - 56px);
+    z-index: 1300;
     transform: translateX(-105%);
     transition: transform .25s ease;
   }

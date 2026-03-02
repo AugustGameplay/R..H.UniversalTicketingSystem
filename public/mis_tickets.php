@@ -2,10 +2,10 @@
 /**
  * mis_tickets.php
  * Vista personal: el usuario ve SOLO sus propios tickets y su estado.
- * Accesible para TODOS los roles (Operaciones, IT, Admin, Superadmin).
+ * Accesible para TODOS los roles autenticados.
  */
-require __DIR__ . '/partials/auth.php';
 $active = 'mis_tickets';
+require __DIR__ . '/partials/auth.php';
 
 require __DIR__ . '/config/db.php';
 

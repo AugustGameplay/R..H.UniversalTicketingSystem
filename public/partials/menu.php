@@ -1,16 +1,16 @@
 <?php
 /**
  * partials/menu.php
- * Sidebar con navegación controlada por rol.
- * Requiere que auth.php ya haya sido incluido (variables $_AUTH_* disponibles).
+ * Sidebar + Topbar móvil.
+ * Requiere que auth.php ya haya sido incluido (variables $_AUTH_* y funciones auth_can()).
  */
 
-// Leer datos de sesión de forma segura
+// Leer datos de sesión
 $_menuUserId   = (int)($_SESSION['user_id'] ?? 0);
 $_menuRoleId   = (int)($_SESSION['id_role'] ?? 0);
 $_menuFullName = (string)($_SESSION['full_name'] ?? 'Usuario');
 
-// Foto de perfil (si existe en BD — opcional, sin romper si no hay)
+// Foto de perfil (opcional)
 $_menuPhoto = '';
 if (isset($pdo)) {
     try {
@@ -22,54 +22,26 @@ if (isset($pdo)) {
     }
 }
 
-// Nombre corto (primer nombre)
 $_menuShortName = explode(' ', trim($_menuFullName))[0];
-
-// Items de navegación
-$_navItems = [];
-
-// Generar Ticket — todos los roles
-$_navItems[] = [
-    'href'  => 'generarTickets.php',
-    'key'   => 'generarTickets',
-    'icon'  => 'fa-solid fa-ticket',
-    'label' => 'Generar Ticket',
-];
-
-// Mis Tickets — todos los roles
-$_navItems[] = [
-    'href'  => 'mis_tickets.php',
-    'key'   => 'mis_tickets',
-    'icon'  => 'fa-solid fa-list-check',
-    'label' => 'Mis Tickets',
-];
-
-// Solo roles con acceso avanzado
-if (in_array($_menuRoleId, [1, 2, 3], true)) {
-    $_navItems[] = [
-        'href'  => 'tickets.php',
-        'key'   => 'tickets',
-        'icon'  => 'fa-solid fa-table-list',
-        'label' => 'Tickets',
-    ];
-    $_navItems[] = [
-        'href'  => 'history.php',
-        'key'   => 'history',
-        'icon'  => 'fa-solid fa-clock-rotate-left',
-        'label' => 'History',
-    ];
-}
-
-// Solo Superadmin y Admin
-if (in_array($_menuRoleId, [1, 2], true)) {
-    $_navItems[] = [
-        'href'  => 'users.php',
-        'key'   => 'users',
-        'icon'  => 'fa-solid fa-users',
-        'label' => 'Users',
-    ];
-}
 ?>
+
+<!-- TOPBAR (solo móvil) -->
+<header class="mobile-topbar" id="mobileTopbar">
+  <button type="button"
+          class="hamburger"
+          id="btnSidebarOpen"
+          aria-controls="sidebar"
+          aria-expanded="false"
+          aria-label="Abrir menú">
+    <i class="fa-solid fa-bars" aria-hidden="true"></i>
+  </button>
+
+  <img class="mobile-topbar__logo" src="./assets/img/RHR UNIVERSAL-01.png" alt="RH&amp;R Universal">
+
+  <a href="logout.php" class="hamburger" aria-label="Cerrar sesión" title="Cerrar sesión">
+    <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+  </a>
+</header>
 
 <aside class="sidebar d-flex flex-column" id="sidebar">
 
@@ -95,14 +67,50 @@ if (in_array($_menuRoleId, [1, 2], true)) {
 
     <!-- Nav -->
     <nav class="menu mt-3" aria-label="Navegación principal">
-        <?php foreach ($_navItems as $_item): ?>
-            <a href="<?= htmlspecialchars($_item['href'], ENT_QUOTES, 'UTF-8') ?>"
-               class="menu__item nav-link<?= (($active ?? '') === $_item['key']) ? ' active' : '' ?>"
-               aria-current="<?= (($active ?? '') === $_item['key']) ? 'page' : 'false' ?>">
-                <i class="<?= htmlspecialchars($_item['icon'], ENT_QUOTES, 'UTF-8') ?> me-2" aria-hidden="true"></i>
-                <?= htmlspecialchars($_item['label'], ENT_QUOTES, 'UTF-8') ?>
-            </a>
-        <?php endforeach; ?>
+
+        <!-- Generar Ticket (todos) -->
+        <a href="generarTickets.php"
+           class="menu__item nav-link<?= (($active ?? '') === 'generarTickets') ? ' active' : '' ?>"
+           aria-current="<?= (($active ?? '') === 'generarTickets') ? 'page' : 'false' ?>">
+            <i class="fa-solid fa-ticket me-2" aria-hidden="true"></i>
+            Generar Ticket
+        </a>
+
+        <!-- Mis Tickets (todos) -->
+        <a href="mis_tickets.php"
+           class="menu__item nav-link<?= (($active ?? '') === 'mis_tickets') ? ' active' : '' ?>"
+           aria-current="<?= (($active ?? '') === 'mis_tickets') ? 'page' : 'false' ?>">
+            <i class="fa-solid fa-list-check me-2" aria-hidden="true"></i>
+            Mis Tickets
+        </a>
+
+        <?php if (function_exists('auth_can') && auth_can('tickets')): ?>
+        <a href="tickets.php"
+           class="menu__item nav-link<?= (($active ?? '') === 'tickets') ? ' active' : '' ?>"
+           aria-current="<?= (($active ?? '') === 'tickets') ? 'page' : 'false' ?>">
+            <i class="fa-solid fa-table-list me-2" aria-hidden="true"></i>
+            Tickets
+        </a>
+        <?php endif; ?>
+
+        <?php if (function_exists('auth_can') && auth_can('history')): ?>
+        <a href="history.php"
+           class="menu__item nav-link<?= (($active ?? '') === 'history') ? ' active' : '' ?>"
+           aria-current="<?= (($active ?? '') === 'history') ? 'page' : 'false' ?>">
+            <i class="fa-solid fa-clock-rotate-left me-2" aria-hidden="true"></i>
+            History
+        </a>
+        <?php endif; ?>
+
+        <?php if (function_exists('auth_can') && auth_can('users')): ?>
+        <a href="users.php"
+           class="menu__item nav-link<?= (($active ?? '') === 'users') ? ' active' : '' ?>"
+           aria-current="<?= (($active ?? '') === 'users') ? 'page' : 'false' ?>">
+            <i class="fa-solid fa-users me-2" aria-hidden="true"></i>
+            Users
+        </a>
+        <?php endif; ?>
+
     </nav>
 
     <!-- Spacer + logout -->
@@ -116,3 +124,6 @@ if (in_array($_menuRoleId, [1, 2], true)) {
 
 <!-- Overlay móvil -->
 <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+
+<!-- JS del sidebar (móvil) -->
+<script src="./assets/js/sidebar.js" defer></script>
