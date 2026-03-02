@@ -1,291 +1,339 @@
 /* =========================
-   TICKETS.CSS (LIMPIO + PRO)
-   - Estilo tipo ticket_edit.php
-   - Hovers notorios
-   - Badges por prioridad/estado
-   - Sin romper tu HTML actual
+   TICKETS.CSS — Refined UI
+   Requiere brand.css antes
    ========================= */
 
-:root{
-  --rhr-navy: #0b3a57;
-  --rhr-navy-2: #0f4a6d;
-  --rhr-orange: #ff6a00;
-  --rhr-orange-dark: #d14b16;
+/* Variables locales */
+:root {
+  --rhr-navy:        #083B5C;
+  --rhr-navy-2:      #0d4e7a;
+  --rhr-orange:      #F47A21;
+  --rhr-orange-dark: #D14B16;
 
-  --text: #0f172a;
-  --muted: rgba(15,23,42,.62);
-  --line: rgba(2,6,23,.10);
-
-  --shadow: 0 18px 50px rgba(0,0,0,.10);
-  --shadow2: 0 10px 26px rgba(0,0,0,.10);
-
+  --text:    #0f172a;
+  --muted:   rgba(15,23,42,.58);
+  --line:    rgba(2,6,23,.08);
+  --shadow:  0 20px 55px rgba(0,0,0,.10);
+  --shadow2: 0  8px 22px rgba(0,0,0,.08);
   --r: 22px;
 }
 
-/* Panel */
-.tickets-panel{
-  padding: 26px 28px 22px;
+/* ── Panel ─────────────────────────────────────── */
+.tickets-panel {
+  padding: 28px 30px 24px;
 }
 
-/* Header */
-.tickets-head{
-  display:flex;
-  align-items:center;
+/* ── Header ────────────────────────────────────── */
+.tickets-head {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 14px;
 }
 
-/* Search */
-.search-wrap{
+/* ── Search ────────────────────────────────────── */
+.search-wrap {
   width: min(360px, 100%);
   height: 46px;
   background: #fff;
-  border: 1px solid rgba(0,0,0,.10);
-  border-radius: 18px;
+  border: 1.5px solid rgba(15,23,42,.09);
+  border-radius: 14px;
 
-  display:flex;
-  align-items:center;
+  display: flex;
+  align-items: center;
   gap: 10px;
   padding: 0 16px;
 
   box-shadow: var(--shadow2);
-  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+  transition:
+    transform     .15s cubic-bezier(.2,.8,.2,1),
+    box-shadow    .18s cubic-bezier(.2,.8,.2,1),
+    border-color  .18s ease;
 }
 
-.search-wrap:hover{
+.search-wrap:hover {
   transform: translateY(-1px);
-  border-color: rgba(255,106,0,.40);
-  box-shadow: 0 18px 34px rgba(0,0,0,.14);
+  border-color: rgba(244,122,33,.40);
+  box-shadow: 0 14px 30px rgba(0,0,0,.11);
 }
 
-.search-wrap:focus-within{
-  border-color: rgba(255,106,0,.75);
-  box-shadow: 0 0 0 4px rgba(255,106,0,.16), 0 18px 34px rgba(0,0,0,.14);
+.search-wrap:focus-within {
+  border-color: rgba(244,122,33,.70);
+  box-shadow:
+    0 0 0 3.5px rgba(244,122,33,.14),
+    0 16px 32px rgba(0,0,0,.12);
   transform: translateY(-1px);
 }
 
-.search-wrap i{
-  color: rgba(0,0,0,.55);
-}
+.search-wrap i { color: rgba(15,23,42,.45); }
 
-.search-input{
+.search-input {
   width: 100%;
   border: 0 !important;
   outline: none !important;
   background: transparent !important;
+  font-family: inherit;
   font-size: 14px;
-  font-weight: 800;
-  color: rgba(15,23,42,.82);
+  font-weight: 700;
+  color: var(--text);
 }
 
-/* Filtros */
-.filter-select{
+/* ── Filtros ────────────────────────────────────── */
+.filter-select {
   height: 46px;
-  border-radius: 18px !important;
-  border: 1px solid rgba(0,0,0,.10) !important;
+  border-radius: 14px !important;
+  border: 1.5px solid rgba(15,23,42,.09) !important;
   background: #fff !important;
   box-shadow: var(--shadow2);
-  font-weight: 900;
-  color: rgba(15,23,42,.82);
+  font-family: inherit;
+  font-weight: 800;
+  color: var(--text);
   padding-left: 14px;
-  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+  transition:
+    transform    .15s cubic-bezier(.2,.8,.2,1),
+    box-shadow   .18s cubic-bezier(.2,.8,.2,1),
+    border-color .18s ease;
 }
 
-.filter-select:hover{
+.filter-select:hover {
   transform: translateY(-1px);
-  border-color: rgba(255,106,0,.40) !important;
-  box-shadow: 0 18px 34px rgba(0,0,0,.14);
+  border-color: rgba(244,122,33,.40) !important;
+  box-shadow: 0 14px 30px rgba(0,0,0,.11);
 }
 
-.filter-select:focus{
+.filter-select:focus {
   outline: none !important;
-  border-color: rgba(255,106,0,.75) !important;
-  box-shadow: 0 0 0 4px rgba(255,106,0,.16), 0 18px 34px rgba(0,0,0,.14) !important;
+  border-color: rgba(244,122,33,.70) !important;
+  box-shadow: 0 0 0 3.5px rgba(244,122,33,.14), 0 16px 30px rgba(0,0,0,.12) !important;
 }
 
-/* Botón New Ticket */
-.btn-pro{
+/* ── Botón New Ticket ───────────────────────────── */
+.btn-pro {
   height: 46px;
   border: 0 !important;
-  border-radius: 18px !important;
-  padding: 0 18px;
+  border-radius: 14px !important;
+  padding: 0 20px;
+  font-family: inherit;
   font-weight: 900;
+  font-size: 14px;
   color: #fff !important;
   background: linear-gradient(135deg, var(--rhr-navy), var(--rhr-navy-2));
-  box-shadow: 0 16px 30px rgba(0,0,0,.14);
-  transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+  box-shadow: 0 10px 26px rgba(8,59,92,.28);
+  transition:
+    transform  .15s cubic-bezier(.2,.8,.2,1),
+    box-shadow .18s cubic-bezier(.2,.8,.2,1),
+    filter     .18s ease;
 }
 
-.btn-pro:hover{
+.btn-pro:hover {
   transform: translateY(-1px);
-  filter: brightness(1.06);
-  box-shadow: 0 22px 40px rgba(0,0,0,.18);
+  filter: brightness(1.08);
+  box-shadow: 0 18px 38px rgba(8,59,92,.34);
 }
-.btn-pro:active{ transform: translateY(0) scale(.98); }
+.btn-pro:active { transform: translateY(0) scale(.98); }
 
-/* Tabla (contenedor blanco pro) */
-.tickets-table{
-  border-radius: 22px;
-  border: 1px solid rgba(0,0,0,.08);
-  background: rgba(255,255,255,.92);
+/* ── Tabla contenedor ───────────────────────────── */
+.tickets-table {
+  margin-top: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(15,23,42,.07);
+  background: #fff;
   box-shadow: var(--shadow);
-  padding: 10px;
+  padding: 0;
   overflow-x: auto;
   overflow-y: hidden;
 }
 
-/* Encabezado tabla */
-.tickets-table thead th{
+/* ── Table head ─────────────────────────────────── */
+.tickets-table thead th {
   font-weight: 900;
-  color: rgba(15,23,42,.78);
-  padding: 16px 14px;
-  border-bottom: 1px solid rgba(0,0,0,.06) !important;
+  font-size: 12px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: rgba(15,23,42,.52);
+  padding: 16px 16px !important;
+  background: rgba(248,250,253,1);
+  border-bottom: 1px solid rgba(15,23,42,.07) !important;
+  white-space: nowrap;
+  vertical-align: middle;
 }
 
-/* Filas */
-.tickets-table tbody tr{
-  transition: transform .16s ease, background .16s ease;
+.tickets-table thead tr:first-child th:first-child  { border-radius: 20px 0 0 0; }
+.tickets-table thead tr:first-child th:last-child   { border-radius: 0 20px 0 0; }
+
+/* ── Rows ───────────────────────────────────────── */
+.tickets-table tbody tr {
+  transition:
+    background .16s ease,
+    transform  .14s cubic-bezier(.2,.8,.2,1);
 }
 
-.tickets-table tbody tr:hover{
-  background:
-    radial-gradient(900px 240px at 12% 0%, rgba(255,106,0,.08), transparent 60%),
-    radial-gradient(900px 240px at 88% 0%, rgba(11,58,87,.08), transparent 60%);
+.tickets-table tbody tr:hover {
+  background: linear-gradient(90deg,
+    rgba(244,122,33,.04) 0%,
+    rgba(8,59,92,.04)    100%);
   transform: translateY(-1px);
 }
 
-.tickets-table tbody td{
-  padding: 18px 14px;
-  border-top: 1px solid rgba(0,0,0,.06) !important;
-  color: rgba(15,23,42,.86);
+.tickets-table tbody tr:hover td {
+  border-top-color: rgba(15,23,42,.10) !important;
+}
+
+.tickets-table tbody td {
+  padding: 16px 16px !important;
+  border-top: 1px solid rgba(15,23,42,.055) !important;
+  color: rgba(15,23,42,.88);
+  font-weight: 700;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+/* ── Centrado ───────────────────────────────────── */
+.th-center { text-align: center; }
+
+/* ── Badges base ────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 12px;
+  border: 1px solid rgba(15,23,42,.08);
+  box-shadow: 0 3px 8px rgba(0,0,0,.07);
+  color: rgba(15,23,42,.88);
+  letter-spacing: .1px;
+}
+
+/* ── PRIORITY ───────────────────────────────────── */
+.badge-prio { background: rgba(15,23,42,.06); }
+
+.prio-low {
+  background: rgba(56,189,248,.14);
+  border-color: rgba(56,189,248,.28);
+  color: #0c4a6e;
+}
+.prio-medium {
+  background: rgba(245,158,11,.14);
+  border-color: rgba(245,158,11,.28);
+  color: #78350f;
+}
+.prio-high {
+  background: rgba(244,122,33,.14);
+  border-color: rgba(244,122,33,.30);
+  color: #7c2d12;
+}
+.prio-urgent {
+  background: rgba(239,68,68,.12);
+  border-color: rgba(239,68,68,.28);
+  color: #7f1d1d;
+}
+
+/* ── STATUS ─────────────────────────────────────── */
+.badge-status { background: rgba(15,23,42,.06); }
+
+.st-open {
+  background: rgba(56,189,248,.14);
+  border-color: rgba(56,189,248,.28);
+  color: #0c4a6e;
+}
+.st-progress {
+  background: rgba(34,197,94,.12);
+  border-color: rgba(34,197,94,.26);
+  color: #14532d;
+}
+.st-wait {
+  background: rgba(148,163,184,.16);
+  border-color: rgba(148,163,184,.28);
+  color: #374151;
+}
+.st-done {
+  background: rgba(34,197,94,.12);
+  border-color: rgba(34,197,94,.26);
+  color: #14532d;
+}
+.st-cancel {
+  background: rgba(239,68,68,.10);
+  border-color: rgba(239,68,68,.24);
+  color: #7f1d1d;
+}
+
+/* ── Icon action (lápiz / acción) ───────────────── */
+.icon-action {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  border: 1.5px solid rgba(244,122,33,.60);
+  background: rgba(255,255,255,.92);
+  color: rgba(209,75,22,.95);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,.08);
+  transition:
+    transform     .14s cubic-bezier(.2,.8,.2,1),
+    box-shadow    .18s ease,
+    background    .16s ease,
+    border-color  .16s ease;
+}
+
+.icon-action:hover {
+  transform: translateY(-1px) rotate(-3deg);
+  background: rgba(244,122,33,.08);
+  border-color: rgba(209,75,22,.85);
+  box-shadow: 0 10px 22px rgba(0,0,0,.12);
+}
+.icon-action:active { transform: translateY(0) scale(.96); }
+
+/* ── Footer ─────────────────────────────────────── */
+.table-foot .foot-text {
+  color: var(--muted);
+  font-size: 13px;
   font-weight: 700;
 }
 
-/* Centrado */
-.th-center{ text-align:center; }
-
-/* Badges base */
-.badge{
-  border-radius: 999px;
-  padding: 8px 12px;
-  font-weight: 900;
-  font-size: 12px;
-  border: 1px solid rgba(0,0,0,.08);
-  box-shadow: 0 10px 18px rgba(0,0,0,.06);
-  color: rgba(15,23,42,.92);
+/* ── Paginación ─────────────────────────────────── */
+.pagination .page-link {
+  border-radius: 10px;
+  border: 1.5px solid rgba(15,23,42,.10);
+  box-shadow: 0 4px 10px rgba(0,0,0,.07);
+  font-family: inherit;
+  font-weight: 700;
+  transition:
+    transform    .14s cubic-bezier(.2,.8,.2,1),
+    box-shadow   .16s ease,
+    border-color .16s ease,
+    background   .16s ease;
 }
 
-/* PRIORITY (colores claros) */
-.badge-prio{ background: rgba(0,0,0,.06); }
-.prio-low{
-  background: rgba(56,189,248,.18);
-  border-color: rgba(56,189,248,.32);
-}
-.prio-medium{
-  background: rgba(245,158,11,.18);
-  border-color: rgba(245,158,11,.32);
-}
-.prio-high{
-  background: rgba(255,106,0,.18);
-  border-color: rgba(255,106,0,.38);
-}
-.prio-urgent{
-  background: rgba(239,68,68,.16);
-  border-color: rgba(239,68,68,.32);
-}
-
-/* STATUS */
-.badge-status{ background: rgba(0,0,0,.06); }
-.st-open{
-  background: rgba(56,189,248,.18);
-  border-color: rgba(56,189,248,.32);
-}
-.st-progress{
-  background: rgba(34,197,94,.16);
-  border-color: rgba(34,197,94,.30);
-}
-.st-wait{
-  background: rgba(148,163,184,.20);
-  border-color: rgba(148,163,184,.34);
-}
-.st-done{
-  background: rgba(34,197,94,.16);
-  border-color: rgba(34,197,94,.30);
-}
-.st-cancel{
-  background: rgba(239,68,68,.14);
-  border-color: rgba(239,68,68,.28);
-}
-
-/* Icon action (lápiz) */
-.icon-action{
-  width: 46px;
-  height: 46px;
-  border-radius: 16px;
-  border: 2px solid rgba(255,106,0,.75);
-  background: #fff;
-  color: rgba(255,106,0,.98);
-  display:grid;
-  place-items:center;
-  cursor:pointer;
-  box-shadow: 0 12px 22px rgba(0,0,0,.10);
-  transition: transform .16s ease, box-shadow .16s ease, background .16s ease, border-color .16s ease;
-}
-
-.icon-action:hover{
-  transform: translateY(-1px) rotate(-2deg);
-  background: rgba(255,106,0,.10);
-  border-color: rgba(255,106,0,.95);
-  box-shadow: 0 18px 32px rgba(0,0,0,.14);
-}
-.icon-action:active{ transform: translateY(0) scale(.97); }
-
-/* Footer */
-.table-foot .foot-text{
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 800;
-}
-
-/* Paginación */
-.pagination .page-link{
-  border-radius: 12px;
-  border: 1px solid rgba(0,0,0,.10);
-  box-shadow: 0 8px 16px rgba(0,0,0,.08);
-  transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease, background .14s ease;
-}
-
-.pagination .page-link:hover{
+.pagination .page-link:hover {
   transform: translateY(-1px);
-  border-color: rgba(255,106,0,.40);
-  box-shadow: 0 14px 24px rgba(0,0,0,.12);
-  background: rgba(255,106,0,.08);
+  border-color: rgba(244,122,33,.40);
+  box-shadow: 0 10px 20px rgba(0,0,0,.10);
+  background: rgba(244,122,33,.07);
 }
 
-.pagination .page-item.active .page-link{
-  background: linear-gradient(135deg, var(--rhr-orange), #ff8a3d);
+.pagination .page-item.active .page-link {
+  background: linear-gradient(135deg, var(--rhr-orange), #e8671a);
   border: 0;
   color: #fff;
+  box-shadow: 0 8px 20px rgba(244,122,33,.35);
 }
 
-/* =========================
-   FIX CENTRADO + RESPONSIVO (tickets.php)
-   ========================= */
-
-/* ===== LAYOUT DESKTOP (1080p+): usar mejor el espacio ===== */
-.tickets-page main.main{
+/* ── Layout 1080p ───────────────────────────────── */
+.tickets-page main.main {
   padding: 26px 26px 40px;
-  align-items: stretch !important; /* evita que quede “muy arriba” */
+  align-items: stretch !important;
 }
 
-/* wrapper interno: sobreescribe max-width inline si existe */
-.tickets-page main.main > div.tickets-page{
+.tickets-page main.main > div.tickets-page {
   max-width: 1500px !important;
   width: 100% !important;
 }
 
-/* Panel: ancho flexible + alto que aprovecha la pantalla */
-.panel.card.tickets-panel{
+.panel.card.tickets-panel {
   margin: 0 auto !important;
   width: 100% !important;
   max-width: clamp(980px, 78vw, 1500px) !important;
@@ -294,269 +342,65 @@
   min-height: clamp(640px, 86vh, 900px);
 }
 
-/* Si el avatar-btn te rompe el layout, lo ocultamos */
-.panel.card.tickets-panel .avatar-btn{
+.panel.card.tickets-panel .avatar-btn {
   display: none !important;
 }
 
-/* Tabla: que rellene el panel y haga scroll vertical si hace falta */
-.panel.card.tickets-panel .tickets-table{
+.panel.card.tickets-panel .tickets-table {
   flex: 1 1 auto;
   min-height: 360px;
   overflow: auto !important;
 }
 
-/* ===== FIX: acciones (solo columna Action) ===== */
-.tickets-table td.td-actions{
+/* ── Columna Acciones sticky ────────────────────── */
+.tickets-table td.td-actions {
   text-align: right !important;
   white-space: nowrap !important;
   padding-right: 18px !important;
 }
 
-/* Si el clip es <button class="icon-action">, quita estilo nativo del button */
-.tickets-table td.td-actions button.icon-action{
+.tickets-table td.td-actions button.icon-action {
   border: 0;
   background: transparent;
-  padding: 0;
 }
 
-
-
-
-/* =========================
-   ICONOS (evidencia + eliminar) - igual vibe que ticket_edit
-   ========================= */
-.icon-action.icon-evidence{
-  border-color: rgba(13,110,253,.60) !important;
-  color: rgba(13,110,253,.98) !important;
-}
-.icon-action.icon-evidence:hover{
-  background: rgba(13,110,253,.10) !important;
-  border-color: rgba(13,110,253,.85) !important;
+.tickets-table {
+  --act-size: 38px;
+  --act-gap: 8px;
+  --act-col: 220px;
 }
 
-.icon-action.icon-delete{
-  border-color: rgba(220,53,69,.60) !important;
-  color: rgba(220,53,69,.98) !important;
-}
-.icon-action.icon-delete:hover{
-  background: rgba(220,53,69,.10) !important;
-  border-color: rgba(220,53,69,.85) !important;
-}
-
-/* =========================
-   MODAL EVIDENCIA (PRO)
-   ========================= */
-.tickets-page .evidence-modal .modal-content{
-  border-radius: 18px;
-  border: 1px solid rgba(0,0,0,.08);
-  overflow: hidden;
-}
-
-.tickets-page .evidence-modal .modal-header{
-  background: rgba(255,255,255,.92);
-}
-
-.tickets-page .evidence-toolbar{
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-}
-
-.tickets-page .evidence-toolbar .ev-toolbtn{
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  border: 1px solid rgba(0,0,0,.10);
-  box-shadow: 0 10px 20px rgba(0,0,0,.08);
-  display: grid;
-  place-items: center;
-  transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease;
-}
-
-.tickets-page .evidence-toolbar .ev-toolbtn:hover{
-  transform: translateY(-1px);
-  box-shadow: 0 14px 26px rgba(0,0,0,.12);
-  border-color: rgba(0,0,0,.18);
-}
-
-.tickets-page .evidence-open{
-  border-radius: 14px;
-}
-
-.tickets-page .evidence-canvas{
-  position: relative;
-  width: 100%;
-  height: min(70vh, 560px);
-  border-radius: 16px;
-  border: 1px solid rgba(0,0,0,.10);
-  background: rgba(15,23,42,.04);
-  overflow: hidden; /* no se sale */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.tickets-page .evidence-canvas.is-zoomed{
-  overflow: auto; /* permite pan cuando hay zoom */
-}
-
-.tickets-page .evidence-canvas img{
-  max-width: 100%;
-  max-height: 100%;
-  transform-origin: center center;
-  transition: transform .12s ease;
-  border-radius: 12px;
-  box-shadow: 0 14px 40px rgba(0,0,0,.12);
-}
-
-.tickets-page .evidence-canvas iframe{
-  width: 100%;
-  height: 100%;
-  border: 0;
-  display: block;
-  border-radius: 12px;
-}
-
-.tickets-page .evidence-tip{
-  font-size: 13px;
-  font-weight: 800;
-  color: rgba(15,23,42,.58);
-}
-
-/* =========================
-   MODAL ELIMINAR
-   ========================= */
-.tickets-page .delete-modal{
-  border-radius: 18px;
-  border: 1px solid rgba(0,0,0,.08);
-  overflow: hidden;
-}
-
-.tickets-page .delete-modal .modal-header{
-  background: rgba(255,255,255,.92);
-}
-
-
-
-/* =========================
-   HOTFIX MODAL (por el sidebar fijo)
-   - asegura que el modal SIEMPRE quede arriba
-   ========================= */
-.tickets-page .modal{ z-index: 2000; }
-.tickets-page .modal-backdrop{ z-index: 1995; }
-
-/* =========================
-   EVIDENCIA: que la imagen se ajuste y se vea grande dentro del canvas
-   ========================= */
-.tickets-page .evidence-canvas{
-  height: clamp(360px, 62vh, 680px); /* más natural que 70vh/560px */
-  background: rgba(15,23,42,.03);
-  padding: 10px;
-}
-
-.tickets-page .evidence-canvas img{
-  width: 100%;
-  height: 100%;
-  max-width: none;
-  max-height: none;
-  object-fit: contain;   /* llena el canvas sin recortar */
-}
-
-/* Toolbar un pelín más compacta */
-.tickets-page .evidence-toolbar .ev-toolbtn{
-  width: 42px;
-  height: 42px;
-  border-radius: 13px;
-}
-
-
-/* Modal evidencia más “tight” y centrado */
-.tickets-page .evidence-modal .modal-dialog{
-  max-width: min(1100px, 96vw);
-}
-.tickets-page .evidence-modal .modal-content{
-  max-height: 92vh;
-  display: flex;
-  flex-direction: column;
-}
-.tickets-page .evidence-modal .modal-body{
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-.tickets-page .evidence-tip{
-  margin-top: 10px !important;
-}
-
-/* Ajuste para la columna de fecha (Creado) */
-.tickets-table th:nth-child(2),
-.tickets-table td:nth-child(2){
-  white-space: nowrap;        /* no parte la fecha/hora con espacios */
-  min-width: 120px;           /* compacto para no empujar Acciones */
-}
-
-
-/* =========================
-   FIX: no recortar Acciones al agregar "Creado"
-   - deja scroll horizontal si es necesario
-   - mantiene Acciones siempre visibles (sticky a la derecha)
-   ========================= */
-.tickets-table table{
+.tickets-table table {
   width: 100%;
   table-layout: auto;
 }
 
-/* Columna Acciones: siempre visible */
 .tickets-table thead th:last-child,
-.tickets-table tbody td:last-child{
+.tickets-table tbody td:last-child {
   position: sticky;
   right: 0;
   z-index: 3;
-  background: rgba(255,255,255,.96);
-  min-width: 240px;
-  width: 240px;
-}
-
-/* Separador visual para Acciones */
-.tickets-table thead th:last-child{
-  box-shadow: -14px 0 18px rgba(0,0,0,.06);
-}
-.tickets-table tbody td:last-child{
-  box-shadow: -14px 0 18px rgba(0,0,0,.05);
-}
-
-/* Que el hover no "manche" raro el sticky */
-.tickets-table tbody tr:hover td:last-child{
-  background: rgba(255,255,255,.96);
-}
-
-/* =========================
-   OVERRIDE PRO: Acciones perfectas (3 o 4 botones)
-   ========================= */
-.tickets-table{
-  --act-size: 46px;
-  --act-gap: 10px;
-  --act-col: 240px;
-}
-
-/* Columna Acciones (sticky) con espacio para 4 botones */
-.tickets-table thead th:last-child,
-.tickets-table tbody td:last-child{
+  background: #fff;
   min-width: var(--act-col) !important;
   width: var(--act-col) !important;
   text-align: right !important;
   white-space: nowrap !important;
 }
 
-/* Mantén ID centrado (si se usa td-id) */
-.tickets-table td.td-id{
-  text-align: center !important;
+.tickets-table thead th:last-child {
+  background: rgba(248,250,253,1);
+  box-shadow: -10px 0 18px rgba(0,0,0,.05);
 }
 
-/* Contenedor de acciones: flex + gap uniforme */
-.tickets-table td.td-actions .action-wrap{
+.tickets-table tbody td:last-child {
+  box-shadow: -10px 0 18px rgba(0,0,0,.04);
+}
+
+.tickets-table tbody tr:hover td:last-child {
+  background: rgba(252,253,255,1);
+}
+
+.tickets-table td.td-actions .action-wrap {
   display: flex;
   justify-content: flex-end;
   align-items: center;
@@ -564,103 +408,199 @@
   flex-wrap: nowrap;
 }
 
-/* Quita separaciones viejas por margin-left cuando hay gap */
-.tickets-table td.td-actions .icon-action + .icon-action{
+.tickets-table td.td-actions .icon-action + .icon-action {
   margin-left: 0 !important;
 }
 
-/* Consistencia de tamaño */
-.tickets-table td.td-actions .icon-action{
+.tickets-table td.td-actions .icon-action {
   width: var(--act-size);
   height: var(--act-size);
 }
 
-
-@media (min-width: 1600px){
-  .panel.card.tickets-panel{ max-width: 1600px !important; }
-}
-
-@media (max-width: 991.98px){
-  .tickets-page main.main{ padding: 16px 12px 26px; }
-  .panel.card.tickets-panel{ min-height: auto; }
-}
-
-/* =========================
-   1080p: aprovechar altura + nueva columna "Creado por"
-   ========================= */
-.tickets-page .layout{ min-height: 100vh; }
-.tickets-page main.main{ min-height: 100vh; }
-
-/* Columna 3 = Creado por */
-.tickets-table th:nth-child(3),
-.tickets-table td:nth-child(3){
+/* ── Sort links ─────────────────────────────────── */
+.tickets-table thead th a.th-sort {
+  color: inherit;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   white-space: nowrap;
+  line-height: 1.1;
+}
+.tickets-table thead th a.th-sort:hover { text-decoration: underline; }
+.tickets-table thead th .sort-ico {
+  width: 14px; height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.tickets-table thead th .sort-ico i {
+  font-size: 11px;
+  line-height: 1;
 }
 
-/* Recorte elegante de nombres largos (sin romper tabla) */
-.tickets-page .cell-ellipsis{
+/* ── Cell utilities ─────────────────────────────── */
+.tickets-table td.td-id { text-align: center !important; }
+
+.tickets-page .cell-ellipsis {
   display: block;
   max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* =========================
-   FIX: Colores por acción (Evidencia azul / Eliminar rojo)
-   Nota: se deja al final para ganar la cascada aunque exista un border naranja general
-   ========================= */
-.tickets-table td.td-actions .icon-action.icon-evidence{
-  border: 2px solid rgba(13,110,253,.60) !important;
-  color: rgba(13,110,253,.98) !important;
-}
-.tickets-table td.td-actions .icon-action.icon-evidence:hover{
-  background: rgba(13,110,253,.10) !important;
-  border-color: rgba(13,110,253,.85) !important;
-}
 
-.tickets-table td.td-actions .icon-action.icon-delete{
-  border: 2px solid rgba(220,53,69,.60) !important;
-  color: rgba(220,53,69,.98) !important;
-}
-.tickets-table td.td-actions .icon-action.icon-delete:hover{
-  background: rgba(220,53,69,.10) !important;
-  border-color: rgba(220,53,69,.85) !important;
-}
-
-/* =========================
-   SORT: Encabezados clickeables (sin desfasarse)
-   ========================= */
-.tickets-table thead th{
-  vertical-align: middle;
-}
-.tickets-table thead th a.th-sort{
-  color: inherit;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+/* ── Columna fecha ──────────────────────────────── */
+.tickets-table th:nth-child(2),
+.tickets-table td:nth-child(2) {
   white-space: nowrap;
-  line-height: 1.1;
+  min-width: 120px;
 }
-.tickets-table thead th a.th-sort:hover{
-  text-decoration: underline;
+
+/* ── Colores por tipo de acción ─────────────────── */
+.tickets-table td.td-actions .icon-action.icon-evidence {
+  border: 1.5px solid rgba(13,110,253,.50) !important;
+  color: rgba(13,110,253,.92) !important;
 }
-.tickets-table thead th .sort-ico{
-  width: 16px;
-  height: 16px;
-  display: inline-flex;
+.tickets-table td.td-actions .icon-action.icon-evidence:hover {
+  background: rgba(13,110,253,.08) !important;
+  border-color: rgba(13,110,253,.80) !important;
+}
+
+.tickets-table td.td-actions .icon-action.icon-delete {
+  border: 1.5px solid rgba(220,53,69,.50) !important;
+  color: rgba(220,53,69,.92) !important;
+}
+.tickets-table td.td-actions .icon-action.icon-delete:hover {
+  background: rgba(220,53,69,.08) !important;
+  border-color: rgba(220,53,69,.80) !important;
+}
+
+/* ── Modal evidencia ────────────────────────────── */
+.tickets-page .evidence-modal .modal-content {
+  border-radius: 20px;
+  border: 1px solid rgba(15,23,42,.08);
+  overflow: hidden;
+}
+
+.tickets-page .evidence-modal .modal-header {
+  background: rgba(255,255,255,.96);
+}
+
+.tickets-page .evidence-toolbar {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.tickets-page .evidence-toolbar .ev-toolbtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(15,23,42,.10);
+  box-shadow: 0 4px 12px rgba(0,0,0,.08);
+  display: grid;
+  place-items: center;
+  transition:
+    transform  .14s cubic-bezier(.2,.8,.2,1),
+    box-shadow .16s ease,
+    border-color .16s ease;
+}
+
+.tickets-page .evidence-toolbar .ev-toolbtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(0,0,0,.11);
+  border-color: rgba(15,23,42,.18);
+}
+
+.tickets-page .evidence-canvas {
+  flex: 1;
+  height: clamp(360px, 62vh, 680px);
+  background: rgba(15,23,42,.025);
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(15,23,42,.07);
+  overflow: hidden;
+  display: flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
-}
-.tickets-table thead th .sort-ico i{
-  line-height: 1;
-  font-size: 12px;
 }
 
-/* Evita que "Assigned to" se parta raro en desktop */
-@media (min-width: 992px){
-  .tickets-table thead th{
-    white-space: nowrap;
-  }
+.tickets-page .evidence-canvas.is-zoomed { overflow: auto; }
+
+.tickets-page .evidence-canvas img {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+  transform-origin: center center;
+  transition: transform .12s ease;
+  border-radius: 12px;
+  box-shadow: 0 14px 40px rgba(0,0,0,.12);
+}
+
+.tickets-page .evidence-canvas iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  border-radius: 12px;
+}
+
+.tickets-page .evidence-tip {
+  margin-top: 10px !important;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(15,23,42,.50);
+}
+
+.tickets-page .evidence-modal .modal-dialog {
+  max-width: min(1100px, 96vw);
+}
+.tickets-page .evidence-modal .modal-content {
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+}
+.tickets-page .evidence-modal .modal-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Modal eliminar ─────────────────────────────── */
+.tickets-page .delete-modal {
+  border-radius: 20px;
+  border: 1px solid rgba(15,23,42,.08);
+  overflow: hidden;
+}
+
+.tickets-page .delete-modal .modal-header {
+  background: rgba(255,255,255,.96);
+}
+
+/* ── Modal z-index ──────────────────────────────── */
+.tickets-page .modal         { z-index: 2000; }
+.tickets-page .modal-backdrop{ z-index: 1995; }
+
+/* ── 1080p extra ────────────────────────────────── */
+.tickets-page .layout   { min-height: 100vh; }
+.tickets-page main.main { min-height: 100vh; }
+
+.tickets-table th:nth-child(3),
+.tickets-table td:nth-child(3) { white-space: nowrap; }
+
+@media (min-width: 992px) {
+  .tickets-table thead th { white-space: nowrap; }
+}
+
+@media (min-width: 1600px) {
+  .panel.card.tickets-panel { max-width: 1600px !important; }
+}
+
+@media (max-width: 991.98px) {
+  .tickets-page main.main  { padding: 16px 12px 26px; }
+  .panel.card.tickets-panel{ min-height: auto; }
 }

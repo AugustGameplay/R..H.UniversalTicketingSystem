@@ -6,9 +6,10 @@ session_start();
 $flash_success = $_SESSION['flash_success'] ?? null;
 unset($_SESSION['flash_success']);
 
-// Si ya hay sesión iniciada, redirige (ajusta la ruta a tu dashboard)
+// Si ya hay sesión iniciada, redirige según rol
 if (!empty($_SESSION['user_id'])) {
-  header("Location: generarTickets.php");
+  $roleId = (int)($_SESSION['id_role'] ?? 0);
+  header("Location: " . (in_array($roleId, [1, 2, 3]) ? 'tickets.php' : 'generarTickets.php'));
   exit;
 }
 
@@ -50,13 +51,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($hash === '' || !password_verify($password, $hash)) {
           $msg = "Credenciales incorrectas.";
         } else {
-          // ✅ Login OK
+          // ✅ Login OK — redirigir según rol
           $_SESSION['user_id']   = (int)$user['id_user'];
           $_SESSION['full_name'] = $user['full_name'];
           $_SESSION['email']     = $user['email'];
           $_SESSION['id_role']   = (int)$user['id_role'];
 
-          header("Location: generarTickets.php");
+          $roleId = (int)$user['id_role'];
+          $dest   = in_array($roleId, [1, 2, 3]) ? 'tickets.php' : 'generarTickets.php';
+          header("Location: $dest");
           exit;
         }
       }

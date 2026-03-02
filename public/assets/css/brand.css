@@ -1,67 +1,154 @@
-/* public/assets/css/brand.css */
+/* public/assets/css/brand.css
+   ── RH&R Universal Design System ──────────────────────────
+   Base tokens + reset. Importar PRIMERO.
+   ──────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;800;900&display=swap');
+
 :root{
-  /* Colores aproximados del manual (ajústalos si te pasan los hex oficiales) */
-  --rhr-orange: #F47A21;     /* naranja principal */
-  --rhr-orange-dark: #D14B16;/* naranja más oscuro */
-  --rhr-cyan: #18A9C8;       /* cian principal */
-  --rhr-cyan-light: #66D7F2; /* cian claro */
-  --rhr-navy: #083B5C;       /* azul marino */
-  --rhr-teal: #0C7EA1;       /* azul/teal intermedio */
+  /* ── Brand palette ──────────────────────────────────── */
+  --rhr-orange:       #F47A21;
+  --rhr-orange-dark:  #D14B16;
+  --rhr-orange-glow:  rgba(244,122,33,.18);
+  --rhr-cyan:         #18A9C8;
+  --rhr-cyan-light:   #66D7F2;
+  --rhr-navy:         #083B5C;
+  --rhr-navy-2:       #0d4e7a;
+  --rhr-teal:         #0C7EA1;
 
-  --bg: #ECECEC;             /* gris claro fondo */
-  --panel: #FFFFFF;
-  --text: #0F172A;
-  --muted: #6B7280;
-  --border: #D1D5DB;
+  /* ── Sidebar (NO tocar) ──────────────────────────────── */
+  --sidebar: #0a3d63;
 
-  --radius: 14px;
+  /* ── Surface / Background ───────────────────────────── */
+  --bg:             #eef1f6;
+  --bg-2:           #e4e9f0;
+  --panel:          #ffffff;
+  --surface:        rgba(255,255,255,.82);
+  --surface-strong: rgba(255,255,255,.96);
+  --glass:          rgba(255,255,255,.62);
+  --glass-strong:   rgba(255,255,255,.82);
+
+  /* ── Text ────────────────────────────────────────────── */
+  --text:   #0f172a;
+  --muted:  rgba(15,23,42,.56);
+  --subtle: rgba(15,23,42,.38);
+
+  /* ── Borders ─────────────────────────────────────────── */
+  --border:        rgba(15,23,42,.10);
+  --border-strong: rgba(15,23,42,.18);
+  --stroke:        rgba(15,23,42,.08);
+
+  /* ── Shadows ─────────────────────────────────────────── */
+  --shadow-xs: 0 2px  6px rgba(2,6,23,.07);
+  --shadow-sm: 0 5px 14px rgba(2,6,23,.09);
+  --shadow-md: 0 10px 28px rgba(2,6,23,.12);
+  --shadow-lg: 0 18px 50px rgba(2,6,23,.14);
+  --shadow-xl: 0 28px 70px rgba(2,6,23,.18);
+
+  /* ── Radii ───────────────────────────────────────────── */
+  --r-xs:  8px;
+  --r-sm:  12px;
+  --r-md:  16px;
+  --r-lg:  20px;
+  --r-xl:  26px;
+  --r-full: 999px;
+  --radius: 14px;   /* compat */
+
+  /* ── Motion ──────────────────────────────────────────── */
+  --ease:   cubic-bezier(.2,.8,.2,1);
+  --ease-b: cubic-bezier(.34,1.56,.64,1);  /* bounce sutil */
+  --t-fast: 120ms;
+  --t-med:  190ms;
+  --t-slow: 280ms;
+
+  /* ── Semantic colors ─────────────────────────────────── */
+  --ok:     #16a34a;
+  --warn:   #d97706;
+  --danger: #dc2626;
+  --info:   #0284c7;
 }
 
-/* Reset básico */
-*{ box-sizing: border-box; }
-html,body{ height:100%; }
-body{
-  margin:0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+/* ── Reset + base ──────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: 'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
   background: var(--bg);
   color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
-a{ color: var(--rhr-cyan); text-decoration:none; }
-a:hover{ text-decoration:underline; }
 
-/* Componentes reutilizables */
-.container{
+a { color: var(--rhr-cyan); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Utility components ────────────────────────────────── */
+.container {
   width: min(1100px, 100%);
   margin: 0 auto;
   padding: 24px;
 }
 
-.card{
+.card {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-md);
 }
 
-.badge{
-  display:inline-block;
-  padding: 8px 12px;
-  border-radius: 10px;
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: var(--r-sm);
   background: var(--rhr-navy);
-  color: white;
+  color: #fff;
   font-weight: 700;
-  letter-spacing: .2px;
+  font-size: 12px;
+  letter-spacing: .3px;
 }
 
-.btn{
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   border: 0;
-  border-radius: 12px;
-  padding: 12px 14px;
+  border-radius: var(--r-sm);
+  padding: 11px 18px;
+  font-family: inherit;
+  font-size: 14px;
   font-weight: 800;
   cursor: pointer;
+  transition: transform var(--t-fast) var(--ease),
+              box-shadow var(--t-med) var(--ease),
+              filter var(--t-med) var(--ease),
+              background-color var(--t-med) var(--ease);
 }
-.btn-primary{
-  background: linear-gradient(90deg, var(--rhr-orange), var(--rhr-orange-dark));
-  color: white;
+
+.btn:active { transform: translateY(1px) scale(.98) !important; }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--rhr-navy), var(--rhr-navy-2));
+  color: #fff;
+  box-shadow: var(--shadow-sm);
 }
-.btn-primary:hover{ filter: brightness(0.98); }
+.btn-primary:hover {
+  filter: brightness(1.08);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+/* ── Accessibility ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
