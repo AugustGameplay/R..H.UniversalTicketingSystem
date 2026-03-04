@@ -9,7 +9,7 @@ html, body{
   height: 100%;
 }
 
-@media (min-width: 760px){
+@media (min-width: 768px){
   body{
     overflow: hidden; /* evita doble scroll */
   }
@@ -27,7 +27,7 @@ html, body{
 }
 
 /* En móvil, se comporta normal (sidebar tipo overlay) */
-@media (max-width: 759.98px){
+@media (max-width: 767.98px){
   body{
     overflow-x: hidden;
   }

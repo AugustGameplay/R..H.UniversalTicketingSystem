@@ -160,6 +160,37 @@ $stmt->execute([
   ':attachment_path'  => $attachment_path
 ]);
 
+      // ====== Notificación por correo (DEV: Mailpit / PROD: Resend) ======
+      // Nota: si el envío falla, NO debe impedir que el ticket se guarde.
+      $ticketId = (int)$pdo->lastInsertId();
+
+      try {
+        require_once __DIR__ . '/config/mailer.php';
+
+        $tituloEmail = trim(($type !== '' ? $type : 'Ticket') . ' | ' . ($area !== '' ? $area : 'Área N/A'));
+
+        $ticketMail = [
+          'id' => $ticketId,
+          'titulo' => $tituloEmail,
+          'descripcion' => $comments,
+          'area' => $area,
+          'prioridad' => 'N/A',
+          'creado_por' => ($creator_name ?: ('User #' . $user_id)),
+          'url' => $ticket_url ?: '',
+          'category' => $category,
+          'type' => $type,
+          'status' => 'Pendiente',
+          'attachment_path' => $attachment_path ?: '',
+        ];
+
+        // Envía al correo configurado en TICKETS_NOTIFY_EMAIL (o default local)
+        notify_ticket_created($ticketMail);
+
+      } catch (\Throwable $mailErr) {
+        error_log('[MAIL] No se pudo enviar notificación de ticket: ' . $mailErr->getMessage());
+      }
+
+
       $success = "✅ Ticket enviado correctamente.";
     } catch (PDOException $e) {
       $errors[] = "Error al guardar en BD: " . $e->getMessage();

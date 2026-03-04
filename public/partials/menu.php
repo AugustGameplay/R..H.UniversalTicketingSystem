@@ -1,117 +1,129 @@
 <?php
-// public/partials/menu.php
-$active = $active ?? '';
+/**
+ * partials/menu.php
+ * Sidebar + Topbar móvil.
+ * Requiere que auth.php ya haya sido incluido (variables $_AUTH_* y funciones auth_can()).
+ */
 
-// ✅ Primer nombre desde sesión
-$fullName  = trim($_SESSION['full_name'] ?? 'Usuario');
-$firstName = ($fullName !== '') ? explode(' ', $fullName)[0] : 'Usuario';
+// Leer datos de sesión
+$_menuUserId   = (int)($_SESSION['user_id'] ?? 0);
+$_menuRoleId   = (int)($_SESSION['id_role'] ?? 0);
+$_menuFullName = (string)($_SESSION['full_name'] ?? 'Usuario');
 
-/* ====== SOLO LO NUEVO: traer foto del usuario ====== */
-require_once __DIR__ . '/../config/db.php';
-
-// Detecta el id del usuario en sesión (ajusta si tu sesión usa otro key)
-$sessionUserId = $_SESSION['id_user'] ?? $_SESSION['user_id'] ?? $_SESSION['id'] ?? null;
-
-$avatarUrl = null;
-
-if ($sessionUserId) {
-  // En tu BD el PK se llama id_user (según tu captura)
-  $stmt = $pdo->prepare("SELECT profile_photo FROM users WHERE id_user = ? LIMIT 1");
-  $stmt->execute([$sessionUserId]);
-  $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-  if (!empty($row['profile_photo'])) {
-    // Como estás en public/ y tus uploads están en public/uploads/avatars/
-    $photo = $row['profile_photo'];
-
-if (!empty($photo)) {
-  // Si ya viene como "uploads/avatars/archivo.webp"
-  if (strpos($photo, 'uploads/') === 0) {
-    $avatarUrl = './' . $photo;
-  } else {
-    // Si solo viene el nombre "archivo.webp"
-    $avatarUrl = './uploads/avatars/' . $photo;
-  }
+// Foto de perfil (opcional)
+$_menuPhoto = '';
+if (isset($pdo)) {
+    try {
+        $stmtPhoto = $pdo->prepare("SELECT profile_photo FROM users WHERE id_user = :id LIMIT 1");
+        $stmtPhoto->execute([':id' => $_menuUserId]);
+        $_menuPhoto = (string)($stmtPhoto->fetchColumn() ?: '');
+    } catch (Throwable $e) {
+        $_menuPhoto = '';
+    }
 }
-  }
-}
-/* ================================================ */
+
+$_menuShortName = explode(' ', trim($_menuFullName))[0];
 ?>
 
-<!-- HEADER MÓVIL (solo pantallas < md) -->
-<header class="mobile-topbar d-md-none">
-  <button
-    id="btnSidebarOpen"
-    class="hamburger"
-    type="button"
-    aria-label="Abrir menú"
-    aria-controls="sidebar"
-    aria-expanded="false"
-  >
-    <i class="fa-solid fa-bars"></i>
+<!-- TOPBAR (solo móvil) -->
+<header class="mobile-topbar" id="mobileTopbar">
+  <button type="button"
+          class="hamburger"
+          id="btnSidebarOpen"
+          aria-controls="sidebar"
+          aria-expanded="false"
+          aria-label="Abrir menú">
+    <i class="fa-solid fa-bars" aria-hidden="true"></i>
   </button>
 
-  <div class="mobile-topbar__brand">
-    <img src="./assets/img/RHR UNIVERSAL-01.png" alt="RH&R Universal" class="mobile-topbar__logo">
-  </div>
+  <img class="mobile-topbar__logo" src="./assets/img/RHR UNIVERSAL-01.png" alt="RH&amp;R Universal">
+
+  <a href="logout.php" class="hamburger" aria-label="Cerrar sesión" title="Cerrar sesión">
+    <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+  </a>
 </header>
 
-<!-- OVERLAY -->
-<div id="sidebarOverlay" class="sidebar-overlay" aria-hidden="true"></div>
+<aside class="sidebar d-flex flex-column" id="sidebar">
 
-<!-- SIDEBAR -->
-<aside id="sidebar" class="sidebar d-flex flex-column" aria-label="Menú lateral">
+    <!-- Logo -->
+    <div class="sidebar__logo">
+        <img src="./assets/img/RHR UNIVERSAL-01.png" alt="RH&amp;R Universal">
+    </div>
 
-  <!-- Logo solo desktop -->
-  <div class="sidebar__logo text-center d-none d-md-block">
-    <img src="./assets/img/RHR UNIVERSAL-01.png" alt="RH&R Universal" class="img-fluid">
-  </div>
+    <!-- Badge usuario -->
+    <div class="user-badge mx-auto">
+        <?php if (!empty($_menuPhoto)): ?>
+            <img class="user-badge__img" src="<?= htmlspecialchars($_menuPhoto, ENT_QUOTES, 'UTF-8') ?>" alt="Foto">
+        <?php else: ?>
+            <i class="fa-solid fa-user fa-xl" style="color:var(--sidebar,#0a3d63);"></i>
+        <?php endif; ?>
+    </div>
 
-  <div class="welcome text-center">
-    <span class="welcome__label">Welcome,</span>
-    <span class="welcome__name">
-      <?php echo htmlspecialchars($firstName, ENT_QUOTES, 'UTF-8'); ?>
-    </span>
-  </div>
+    <!-- Welcome -->
+    <div class="welcome">
+        <span class="welcome__label">Hi,</span>
+        <span class="welcome__name"><?= htmlspecialchars($_menuShortName, ENT_QUOTES, 'UTF-8') ?>!</span>
+    </div>
 
-  <!-- ✅ AQUÍ: ya no personita, ahora foto si existe -->
-  <div class="user-badge mx-auto" aria-hidden="true">
-    <?php if ($avatarUrl): ?>
-      <img
-        class="user-badge__img"
-        src="<?php echo htmlspecialchars($avatarUrl, ENT_QUOTES, 'UTF-8'); ?>"
-        alt="Foto de perfil"
-      >
-    <?php else: ?>
-      <i class="fa-regular fa-user fs-3 text-dark"></i>
-    <?php endif; ?>
-  </div>
+    <!-- Nav -->
+    <nav class="menu mt-3" aria-label="Navegación principal">
 
-  <nav class="menu nav flex-column mt-3">
-    <a class="menu__item nav-link <?php echo ($active === 'generarTickets') ? 'active' : ''; ?>" href="./generarTickets.php">
-      Generate Ticket
-    </a>
+        <!-- Generar Ticket (todos) -->
+        <a href="generarTickets.php"
+           class="menu__item nav-link<?= (($active ?? '') === 'generarTickets') ? ' active' : '' ?>"
+           aria-current="<?= (($active ?? '') === 'generarTickets') ? 'page' : 'false' ?>">
+            <i class="fa-solid fa-ticket me-2" aria-hidden="true"></i>
+            Generar Ticket
+        </a>
 
-    <a class="menu__item nav-link <?php echo ($active === 'tickets') ? 'active' : ''; ?>" href="./tickets.php">
-      Tickets
-    </a>
+        <!-- Mis Tickets (todos) -->
+        <a href="mis_tickets.php"
+           class="menu__item nav-link<?= (($active ?? '') === 'mis_tickets') ? ' active' : '' ?>"
+           aria-current="<?= (($active ?? '') === 'mis_tickets') ? 'page' : 'false' ?>">
+            <i class="fa-solid fa-list-check me-2" aria-hidden="true"></i>
+            Mis Tickets
+        </a>
 
-    <a class="menu__item nav-link <?php echo ($active === 'users') ? 'active' : ''; ?>" href="./users.php">
-      Users
-    </a>
+        <?php if (function_exists('auth_can') && auth_can('tickets')): ?>
+        <a href="tickets.php"
+           class="menu__item nav-link<?= (($active ?? '') === 'tickets') ? ' active' : '' ?>"
+           aria-current="<?= (($active ?? '') === 'tickets') ? 'page' : 'false' ?>">
+            <i class="fa-solid fa-table-list me-2" aria-hidden="true"></i>
+            Tickets
+        </a>
+        <?php endif; ?>
 
-    <a class="menu__item nav-link <?php echo ($active === 'history') ? 'active' : ''; ?>" href="./history.php">
-      History
-    </a>
-  </nav>
+        <?php if (function_exists('auth_can') && auth_can('history')): ?>
+        <a href="history.php"
+           class="menu__item nav-link<?= (($active ?? '') === 'history') ? ' active' : '' ?>"
+           aria-current="<?= (($active ?? '') === 'history') ? 'page' : 'false' ?>">
+            <i class="fa-solid fa-clock-rotate-left me-2" aria-hidden="true"></i>
+            History
+        </a>
+        <?php endif; ?>
 
-  <!-- LOGOUT (POST) -->
-  <div class="mt-auto d-flex justify-content-end pt-3">
-    <form action="./logout.php" method="POST" class="m-0">
-      <button class="logout" type="submit" title="Logout" aria-label="Logout">
-        <i class="fa-solid fa-right-from-bracket"></i>
-      </button>
-    </form>
-  </div>
+        <?php if (function_exists('auth_can') && auth_can('users')): ?>
+        <a href="users.php"
+           class="menu__item nav-link<?= (($active ?? '') === 'users') ? ' active' : '' ?>"
+           aria-current="<?= (($active ?? '') === 'users') ? 'page' : 'false' ?>">
+            <i class="fa-solid fa-users me-2" aria-hidden="true"></i>
+            Users
+        </a>
+        <?php endif; ?>
+
+    </nav>
+
+    <!-- Spacer + logout -->
+    <div class="mt-auto pt-3 d-flex justify-content-center">
+        <a href="logout.php" class="logout d-flex align-items-center justify-content-center" title="Cerrar sesión">
+            <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+        </a>
+    </div>
 
 </aside>
+
+<!-- Overlay móvil -->
+<div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+
+<!-- JS del sidebar (móvil) -->
+<script src="./assets/js/sidebar.js" defer></script>
