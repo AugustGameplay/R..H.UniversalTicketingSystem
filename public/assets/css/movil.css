@@ -91,7 +91,7 @@ body.sidebar-open{
   }
 
   body.sidebar-open{
-    overflow: auto;
+    overflow: hidden;
   }
 }
 

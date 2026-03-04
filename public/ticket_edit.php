@@ -543,6 +543,194 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       $pdo->commit();
 
+      // Correo de asignacion: cuando cambia el asignado a un usuario valido.
+      // Si falla el mail, NO debe romper el guardado.
+      if ($assigned_user_id && $oldAssigned !== $assigned_user_id) {
+        try {
+          require_once __DIR__ . '/config/mailer.php';
+
+          // Destinatario: creador del ticket.
+          $creatorEmail = '';
+          $creatorNameForMail = 'Usuario';
+          if (!empty($ticket['id_user'])) {
+            $stCreator = $pdo->prepare("SELECT full_name, email FROM users WHERE id_user = :id LIMIT 1");
+            $stCreator->execute([':id' => (int)$ticket['id_user']]);
+            $creatorRow = $stCreator->fetch(PDO::FETCH_ASSOC) ?: [];
+            $creatorEmail = trim((string)($creatorRow['email'] ?? ''));
+            $creatorNameForMail = (string)($creatorRow['full_name'] ?? $creatorNameForMail);
+          }
+
+          if ($creatorEmail !== '' && function_exists('notify_ticket_assigned')) {
+            $assignedName = userNameById($pdo, $assigned_user_id);
+            $assignedRole = 'IT Support';
+            $assignedPhone = (string)(getenv('SUPPORT_PHONE') ?: 'N/A');
+
+            // Traer rol + telefono del agente (si existe alguna columna de telefono).
+            try {
+              $phoneField = null;
+              $phoneCandidates = ['phone','telefono','phone_number','mobile','cellphone','tel','telephone'];
+              $colRows = $pdo->query("SHOW COLUMNS FROM users")->fetchAll(PDO::FETCH_ASSOC) ?: [];
+              foreach ($colRows as $c) {
+                $field = strtolower((string)($c['Field'] ?? ''));
+                if (in_array($field, $phoneCandidates, true)) {
+                  $phoneField = $field;
+                  break;
+                }
+              }
+
+              $phoneSelect = $phoneField ? ", u.`{$phoneField}` AS phone_value" : "";
+              $stAgent = $pdo->prepare("
+                SELECT
+                  u.full_name,
+                  COALESCE(r.name, 'IT Support') AS role_name
+                  {$phoneSelect}
+                FROM users u
+                LEFT JOIN roles r ON r.id_role = u.id_role
+                WHERE u.id_user = :id
+                LIMIT 1
+              ");
+              $stAgent->execute([':id' => $assigned_user_id]);
+              $agentRow = $stAgent->fetch(PDO::FETCH_ASSOC) ?: [];
+
+              $assignedName = (string)($agentRow['full_name'] ?? $assignedName);
+              $assignedRole = (string)($agentRow['role_name'] ?? $assignedRole);
+
+              if ($phoneField) {
+                $dbPhone = trim((string)($agentRow['phone_value'] ?? ''));
+                if ($dbPhone !== '') $assignedPhone = $dbPhone;
+              }
+            } catch (Throwable $agentDataErr) {
+              // Si no se puede consultar extra data, seguimos con defaults.
+            }
+
+            // Fecha real de asignacion (updated_at post-commit).
+            $assignedAt = date('Y-m-d H:i:s');
+            try {
+              $stTime = $pdo->prepare("SELECT updated_at FROM tickets WHERE id_ticket = :id LIMIT 1");
+              $stTime->execute([':id' => $ticketId]);
+              $dbUpdatedAt = trim((string)$stTime->fetchColumn());
+              if ($dbUpdatedAt !== '') $assignedAt = $dbUpdatedAt;
+            } catch (Throwable $timeErr) {
+              // fallback a now
+            }
+
+            $ticketMail = [
+              'id' => $ticketId,
+              'type' => (string)$type,
+              'area' => (string)$area,
+              'category' => (string)($ticket['category'] ?? 'General'),
+              'asunto_ticket' => trim(((string)$type !== '' ? (string)$type : 'Ticket') . ' | ' . ((string)$area !== '' ? (string)$area : 'Area N/A')),
+              'created_at' => (string)($ticket['created_at'] ?? ''),
+              'assigned_at' => $assignedAt,
+              'created_by' => $creatorNameForMail,
+              'assigned_to' => $assignedName,
+              'assigned_role' => $assignedRole,
+              'assigned_phone' => $assignedPhone,
+              'url_ticket' => function_exists('my_tickets_url') ? my_tickets_url() : '',
+            ];
+
+            notify_ticket_assigned($ticketMail, $creatorEmail, $creatorNameForMail);
+          } else {
+            error_log('[MAIL] Ticket asignado sin destinatario: id_ticket=' . $ticketId);
+          }
+        } catch (Throwable $mailErr) {
+          error_log('[MAIL] No se pudo enviar correo de ticket asignado: ' . $mailErr->getMessage());
+        }
+      }
+
+      // Correo de cierre: solo cuando cambia especificamente a "Cerrado".
+      // Si falla el mail, NO debe romper el guardado.
+      if ($status === 'Cerrado' && $oldStatus !== 'Cerrado') {
+        try {
+          require_once __DIR__ . '/config/mailer.php';
+
+          // Destinatario: creador del ticket
+          $creatorEmail = '';
+          $creatorNameForMail = 'Usuario';
+          if (!empty($ticket['id_user'])) {
+            $stCreator = $pdo->prepare("SELECT full_name, email FROM users WHERE id_user = :id LIMIT 1");
+            $stCreator->execute([':id' => (int)$ticket['id_user']]);
+            $creatorRow = $stCreator->fetch(PDO::FETCH_ASSOC) ?: [];
+            $creatorEmail = trim((string)($creatorRow['email'] ?? ''));
+            $creatorNameForMail = (string)($creatorRow['full_name'] ?? $creatorNameForMail);
+          }
+
+          if ($creatorEmail !== '' && function_exists('notify_ticket_closed')) {
+            // Tomar created_at/closed_at reales desde BD para el template
+            $stTimes = $pdo->prepare("SELECT created_at, closed_at FROM tickets WHERE id_ticket = :id LIMIT 1");
+            $stTimes->execute([':id' => $ticketId]);
+            $times = $stTimes->fetch(PDO::FETCH_ASSOC) ?: [];
+            $createdAt = (string)($times['created_at'] ?? ($ticket['created_at'] ?? ''));
+            $closedAt  = (string)($times['closed_at'] ?? date('Y-m-d H:i:s'));
+
+            // Texto de resolucion (ultma nota interna, si existe)
+            $resolutionDescription = 'El ticket fue marcado como cerrado por el equipo de soporte.';
+            $interactionsCount = 1;
+            if (!empty($commentsOk)) {
+              try {
+                $stCount = $pdo->prepare("SELECT COUNT(*) FROM ticket_comments WHERE ticket_id = :id");
+                $stCount->execute([':id' => $ticketId]);
+                $interactionsCount += (int)$stCount->fetchColumn();
+
+                $stLast = $pdo->prepare("SELECT comment FROM ticket_comments WHERE ticket_id = :id ORDER BY id DESC LIMIT 1");
+                $stLast->execute([':id' => $ticketId]);
+                $lastComment = trim((string)$stLast->fetchColumn());
+                if ($lastComment !== '') {
+                  $resolutionDescription = $lastComment;
+                }
+              } catch (Throwable $mailDataErr) {
+                // Si falla obtener extras, seguimos con defaults.
+              }
+            }
+
+            // Tiempo de resolucion aproximado
+            $resolutionTime = 'N/A';
+            try {
+              if ($createdAt !== '' && $closedAt !== '') {
+                $dtStart = new DateTime($createdAt);
+                $dtEnd = new DateTime($closedAt);
+                $diff = $dtStart->diff($dtEnd);
+                $parts = [];
+                if ($diff->d > 0) $parts[] = $diff->d . ' d';
+                if ($diff->h > 0) $parts[] = $diff->h . ' h';
+                if ($diff->i > 0) $parts[] = $diff->i . ' min';
+                if (!$parts) $parts[] = '0 min';
+                $resolutionTime = implode(' ', array_slice($parts, 0, 2));
+              }
+            } catch (Throwable $timeErr) {
+              $resolutionTime = 'N/A';
+            }
+
+            $resolvedBy = $assigned_user_id ? userNameById($pdo, $assigned_user_id) : ($modifierId ? userNameById($pdo, $modifierId) : 'Mesa de Ayuda IT');
+            $titleForMail = trim(($type !== '' ? $type : 'Ticket') . ' | ' . ($area !== '' ? $area : 'Area N/A'));
+            $reopenUrl = function_exists('my_tickets_url') ? my_tickets_url() : '';
+
+            $ticketMail = [
+              'id' => $ticketId,
+              'titulo' => $titleForMail,
+              'category' => (string)($ticket['category'] ?? 'General'),
+              'created_at' => $createdAt,
+              'closed_at' => $closedAt,
+              'created_by' => $creatorNameForMail,
+              'resolved_by' => $resolvedBy,
+              'resolution_description' => $resolutionDescription,
+              'resolution_time' => $resolutionTime,
+              'interactions_count' => (string)$interactionsCount,
+              'prioridad' => $priority,
+              'survey_url' => '#',
+              'reopen_url' => $reopenUrl,
+              'reopen_days' => '7',
+            ];
+
+            notify_ticket_closed($ticketMail, $creatorEmail, $creatorNameForMail);
+          } else {
+            error_log('[MAIL] Ticket cerrado sin destinatario: id_ticket=' . $ticketId);
+          }
+        } catch (Throwable $mailErr) {
+          error_log('[MAIL] No se pudo enviar correo de ticket cerrado: ' . $mailErr->getMessage());
+        }
+      }
+
       header("Location: tickets.php?updated=1");
       exit;
 
