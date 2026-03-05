@@ -512,3 +512,59 @@ body.sidebar-open{
     padding: 18px 16px 26px !important;
   }
 }
+
+/* =========================================
+   FIXS MÓVIL - Generar Tickets + Sidebar
+   ========================================= */
+@media (max-width: 767.98px){
+
+  /* 1) Que el contenido no quede tapado por la topbar fija */
+  .main{
+    padding-top: 72px !important; /* antes 56px, damos aire extra */
+  }
+
+  /* Si quieres que SOLO afecte a generarTickets, usa esta opción adicional */
+  .panel.card{
+    margin-top: 8px !important;
+  }
+
+  /* 2) Ocultar logo dentro del sidebar en móvil (el de la topbar se queda) */
+  .sidebar .sidebar__logo{
+    display: none !important;
+  }
+
+  /* 3) Ocultar logout del sidebar en móvil (se queda el del topbar) */
+  .sidebar .logout{
+    display: none !important;
+  }
+
+  /* Opcional: quitar espacio vacío inferior del contenedor del logout */
+  .sidebar .mt-auto.pt-3{
+    display: none !important;
+  }
+
+  /* Opcional: que el sidebar aproveche mejor altura al quitar logo */
+  .sidebar{
+    padding-top: 10px;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .form-actions,
+  .ticket-actions {
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+    padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
+    z-index: 20;
+  }
+
+  .form-actions button[type="submit"],
+  .ticket-actions button[type="submit"] {
+    width: 100%;
+    min-height: 50px;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 600;
+  }
+}

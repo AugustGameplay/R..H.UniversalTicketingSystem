@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // login.php
 session_start();
 
@@ -6,10 +6,9 @@ session_start();
 $flash_success = $_SESSION['flash_success'] ?? null;
 unset($_SESSION['flash_success']);
 
-// Si ya hay sesión iniciada, redirige según rol
-if (!empty($_SESSION['user_id'])) {
-  $roleId = (int)($_SESSION['id_role'] ?? 0);
-  header("Location: " . (in_array($roleId, [1, 2, 3]) ? 'tickets.php' : 'generarTickets.php'));
+// ✅ Si ya hay sesión iniciada, TODOS los roles van a generarTickets.php
+if (!empty($_SESSION['user_id']) || !empty($_SESSION['id_user'])) {
+  header("Location: generarTickets.php");
   exit;
 }
 
@@ -51,19 +50,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($hash === '' || !password_verify($password, $hash)) {
           $msg = "Credenciales incorrectas.";
         } else {
-          // ✅ Login OK — redirigir según rol
-          $_SESSION['user_id']   = (int)$user['id_user'];
-          $_SESSION['full_name'] = $user['full_name'];
-          $_SESSION['email']     = $user['email'];
-          $_SESSION['id_role']   = (int)$user['id_role'];
+          // ✅ Login OK — sesión robusta (compatible con módulos antiguos/nuevos)
+          session_regenerate_id(true);
 
+          $userId = (int)$user['id_user'];
           $roleId = (int)$user['id_role'];
-          $dest   = in_array($roleId, [1, 2, 3]) ? 'tickets.php' : 'generarTickets.php';
-          header("Location: $dest");
+          $fullName = (string)($user['full_name'] ?? '');
+          $userEmail = (string)($user['email'] ?? '');
+
+          // Formato principal
+          $_SESSION['user_id']   = $userId;
+          $_SESSION['full_name'] = $fullName;
+          $_SESSION['email']     = $userEmail;
+          $_SESSION['id_role']   = $roleId;
+
+          // Compatibilidad extra (por si auth.php/menu usan otros nombres)
+          $_SESSION['id_user'] = $userId;
+          $_SESSION['id']      = $userId;
+          $_SESSION['uid']     = $userId;
+          $_SESSION['name']    = $fullName;
+
+          // Algunos módulos esperan un arreglo "user"
+          $_SESSION['user'] = [
+            'id_user'   => $userId,
+            'user_id'   => $userId,
+            'id'        => $userId,
+            'uid'       => $userId,
+            'full_name' => $fullName,
+            'name'      => $fullName,
+            'email'     => $userEmail,
+            'id_role'   => $roleId,
+          ];
+
+          // ✅ SOLUCIÓN: TODOS los roles autenticados van a generarTickets.php
+          header("Location: generarTickets.php");
           exit;
         }
       }
     } catch (Throwable $e) {
+      // Si quieres depurar en local, descomenta la siguiente línea:
+      // error_log('Login error: ' . $e->getMessage());
       $msg = "Ocurrió un error al iniciar sesión.";
     }
   }

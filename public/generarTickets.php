@@ -213,7 +213,6 @@ $stmt->execute([
   <link rel="stylesheet" href="./assets/css/generarTickets.css?v=<?= filemtime(__DIR__ . '/assets/css/generarTickets.css') ?>">
   <link rel="stylesheet" href="./assets/css/menu.css">
   <link rel="stylesheet" href="./assets/css/movil.css">
-  <script defer src="./assets/js/sidebar.js"></script>
 
   <!-- Si ya tienes selects.js y lo usas en otras vistas, lo dejamos.
        Aquí igual implemento el binding en esta página para que sea seguro. -->
@@ -298,8 +297,8 @@ $stmt->execute([
           <!-- URL (opcional) -->
           <div class="field">
             <div class="field__row">
-              <label class="field__label" for="ticket_url">URL (opcional)</label>
-              <span class="field__counter">Opcional</span>
+              <label class="field__label" for="ticket_url">URL (optional)</label>
+              <span class="field__counter">Optional</span>
             </div>
 
             <div class="tc-urlwrap">
@@ -310,20 +309,20 @@ $stmt->execute([
                 id="ticket_url"
                 name="ticket_url"
                 value="<?= htmlspecialchars($_POST['ticket_url'] ?? '') ?>"
-                placeholder="Pega un enlace (Drive, SharePoint, etc.)">
+                placeholder="Paste a link (Drive, SharePoint, etc.)">
             </div>
 
-            <div class="field__hint">Tip: si pegas sin http/https, lo normalizamos automáticamente.</div>
+            <div class="field__hint">Tip: if you paste without http/https, we normalize it automatically.</div>
             <div id="urlError" class="tc-inline-error" hidden>
               <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
-              La URL no es válida.
+              URL is invalid.
             </div>
           </div>
 
           <!-- Adjunto / Evidencia (opcional) -->
           <div class="field">
             <div class="field__row">
-              <label class="field__label" for="attachment">Adjunto / Evidencia (opcional)</label>
+              <label class="field__label" for="attachment">Attachment/Evidence (optional)</label>
               <span class="field__counter">Máx. 10MB</span>
             </div>
 
@@ -337,10 +336,10 @@ $stmt->execute([
             <label for="attachment" class="tc-dropzone" id="dropzone">
               <div class="tc-dropzone__icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
               <div class="tc-dropzone__text">
-                <strong>Arrastra tu archivo aquí</strong>
-                <span>o haz clic para seleccionar</span>
+                <strong>Drag your file here</strong>
+                <span>or click to select</span>
               </div>
-              <div class="tc-dropzone__meta">Permitidos: PNG/JPG/PDF/DOC/XLS/TXT</div>
+              <div class="tc-dropzone__meta">Allowed: PNG/JPG/PDF/DOC/XLS/TXT</div>
             </label>
 
             <div class="tc-fileinfo" id="fileInfo" hidden>
@@ -360,7 +359,7 @@ $stmt->execute([
               </button>
             </div>
 
-            <div class="field__hint">Consejo: si es imagen, verás una vista previa en pequeño.</div>
+            <div class="field__hint">Tip: If it is an image, you will see a small preview.</div>
           </div>
 
 
@@ -371,7 +370,7 @@ $stmt->execute([
             <textarea class="textarea" id="comments" name="comments" rows="6" required placeholder="Describe your problem"></textarea>
           </div>
 
-          <button class="btn-send" type="submit">Enviar ticket</button>
+          <button class="btn-send" type="submit">Send ticket</button>
         </form>
 
       </section>
