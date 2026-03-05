@@ -73,7 +73,7 @@ $_menuShortName = explode(' ', trim($_menuFullName))[0];
            class="menu__item nav-link<?= (($active ?? '') === 'generarTickets') ? ' active' : '' ?>"
            aria-current="<?= (($active ?? '') === 'generarTickets') ? 'page' : 'false' ?>">
             <i class="fa-solid fa-ticket me-2" aria-hidden="true"></i>
-            Generar Ticket
+            Generate Ticket
         </a>
 
         <!-- Mis Tickets (todos) -->
@@ -81,7 +81,7 @@ $_menuShortName = explode(' ', trim($_menuFullName))[0];
            class="menu__item nav-link<?= (($active ?? '') === 'mis_tickets') ? ' active' : '' ?>"
            aria-current="<?= (($active ?? '') === 'mis_tickets') ? 'page' : 'false' ?>">
             <i class="fa-solid fa-list-check me-2" aria-hidden="true"></i>
-            Mis Tickets
+            My Tickets
         </a>
 
         <?php if (function_exists('auth_can') && auth_can('tickets')): ?>

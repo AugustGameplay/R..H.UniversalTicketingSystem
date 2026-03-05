@@ -87,7 +87,7 @@ function ui_status_label($dbStatus){
     'Pendiente'   => 'Abierto',
     'En Proceso'  => 'En proceso',
     'Resuelto'    => 'Resuelto',
-    'Cerrado'     => 'Cancelado',
+    'Cerrado'     => 'Cerrado',
   ];
   return $map[$dbStatus] ?? $dbStatus;
 }
@@ -98,7 +98,7 @@ function ui_status_class($uiStatus){
     'En proceso'  => 'st-progress',
     'En espera'   => 'st-wait',
     'Resuelto'    => 'st-done',
-    'Cancelado'   => 'st-cancel',
+    'Cerrado'   => 'st-cancel',
   ];
   return $map[$uiStatus] ?? 'badge-status';
 }
@@ -450,7 +450,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
             <div class="col-12 col-md-3">
               <select class="form-select filter-select" name="state" onchange="this.form.submit()">
                 <option value="" <?= $stateUI==='' ? 'selected':''; ?> disabled hidden>Filter by status</option>
-                <?php foreach (['Abierto','En proceso','En espera','Resuelto','Cancelado'] as $opt): ?>
+                <?php foreach (['Abierto','En proceso','Resuelto','Cerrado'] as $opt): ?>
                   <option value="<?= esc($opt) ?>" <?= $stateUI===$opt ? 'selected':''; ?>><?= esc($opt) ?></option>
                 <?php endforeach; ?>
               </select>

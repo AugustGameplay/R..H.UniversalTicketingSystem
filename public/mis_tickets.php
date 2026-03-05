@@ -431,13 +431,13 @@ function build_url(array $overrides = []): string {
                 <!-- ── Header ──────────────────────────────── -->
                 <div class="tickets-head d-flex justify-content-between align-items-center gap-2 flex-wrap">
                     <div>
-                        <h1 class="panel__title m-0">Mis Tickets</h1>
+                        <h1 class="panel__title m-0">My Tickets</h1>
                         <p class="text-muted small m-0 mt-1">
-                            Historial personal de tus solicitudes
+                            Personal history of your requests
                         </p>
                     </div>
                     <a href="generarTickets.php" class="mis-cta">
-                        <i class="fa-solid fa-plus"></i> Nuevo Ticket
+                        <i class="fa-solid fa-plus"></i> New Ticket
                     </a>
                 </div>
 
@@ -453,25 +453,25 @@ function build_url(array $overrides = []): string {
                     <a href="<?= esc(build_url(['status' => 'Pendiente', 'page' => 1])) ?>"
                        class="mis-stat mis-stat--pendiente<?= $filterStatus === 'Pendiente' ? ' is-active' : '' ?>">
                         <div class="mis-stat__num"><?= $statusCounts['Pendiente'] ?></div>
-                        <div class="mis-stat__label">Pendiente</div>
+                        <div class="mis-stat__label">Pending</div>
                     </a>
 
                     <a href="<?= esc(build_url(['status' => 'En Proceso', 'page' => 1])) ?>"
                        class="mis-stat mis-stat--proceso<?= $filterStatus === 'En Proceso' ? ' is-active' : '' ?>">
                         <div class="mis-stat__num"><?= $statusCounts['En Proceso'] ?></div>
-                        <div class="mis-stat__label">En Proceso</div>
+                        <div class="mis-stat__label">In Progress</div>
                     </a>
 
                     <a href="<?= esc(build_url(['status' => 'Resuelto', 'page' => 1])) ?>"
                        class="mis-stat mis-stat--resuelto<?= $filterStatus === 'Resuelto' ? ' is-active' : '' ?>">
                         <div class="mis-stat__num"><?= $statusCounts['Resuelto'] ?></div>
-                        <div class="mis-stat__label">Resuelto</div>
+                        <div class="mis-stat__label">Resolved</div>
                     </a>
 
                     <a href="<?= esc(build_url(['status' => 'Cerrado', 'page' => 1])) ?>"
                        class="mis-stat mis-stat--cerrado<?= $filterStatus === 'Cerrado' ? ' is-active' : '' ?>">
                         <div class="mis-stat__num"><?= $statusCounts['Cerrado'] ?></div>
-                        <div class="mis-stat__label">Cerrado</div>
+                        <div class="mis-stat__label">Closed</div>
                     </a>
 
                 </div>

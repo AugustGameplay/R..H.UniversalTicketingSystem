@@ -90,13 +90,11 @@ foreach ($closedCandidates as $f){
   if (isset($ticketCols[strtolower($f)])) { $closedField = $f; break; }
 }
 
-// Si no existe, intentamos crear closed_at (local) + trigger para autollenar
 if (!$closedField){
   try {
     $pdo->exec("ALTER TABLE tickets ADD COLUMN closed_at DATETIME NULL");
     $closedField = 'closed_at';
 
-    // Backfill suave: si existe updated_at/modified_at, úsalo para tickets ya resueltos.
     $updatedCandidates = ['updated_at','modified_at','last_updated_at','last_update'];
     foreach ($updatedCandidates as $u){
       if (isset($ticketCols[strtolower($u)])){
@@ -107,7 +105,6 @@ if (!$closedField){
       }
     }
 
-    // Trigger para setear/limpiar closed_at según status
     $trgName = 'tickets_set_closed_at';
     $exists = $pdo->prepare("SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = DATABASE() AND TRIGGER_NAME = :t");
     $exists->execute([':t'=>$trgName]);
@@ -128,16 +125,12 @@ if (!$closedField){
       ");
     }
   } catch (Throwable $e) {
-    // si falla, lo dejamos como NULL
     $closedField = null;
   }
 }
 
-
-// Asegurar trigger correcto para "Cerrado/Closed" (por si quedó uno viejo)
 if ($closedField){
   try {
-    // Backfill suave para tickets ya cerrados
     $updatedCandidates = ['updated_at','modified_at','last_updated_at','last_update'];
     foreach ($updatedCandidates as $u){
       if (isset($ticketCols[strtolower($u)])){
@@ -148,7 +141,6 @@ if ($closedField){
       }
     }
 
-    // Re-crear trigger con la lógica correcta
     $trgName = 'tickets_set_closed_at';
     try { $pdo->exec("DROP TRIGGER IF EXISTS {$trgName}"); } catch (Throwable $e) {}
 
@@ -161,16 +153,13 @@ if ($closedField){
            AND (OLD.status <> 'Cerrado' AND OLD.status <> 'Closed') THEN
           SET NEW.{$closedField} = IFNULL(NEW.{$closedField}, NOW());
         END IF;
-
         IF (NEW.status <> 'Cerrado' AND NEW.status <> 'Closed')
            AND (OLD.status = 'Cerrado' OR OLD.status = 'Closed') THEN
           SET NEW.{$closedField} = NULL;
         END IF;
       END
     ");
-  } catch (Throwable $e) {
-    // ignora si no hay permisos o no aplica
-  }
+  } catch (Throwable $e) {}
 }
 
 // =====================================================
@@ -220,17 +209,11 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'mods'){
     echo json_encode(['ok'=>true, 'items'=>[]]);
     exit;
   }
-
   try {
     $stmt = $pdo->prepare("
       SELECT
-        m.id,
-        m.ticket_id,
-        m.modified_at,
-        m.field_name,
-        m.old_value,
-        m.new_value,
-        m.action,
+        m.id, m.ticket_id, m.modified_at, m.field_name,
+        m.old_value, m.new_value, m.action,
         COALESCE(u.full_name, '—') AS modified_by_name
       FROM {$modsTable} m
       LEFT JOIN users u ON u.id_user = m.modified_by
@@ -239,8 +222,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'mods'){
       LIMIT 200
     ");
     $stmt->execute([':id'=>$ticketId]);
-    $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    echo json_encode(['ok'=>true, 'items'=>$items]);
+    echo json_encode(['ok'=>true, 'items'=>$stmt->fetchAll(PDO::FETCH_ASSOC)]);
   } catch (Throwable $e) {
     echo json_encode(['ok'=>false, 'items'=>[]]);
   }
@@ -257,9 +239,7 @@ if (!in_array($view, $allowedViews, true)) $view = 'total';
 $creatorId = trim($_GET['creator'] ?? '');
 $creatorId = ($creatorIdField && $creatorId !== '' && ctype_digit($creatorId)) ? (int)$creatorId : 0;
 
-
 $cat = trim($_GET['cat'] ?? '');
-$cat = ($cat !== '') ? trim($cat) : '';
 $creatorFilterSQL = "";
 $params = $paramsRange;
 if ($creatorIdField && $creatorId > 0){
@@ -268,39 +248,28 @@ if ($creatorIdField && $creatorId > 0){
 }
 
 // =====================================================
-// Download CSV (respeta filtros)
+// Download CSV
 // =====================================================
 if (isset($_GET['download']) && $_GET['download'] == '1') {
   $extraWhere = "";
-
-// Filtro por categoría (cards de Categorías)
-if ($cat !== '') {
-  $extraWhere .= " AND COALESCE(NULLIF(TRIM(t.category), ''), 'Sin categoría') = :cat";
-  $params[':cat'] = $cat;
-}
-  if ($view === 'assigned')   $extraWhere = " AND t.assigned_user_id IS NOT NULL";
-  if ($view === 'unassigned') $extraWhere = " AND t.assigned_user_id IS NULL";
-  if ($view === 'inprogress') $extraWhere = " AND t.status = 'En Proceso'";
-  if ($view === 'done')       $extraWhere = " AND t.status = 'Resuelto'";
-  if ($view === 'closed')     $extraWhere = " AND (t.status = 'Cerrado' OR t.status = 'Closed')";
+  if ($cat !== '') {
+    $extraWhere .= " AND COALESCE(NULLIF(TRIM(t.category), ''), 'Sin categoría') = :cat";
+    $params[':cat'] = $cat;
+  }
+  if ($view === 'assigned')   $extraWhere .= " AND t.assigned_user_id IS NOT NULL";
+  if ($view === 'unassigned') $extraWhere .= " AND t.assigned_user_id IS NULL";
+  if ($view === 'inprogress') $extraWhere .= " AND t.status = 'En Proceso'";
+  if ($view === 'done')       $extraWhere .= " AND t.status = 'Resuelto'";
+  if ($view === 'closed')     $extraWhere .= " AND (t.status = 'Cerrado' OR t.status = 'Closed')";
 
   header('Content-Type: text/csv; charset=utf-8');
   header('Content-Disposition: attachment; filename="tickets_history_'.$start.'_to_'.$end.'_'.$view.'.csv"');
-
   $out = fopen('php://output', 'w');
-  fputcsv($out, ['ID', 'Creado', 'Cerrado', 'Área', 'Prioridad', 'Estatus', 'Asignado a', 'Creado por']);
-
+  fputcsv($out, ['ID','Creado','Cerrado','Área','Prioridad','Estatus','Asignado a','Creado por']);
   $closedSelect = $closedField ? "t.$closedField AS closed_at" : "NULL AS closed_at";
   $stmt = $pdo->prepare("
-    SELECT
-      t.id_ticket,
-      t.created_at,
-      $closedSelect,
-      t.area,
-      t.priority,
-      t.status,
-      COALESCE(u.full_name, '') AS assigned_name,
-      $creatorNameExpr AS created_by_name
+    SELECT t.id_ticket, t.created_at, $closedSelect, t.area, t.priority, t.status,
+           COALESCE(u.full_name, '') AS assigned_name, $creatorNameExpr AS created_by_name
     FROM tickets t
     LEFT JOIN users u ON u.id_user = t.assigned_user_id
     $creatorJoinSQL
@@ -308,18 +277,8 @@ if ($cat !== '') {
     ORDER BY t.id_ticket DESC
   ");
   $stmt->execute($params);
-
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    fputcsv($out, [
-      $row['id_ticket'],
-      $row['created_at'],
-      $row['closed_at'] ?: '',
-      $row['area'],
-      $row['priority'],
-      $row['status'],
-      $row['assigned_name'],
-      $row['created_by_name'],
-    ]);
+    fputcsv($out, [$row['id_ticket'],$row['created_at'],$row['closed_at']?:'',$row['area'],$row['priority'],$row['status'],$row['assigned_name'],$row['created_by_name']]);
   }
   fclose($out);
   exit;
@@ -329,12 +288,12 @@ if ($cat !== '') {
 // Métricas
 // =====================================================
 function count_where(PDO $pdo, string $where, array $params): int {
-  $stmt = $pdo->prepare("SELECT COUNT(*) AS c FROM tickets t WHERE $where");
+  $stmt = $pdo->prepare("SELECT COUNT(*) FROM tickets t WHERE $where");
   $stmt->execute($params);
   return (int)($stmt->fetchColumn() ?: 0);
 }
 
-$whereBase = $sqlRange . $creatorFilterSQL;
+$whereBase  = $sqlRange . $creatorFilterSQL;
 $total      = count_where($pdo, $whereBase, $params);
 $assigned   = count_where($pdo, "$whereBase AND t.assigned_user_id IS NOT NULL", $params);
 $unassigned = count_where($pdo, "$whereBase AND t.assigned_user_id IS NULL", $params);
@@ -343,28 +302,29 @@ $done       = count_where($pdo, "$whereBase AND t.status = 'Resuelto'", $params)
 $closed     = count_where($pdo, "$whereBase AND (t.status = 'Cerrado' OR t.status = 'Closed')", $params);
 
 // =====================================================
-// Lista
+// Vista activa
 // =====================================================
 $extraWhere = "";
 $viewLabel  = "Total";
-if ($view === 'assigned')   { $extraWhere = " AND t.assigned_user_id IS NOT NULL"; $viewLabel="Assigned"; }
-if ($view === 'unassigned') { $extraWhere = " AND t.assigned_user_id IS NULL";     $viewLabel="Unassigned"; }
-if ($view === 'inprogress') { $extraWhere = " AND t.status = 'En Proceso'";        $viewLabel="In progress"; }
-if ($view === 'done')       { $extraWhere = " AND t.status = 'Resuelto'";          $viewLabel="Done"; }
-if ($view === 'closed')     { $extraWhere = " AND (t.status = 'Cerrado' OR t.status = 'Closed')"; $viewLabel="Closed"; }
+if ($view === 'assigned')   { $extraWhere = " AND t.assigned_user_id IS NOT NULL"; $viewLabel = "Assigned"; }
+if ($view === 'unassigned') { $extraWhere = " AND t.assigned_user_id IS NULL";     $viewLabel = "Unassigned"; }
+if ($view === 'inprogress') { $extraWhere = " AND t.status = 'En Proceso'";        $viewLabel = "In progress"; }
+if ($view === 'done')       { $extraWhere = " AND t.status = 'Resuelto'";          $viewLabel = "Done"; }
+if ($view === 'closed')     { $extraWhere = " AND (t.status = 'Cerrado' OR t.status = 'Closed')"; $viewLabel = "Closed"; }
 
+// FIX: aplicar filtro de categoría a la query principal
+if ($cat !== '') {
+  $extraWhere .= " AND COALESCE(NULLIF(TRIM(t.category), ''), 'Sin categoría') = :cat";
+  $params[':cat'] = $cat;
+}
 
 // =====================================================
-// Categorías (cards) + Alerta "Posible falla general"
-// - Cards por categoría respetan: rango + creador + view actual
-// - Alerta se calcula por: día + categoría + type (rango + creador)
+// Categorías + Alerta "Posible falla general"
 // =====================================================
 $categoryCounts = [];
 try {
   $stmtCat = $pdo->prepare("
-    SELECT
-      COALESCE(NULLIF(TRIM(t.category), ''), 'Sin categoría') AS category,
-      COUNT(*) AS total
+    SELECT COALESCE(NULLIF(TRIM(t.category), ''), 'Sin categoría') AS category, COUNT(*) AS total
     FROM tickets t
     WHERE $whereBase $extraWhere
     GROUP BY COALESCE(NULLIF(TRIM(t.category), ''), 'Sin categoría')
@@ -372,15 +332,11 @@ try {
   ");
   $stmtCat->execute($params);
   $categoryCounts = $stmtCat->fetchAll(PDO::FETCH_ASSOC) ?: [];
-} catch (Throwable $e) {
-  $categoryCounts = [];
-}
+} catch (Throwable $e) { $categoryCounts = []; }
 
-// ---- Alerta: muchos tickets misma falla (type) en mismo día y categoría
-$ALERT_THRESHOLD = 5;      // mínimo de tickets para disparar alerta
-$ALERT_MIN_USERS = 3;      // mínimo de reportantes distintos (id_user)
-$alertsByCategory = [];    // ['Network' => ['dia'=>..,'type'=>..,'total'=>..,'reportantes'=>..], ...]
-
+$ALERT_THRESHOLD  = 5;
+$ALERT_MIN_USERS  = 3;
+$alertsByCategory = [];
 try {
   $stmtAlert = $pdo->prepare("
     SELECT
@@ -397,32 +353,23 @@ try {
     HAVING COUNT(*) >= :thr AND COUNT(DISTINCT t.id_user) >= :minu
     ORDER BY total DESC, reportantes DESC
   ");
-  $stmtAlert->execute($params + [':thr' => $ALERT_THRESHOLD, ':minu' => $ALERT_MIN_USERS]);
-
-  while ($r = $stmtAlert->fetch(PDO::FETCH_ASSOC)) {
-    $cat = $r['category'] ?? 'Sin categoría';
-    // guardar solo el "top" por categoría (el de mayor total)
-    if (!isset($alertsByCategory[$cat])) {
-      $alertsByCategory[$cat] = $r;
-    }
+  $stmtAlert->execute($params + [':thr'=>$ALERT_THRESHOLD, ':minu'=>$ALERT_MIN_USERS]);
+  while ($r = $stmtAlert->fetch(PDO::FETCH_ASSOC)){
+    $ck = $r['category'] ?? 'Sin categoría';
+    if (!isset($alertsByCategory[$ck])) $alertsByCategory[$ck] = $r;
   }
-} catch (Throwable $e) {
-  $alertsByCategory = [];
-}
+} catch (Throwable $e) { $alertsByCategory = []; }
 
+// =====================================================
+// Filas de tabla
+// =====================================================
 $rows = [];
 try {
   $closedSelect = $closedField ? "t.$closedField AS closed_at" : "NULL AS closed_at";
   $stmt = $pdo->prepare("
-    SELECT
-      t.id_ticket,
-      t.created_at,
-      $closedSelect,
-      t.area,
-      t.priority,
-      t.status,
-      COALESCE(u.full_name, '—') AS assigned_name,
-      $creatorNameExpr AS created_by_name
+    SELECT t.id_ticket, t.created_at, $closedSelect, t.area, t.priority, t.status,
+           COALESCE(u.full_name, '—') AS assigned_name,
+           $creatorNameExpr AS created_by_name
     FROM tickets t
     LEFT JOIN users u ON u.id_user = t.assigned_user_id
     $creatorJoinSQL
@@ -432,9 +379,7 @@ try {
   ");
   $stmt->execute($params);
   $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (Throwable $e) {
-  $rows = [];
-}
+} catch (Throwable $e) { $rows = []; }
 
 // Usuarios para filtro
 $usersList = [];
@@ -445,12 +390,10 @@ if ($creatorIdField){
     $usersList = $uStmt->fetchAll(PDO::FETCH_ASSOC);
     if ($creatorId > 0){
       foreach ($usersList as $uu){
-        if ((int)$uu['id_user'] === (int)$creatorId) { $selectedCreatorName = (string)$uu['full_name']; break; }
+        if ((int)$uu['id_user'] === (int)$creatorId){ $selectedCreatorName = (string)$uu['full_name']; break; }
       }
     }
-  } catch (Throwable $e) {
-    $usersList = [];
-  }
+  } catch (Throwable $e) { $usersList = []; }
 }
 
 $startText = (new DateTime($start))->format('d/m/Y');
@@ -461,27 +404,14 @@ function build_qs(array $pairs): string {
   return http_build_query($pairs);
 }
 
-$qsBase = build_qs([
-  'start'   => $start,
-  'end'     => $end,
-  'creator' => $creatorId,
-]);
+$qsBase = build_qs(['start'=>$start, 'end'=>$end, 'creator'=>$creatorId, 'cat'=>$cat]);
 
-// Mapeo de campos para el modal
 $fieldLabels = [
-  'status' => 'Estatus',
-  'priority' => 'Prioridad',
-  'area' => 'Área',
-  'assigned_user_id' => 'Asignado a',
-  'assigned_to' => 'Asignado a',
-  'ticket_url' => 'URL',
-  'url' => 'URL',
-  'evidence' => 'Evidencia',
-  'evidence_path' => 'Evidencia',
-  'attachment' => 'Adjunto',
-  'notes' => 'Notas',
+  'status'=>'Estatus','priority'=>'Prioridad','area'=>'Área',
+  'assigned_user_id'=>'Asignado a','assigned_to'=>'Asignado a',
+  'ticket_url'=>'URL','url'=>'URL','evidence'=>'Evidencia',
+  'evidence_path'=>'Evidencia','attachment'=>'Adjunto','notes'=>'Notas',
 ];
-
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -493,13 +423,11 @@ $fieldLabels = [
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 
-  <!-- Base -->
   <link rel="stylesheet" href="./assets/css/generarTickets.css">
   <link rel="stylesheet" href="./assets/css/menu.css">
   <link rel="stylesheet" href="./assets/css/movil.css">
   <script defer src="./assets/js/sidebar.js"></script>
 
-  <!-- History -->
   <link rel="stylesheet" href="./assets/css/history.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 </head>
@@ -510,9 +438,9 @@ $fieldLabels = [
 
     <main class="main flex-grow-1 d-flex justify-content-center align-items-start">
       <section class="panel card history-panel">
-
         <div class="history-shell">
-          <!-- IZQUIERDA -->
+
+          <!-- ══════════════ IZQUIERDA ══════════════ -->
           <div class="history-left">
 
             <div class="history-left__header">
@@ -520,72 +448,79 @@ $fieldLabels = [
               <div class="history-sub">Consulta y descarga tickets por fecha / estatus.</div>
             </div>
 
-            <!-- FECHAS (2 pastillas) -->
+            <!-- FECHAS -->
             <div class="history-dates">
-              <div class="history-date history-date--start" id="pillStart" role="button" aria-label="Seleccionar fecha de inicio">
+              <div class="history-date" id="pillStart" role="button" aria-label="Fecha inicio">
                 <i class="fa-solid fa-calendar-days"></i>
                 <span class="pill-label">Inicio</span>
                 <input id="startDate" class="date-pill-input" type="text" value="<?= esc($startText) ?>" readonly />
               </div>
-
-              <div class="history-date history-date--end" id="pillEnd" role="button" aria-label="Seleccionar fecha fin">
+              <div class="history-date" id="pillEnd" role="button" aria-label="Fecha fin">
                 <i class="fa-solid fa-calendar-days"></i>
                 <span class="pill-label">Fin</span>
                 <input id="endDate" class="date-pill-input" type="text" value="<?= esc($endText) ?>" readonly />
               </div>
             </div>
 
-            <!-- MÉTRICAS (clicables) -->
+            <!-- MÉTRICAS -->
             <div class="history-grid">
-
-              <a class="stat-card stat-total <?= $view==='total'?'is-active':'' ?>" href="history.php?<?= esc($qsBase) ?>&view=total">
+              <a class="stat-card stat-total <?= $view==='total'?'is-active':'' ?>"
+                 href="history.php?<?= esc($qsBase) ?>&view=total">
                 <div class="stat-num"><?= (int)$total ?></div>
                 <div class="stat-label">Total</div>
               </a>
-
-              <a class="stat-card stat-assigned <?= $view==='assigned'?'is-active':'' ?>" href="history.php?<?= esc($qsBase) ?>&view=assigned">
+              <a class="stat-card stat-assigned <?= $view==='assigned'?'is-active':'' ?>"
+                 href="history.php?<?= esc($qsBase) ?>&view=assigned">
                 <div class="stat-num"><?= (int)$assigned ?></div>
                 <div class="stat-label">Assigned</div>
               </a>
-
-              <a class="stat-card stat-unassigned <?= $view==='unassigned'?'is-active':'' ?>" href="history.php?<?= esc($qsBase) ?>&view=unassigned">
+              <a class="stat-card stat-unassigned <?= $view==='unassigned'?'is-active':'' ?>"
+                 href="history.php?<?= esc($qsBase) ?>&view=unassigned">
                 <div class="stat-num"><?= (int)$unassigned ?></div>
                 <div class="stat-label">Unassigned</div>
               </a>
-
-              <a class="stat-card stat-inprogress <?= $view==='inprogress'?'is-active':'' ?>" href="history.php?<?= esc($qsBase) ?>&view=inprogress">
+              <a class="stat-card stat-inprogress <?= $view==='inprogress'?'is-active':'' ?>"
+                 href="history.php?<?= esc($qsBase) ?>&view=inprogress">
                 <div class="stat-num"><?= (int)$inprogress ?></div>
                 <div class="stat-label">In progress</div>
               </a>
-
-              <a class="stat-card stat-done <?= $view==='done'?'is-active':'' ?>" href="history.php?<?= esc($qsBase) ?>&view=done">
+              <a class="stat-card stat-done <?= $view==='done'?'is-active':'' ?>"
+                 href="history.php?<?= esc($qsBase) ?>&view=done">
                 <div class="stat-num"><?= (int)$done ?></div>
                 <div class="stat-label">Done</div>
               </a>
-
-              <a class="stat-card stat-closed <?= $view==='closed'?'is-active':'' ?>" href="history.php?<?= esc($qsBase) ?>&view=closed">
+              <a class="stat-card stat-closed <?= $view==='closed'?'is-active':'' ?>"
+                 href="history.php?<?= esc($qsBase) ?>&view=closed">
                 <div class="stat-num"><?= (int)$closed ?></div>
                 <div class="stat-label">Closed</div>
               </a>
-            <!-- CATEGORÍAS -->
+            </div>
+            <!-- ↑ FIX CLAVE: history-grid se cierra AQUÍ -->
+
+            <!-- CATEGORÍAS — ahora fuera del history-grid -->
             <?php if (!empty($categoryCounts)): ?>
               <div class="history-cat-section">
                 <div class="history-cat-head">
                   <div class="history-cat-title">Categorías</div>
                   <div class="history-cat-sub">Conteo por categoría (mismo filtro actual)</div>
                 </div>
-
                 <div class="history-cat-grid">
                   <?php foreach ($categoryCounts as $cc):
-                    $catName = $cc['category'] ?? 'Sin categoría';
+                    $catName  = $cc['category'] ?? 'Sin categoría';
                     $catTotal = (int)($cc['total'] ?? 0);
-                    $alert = $alertsByCategory[$catName] ?? null;
+                    $alert    = $alertsByCategory[$catName] ?? null;
                     $hasAlert = !empty($alert);
+                    $isActive = ($cat === $catName);
+                    // Link: si ya está activa, quita el filtro al picar; si no, actívala
+                    $catQS = $isActive
+                      ? build_qs(['start'=>$start,'end'=>$end,'creator'=>$creatorId,'view'=>$view])
+                      : build_qs(['start'=>$start,'end'=>$end,'creator'=>$creatorId,'view'=>$view,'cat'=>$catName]);
                   ?>
-                    <div class="stat-card stat-total stat-cat <?= $hasAlert ? 'stat-cat--warn' : '' ?>" role="group" aria-label="<?= esc($catName) ?>">
+                    <a href="history.php?<?= esc($catQS) ?>"
+                       class="stat-card stat-total stat-cat <?= $hasAlert ? 'stat-cat--warn' : '' ?> <?= $isActive ? 'is-active' : '' ?>"
+                       role="button" aria-label="<?= esc($catName) ?>" title="<?= $isActive ? 'Quitar filtro' : 'Filtrar por '.esc($catName) ?>">
                       <div class="stat-num"><?= $catTotal ?></div>
                       <div class="stat-label"><?= esc($catName) ?></div>
-
                       <?php if ($hasAlert): ?>
                         <div class="cat-warn">
                           <i class="fa-solid fa-triangle-exclamation"></i>
@@ -596,24 +531,26 @@ $fieldLabels = [
                           </span>
                         </div>
                       <?php endif; ?>
-                    </div>
+                    </a>
                   <?php endforeach; ?>
                 </div>
               </div>
             <?php endif; ?>
 
+          </div><!-- /history-left -->
 
-
-            </div>
-
-          </div>
-
-          <!-- DERECHA -->
+          <!-- ══════════════ DERECHA ══════════════ -->
           <div class="history-right">
             <div class="history-right__top">
               <div class="history-right__titles">
                 <div class="history-right__title">
                   Tickets <span class="chip-view"><?= esc($viewLabel) ?></span>
+                  <?php if ($cat !== ''): ?>
+                    <span class="chip-cat">
+                      <i class="fa-solid fa-tag"></i> <?= esc($cat) ?>
+                      <a class="chip-cat__clear" href="history.php?<?= esc(build_qs(['start'=>$start,'end'=>$end,'creator'=>$creatorId,'view'=>$view])) ?>" title="Quitar filtro de categoría">×</a>
+                    </span>
+                  <?php endif; ?>
                 </div>
                 <div class="history-right__meta">
                   <?= esc("Del $startText al $endText") ?>
@@ -622,17 +559,17 @@ $fieldLabels = [
                   <?php endif; ?>
                 </div>
               </div>
-
               <div class="history-right__controls">
                 <?php if ($creatorIdField): ?>
                   <form class="history-user-filter" method="get" action="history.php">
-                    <input type="hidden" name="start" value="<?= esc($start) ?>">
-                    <input type="hidden" name="end" value="<?= esc($end) ?>">
-                    <input type="hidden" name="view" value="<?= esc($view) ?>">
+                    <input type="hidden" name="start"   value="<?= esc($start) ?>">
+                    <input type="hidden" name="end"     value="<?= esc($end) ?>">
+                    <input type="hidden" name="view"    value="<?= esc($view) ?>">
                     <select class="form-select" name="creator" onchange="this.form.submit()">
                       <option value="">Todos los creadores</option>
                       <?php foreach ($usersList as $uu): ?>
-                        <option value="<?= (int)$uu['id_user'] ?>" <?= ((int)$uu['id_user']===(int)$creatorId)?'selected':'' ?>>
+                        <option value="<?= (int)$uu['id_user'] ?>"
+                          <?= ((int)$uu['id_user']===(int)$creatorId)?'selected':'' ?>>
                           <?= esc($uu['full_name']) ?>
                         </option>
                       <?php endforeach; ?>
@@ -659,21 +596,15 @@ $fieldLabels = [
                 </thead>
                 <tbody>
                   <?php if (!$rows): ?>
-                    <tr>
-                      <td colspan="9" class="empty-row">No hay tickets para este filtro.</td>
-                    </tr>
+                    <tr><td colspan="9" class="empty-row">No hay tickets para este filtro.</td></tr>
                   <?php else: ?>
                     <?php foreach ($rows as $r): ?>
                       <?php
-                        $createdTxt = '—';
-                        $closedTxt = '—';
-                        try {
-                          $createdTxt = (new DateTime($r['created_at']))->format('d/m/Y H:i');
-                        } catch (Throwable $e) {}
+                        $createdTxt = '—'; $closedTxt = '—';
+                        try { $createdTxt = (new DateTime($r['created_at']))->format('d/m/Y H:i'); } catch (Throwable $e) {}
                         if (!empty($r['closed_at'])){
-                          try {
-                            $closedTxt = (new DateTime($r['closed_at']))->format('d/m/Y H:i');
-                          } catch (Throwable $e) { $closedTxt = esc((string)$r['closed_at']); }
+                          try { $closedTxt = (new DateTime($r['closed_at']))->format('d/m/Y H:i'); }
+                          catch (Throwable $e) { $closedTxt = esc((string)$r['closed_at']); }
                         }
                       ?>
                       <tr>
@@ -684,14 +615,12 @@ $fieldLabels = [
                         <td><?= esc($r['priority']) ?></td>
                         <td><?= esc($r['status']) ?></td>
                         <td class="td-ellipsis" title="<?= esc($r['assigned_name']) ?>"><?= esc($r['assigned_name']) ?></td>
-                        <td class="td-ellipsis" title="<?= esc($r['created_by_name'] ?: '—') ?>"><?= esc($r['created_by_name'] ?: '—') ?></td>
+                        <td class="td-ellipsis" title="<?= esc($r['created_by_name']?:'—') ?>"><?= esc($r['created_by_name']?:'—') ?></td>
                         <td class="td-actions">
-                          <button
-                            type="button"
-                            class="btn-mods"
-                            data-ticket-id="<?= (int)$r['id_ticket'] ?>"
-                            <?= $modsTable ? '' : 'disabled' ?>
-                            title="Ver historial de modificaciones">
+                          <button type="button" class="btn-mods"
+                                  data-ticket-id="<?= (int)$r['id_ticket'] ?>"
+                                  <?= $modsTable ? '' : 'disabled' ?>
+                                  title="Ver historial de modificaciones">
                             <i class="fa-solid fa-clock-rotate-left"></i>
                           </button>
                         </td>
@@ -708,9 +637,9 @@ $fieldLabels = [
                 <i class="fa-solid fa-download me-2"></i> Download
               </a>
             </div>
-          </div>
-        </div>
+          </div><!-- /history-right -->
 
+        </div><!-- /history-shell -->
       </section>
     </main>
   </div>
@@ -742,149 +671,119 @@ $fieldLabels = [
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
   <script>
-    (function(){
-      // ====== FECHAS (2 pastillas) ======
-      const startEl = document.getElementById('startDate');
-      const endEl   = document.getElementById('endDate');
-      const pillStart = document.getElementById('pillStart');
-      const pillEnd   = document.getElementById('pillEnd');
+  (function(){
+    // ── FECHAS ──
+    const startEl   = document.getElementById('startDate');
+    const endEl     = document.getElementById('endDate');
+    const pillStart = document.getElementById('pillStart');
+    const pillEnd   = document.getElementById('pillEnd');
 
-      const view = "<?= esc($view) ?>";
-      const creator = "<?= esc((string)($creatorId ?: '')) ?>";
-      const startISOInit = "<?= esc($start) ?>";
-      const endISOInit   = "<?= esc($end) ?>";
+    const view    = "<?= esc($view) ?>";
+    const creator = "<?= esc((string)($creatorId ?: '')) ?>";
+    let startISO  = "<?= esc($start) ?>";
+    let endISO    = "<?= esc($end) ?>";
 
-      let startISO = startISOInit;
-      let endISO   = endISOInit;
+    const toISO = d => {
+      const yyyy = d.getFullYear();
+      const mm   = String(d.getMonth()+1).padStart(2,'0');
+      const dd   = String(d.getDate()).padStart(2,'0');
+      return `${yyyy}-${mm}-${dd}`;
+    };
 
-      const toISO = (d) => {
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth()+1).padStart(2,'0');
-        const dd = String(d.getDate()).padStart(2,'0');
-        return `${yyyy}-${mm}-${dd}`;
-      };
+    const go = () => {
+      if (!startISO || !endISO) return;
+      const p = new URLSearchParams();
+      p.set('start', startISO); p.set('end', endISO);
+      if (view)    p.set('view', view);
+      if (creator) p.set('creator', creator);
+      window.location.href = `history.php?${p.toString()}`;
+    };
 
-      const go = () => {
-        if (!startISO || !endISO) return;
-        const params = new URLSearchParams();
-        params.set('start', startISO);
-        params.set('end', endISO);
-        if (view) params.set('view', view);
-        if (creator) params.set('creator', creator);
-        window.location.href = `history.php?${params.toString()}`;
-      };
+    const fpStart = flatpickr(startEl, {
+      dateFormat: "d/m/Y", defaultDate: startEl.value,
+      allowInput: false, locale: { firstDayOfWeek: 1 },
+      onChange: sel => {
+        if (!sel?.[0]) return;
+        startISO = toISO(sel[0]);
+        if (startISO > endISO) [startISO, endISO] = [endISO, startISO];
+        setTimeout(go, 150);
+      }
+    });
 
-      const fpStart = flatpickr(startEl, {
-        dateFormat: "d/m/Y",
-        defaultDate: startEl.value,
-        allowInput: false,
-        clickOpens: true,
-        locale: { firstDayOfWeek: 1 },
-        onChange: function(sel){
-          if (!sel || !sel[0]) return;
-          startISO = toISO(sel[0]);
-          if (startISO > endISO){ const tmp = startISO; startISO = endISO; endISO = tmp; }
-          setTimeout(go, 150);
-        }
-      });
+    const fpEnd = flatpickr(endEl, {
+      dateFormat: "d/m/Y", defaultDate: endEl.value,
+      allowInput: false, locale: { firstDayOfWeek: 1 },
+      onChange: sel => {
+        if (!sel?.[0]) return;
+        endISO = toISO(sel[0]);
+        if (startISO > endISO) [startISO, endISO] = [endISO, startISO];
+        setTimeout(go, 150);
+      }
+    });
 
-      const fpEnd = flatpickr(endEl, {
-        dateFormat: "d/m/Y",
-        defaultDate: endEl.value,
-        allowInput: false,
-        clickOpens: true,
-        locale: { firstDayOfWeek: 1 },
-        onChange: function(sel){
-          if (!sel || !sel[0]) return;
-          endISO = toISO(sel[0]);
-          if (startISO > endISO){ const tmp = startISO; startISO = endISO; endISO = tmp; }
-          setTimeout(go, 150);
-        }
-      });
+    pillStart.addEventListener('click', () => fpStart.open());
+    pillEnd.addEventListener('click',   () => fpEnd.open());
 
-      pillStart.addEventListener('click', () => fpStart.open());
-      pillEnd.addEventListener('click', () => fpEnd.open());
+    // ── MODAL MODS ──
+    const modalEl = document.getElementById('modsModal');
+    const modal   = modalEl ? new bootstrap.Modal(modalEl) : null;
+    const titleEl = document.getElementById('modsTitle');
+    const subEl   = document.getElementById('modsSub');
+    const bodyEl  = document.getElementById('modsBody');
+    const FL      = <?= json_encode($fieldLabels, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES) ?>;
 
-      // ====== MODAL MODS ======
-      const modalEl = document.getElementById('modsModal');
-      const modal = modalEl ? new bootstrap.Modal(modalEl) : null;
-      const titleEl = document.getElementById('modsTitle');
-      const subEl = document.getElementById('modsSub');
-      const bodyEl = document.getElementById('modsBody');
+    const fmtDT = s => {
+      if (!s) return '—';
+      const p = String(s).replace('T',' ').split(' ');
+      const d = (p[0]||'').split('-');
+      return d.length !== 3 ? s : `${d[2]}/${d[1]}/${d[0]} ${(p[1]||'').slice(0,5)}`;
+    };
 
-      const fieldLabels = <?= json_encode($fieldLabels, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES) ?>;
+    const e = s => String(s??'').replace(/[&<>'"]/g, c =>
+      ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));
 
-      const fmtDT = (s) => {
-        if (!s) return '—';
-        // asume "YYYY-MM-DD HH:MM:SS"
-        const parts = String(s).replace('T',' ').split(' ');
-        const d = (parts[0]||'').split('-');
-        const t = (parts[1]||'').slice(0,5);
-        if (d.length !== 3) return s;
-        return `${d[2]}/${d[1]}/${d[0]} ${t}`;
-      };
-
-      const escapeHtml = (str) => {
-        return String(str ?? '').replace(/[&<>'"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;','\'':'&#39;'}[c] || c));
-      };
-
-      const renderMods = (items) => {
-        if (!items || !items.length){
-          bodyEl.innerHTML = `<div class="mods-empty">Aún no hay modificaciones registradas para este ticket.</div>`;
-          return;
-        }
-
-        const html = items.map((it) => {
-          const when = fmtDT(it.modified_at);
-          const who = escapeHtml(it.modified_by_name || '—');
-          const fieldRaw = (it.field_name || '').toLowerCase();
-          const field = escapeHtml(fieldLabels[fieldRaw] || it.field_name || 'Campo');
-          const oldv = escapeHtml((it.old_value ?? '—'));
-          const newv = escapeHtml((it.new_value ?? '—'));
-
-          return `
-            <div class="mod-item">
-              <div class="mod-head">
-                <div class="mod-when"><i class="fa-regular fa-clock"></i> ${when}</div>
-                <div class="mod-who"><i class="fa-regular fa-user"></i> ${who}</div>
-              </div>
-              <div class="mod-body">
-                <div class="mod-field">${field}</div>
-                <div class="mod-diff">
-                  <span class="mod-old">${oldv}</span>
-                  <span class="mod-arrow">→</span>
-                  <span class="mod-new">${newv}</span>
-                </div>
-              </div>
+    const renderMods = items => {
+      if (!items?.length){
+        bodyEl.innerHTML = `<div class="mods-empty">Aún no hay modificaciones registradas para este ticket.</div>`;
+        return;
+      }
+      bodyEl.innerHTML = `<div class="mods-list">${items.map(it => `
+        <div class="mod-item">
+          <div class="mod-head">
+            <div class="mod-when"><i class="fa-regular fa-clock"></i> ${fmtDT(it.modified_at)}</div>
+            <div class="mod-who"><i class="fa-regular fa-user"></i> ${e(it.modified_by_name||'—')}</div>
+          </div>
+          <div class="mod-body">
+            <div class="mod-field">${e(FL[(it.field_name||'').toLowerCase()]||it.field_name||'Campo')}</div>
+            <div class="mod-diff">
+              <span class="mod-old">${e(it.old_value??'—')}</span>
+              <span class="mod-arrow">→</span>
+              <span class="mod-new">${e(it.new_value??'—')}</span>
             </div>
-          `;
-        }).join('');
+          </div>
+        </div>`).join('')}</div>`;
+    };
 
-        bodyEl.innerHTML = `<div class="mods-list">${html}</div>`;
-      };
-
-      document.querySelectorAll('.btn-mods').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-          if (!modal) return;
-          const ticketId = btn.getAttribute('data-ticket-id');
-          if (!ticketId) return;
-
-          titleEl.textContent = 'Historial de modificaciones';
-          subEl.textContent = `Ticket #${ticketId}`;
-          bodyEl.innerHTML = `<div class="mods-loading">Cargando…</div>`;
-          modal.show();
-
-          try {
-            const res = await fetch(`history.php?ajax=mods&ticket_id=${encodeURIComponent(ticketId)}`);
-            const data = await res.json();
-            if (data && data.ok) renderMods(data.items);
-            else bodyEl.innerHTML = `<div class="mods-empty">No se pudo cargar el historial.</div>`;
-          } catch (e){
-            bodyEl.innerHTML = `<div class="mods-empty">No se pudo cargar el historial.</div>`;
-          }
-        });
+    document.querySelectorAll('.btn-mods').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!modal) return;
+        const tid = btn.getAttribute('data-ticket-id');
+        if (!tid) return;
+        titleEl.textContent = 'Historial de modificaciones';
+        subEl.textContent   = `Ticket #${tid}`;
+        bodyEl.innerHTML    = `<div class="mods-loading">Cargando…</div>`;
+        modal.show();
+        try {
+          const res  = await fetch(`history.php?ajax=mods&ticket_id=${encodeURIComponent(tid)}`);
+          const data = await res.json();
+          data?.ok ? renderMods(data.items)
+                   : (bodyEl.innerHTML = `<div class="mods-empty">No se pudo cargar el historial.</div>`);
+        } catch {
+          bodyEl.innerHTML = `<div class="mods-empty">No se pudo cargar el historial.</div>`;
+        }
       });
-    })();
+    });
+  })();
   </script>
 </body>
 </html>

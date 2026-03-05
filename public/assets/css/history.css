@@ -1,4 +1,4 @@
-/* =========================================================
+﻿/* =========================================================
    HISTORY VIEW — Refined UI
    - Variables sin ciclos (era bug en versión anterior)
    - Stat cards más elegantes y consistentes
@@ -47,15 +47,22 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Saludo naranja (fixed — no usamos !important innecesario antes) */
+/* Saludo naranja */
 .welcome__label { color: var(--rhr-orange); }
 
-.main { padding: clamp(1rem, 2.2vw, 1.75rem); }
+.main {
+  padding: clamp(1rem, 2.2vw, 1.75rem);
+  /* FIX: asegurar que .main ocupa todo el alto disponible */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
 
 /* ── Panel principal ─────────────────────────────── */
 .history-panel {
   width: min(94vw, 96rem);
-  min-height: calc(100vh - 3.5rem);
+  /* FIX: usar height en lugar de min-height para que el flex interno funcione */
+  height: calc(100vh - 3.5rem);
   padding: clamp(1.1rem, 2.2vw, 1.6rem);
 
   border-radius: calc(var(--r-lg) + .25rem);
@@ -67,6 +74,9 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--s-5);
+
+  /* FIX: evitar que el panel crezca más allá de la pantalla */
+  overflow: hidden;
 }
 
 /* ── Shell: izquierda + derecha ──────────────────── */
@@ -74,8 +84,10 @@ body {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(20rem, 40rem) minmax(18rem, 1fr);
+  grid-template-columns: minmax(22rem, 32rem) minmax(0, 1fr);
   gap: clamp(1rem, 2vw, 1.75rem);
+  /* FIX: no ocultar — la izquierda hace scroll propio */
+  overflow: visible;
 }
 
 /* ── Izquierda ───────────────────────────────────── */
@@ -84,6 +96,13 @@ body {
   flex-direction: column;
   min-width: 0;
   gap: var(--s-4);
+  /* FIX: padding generoso en todos los lados para que sombras y outlines no se corten */
+  padding: .25rem .5rem .5rem .25rem;
+  /* FIX: scroll solo vertical, sin ocultar nada en X */
+  overflow-y: auto;
+  overflow-x: visible;
+  /* FIX: compensar el padding para no romper el ancho del grid */
+  box-sizing: border-box;
 }
 
 .history-left__header { margin: 0; }
@@ -105,12 +124,13 @@ body {
 /* ── Date pills ──────────────────────────────────── */
 .history-dates {
   display: flex;
-  gap: var(--s-4);
-  flex-wrap: wrap;
+  gap: var(--s-3);
+  flex-wrap: nowrap; /* FIX: mantener siempre en la misma fila */
 }
 
 .history-date {
-  flex: 1 1 18rem;
+  flex: 1 1 0; /* FIX: ambas pills reparten el espacio equitativamente */
+  min-width: 0;
   height: 3.1rem;
   border-radius: var(--r-md);
   background: rgba(255,255,255,.90);
@@ -182,7 +202,9 @@ body {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(.75rem, 1.5vw, 1.2rem);
-  max-width: 40rem;
+  max-width: 100%;
+  /* FIX: padding para que box-shadow no se recorte en los bordes del grid */
+  padding: .2rem .15rem .3rem;
 }
 
 .stat-card {
@@ -195,7 +217,8 @@ body {
   text-align: center;
   padding: .75rem .5rem;
 
-  box-shadow: var(--shadow-md);
+  /* FIX: sombra más suave para que no se note el corte */
+  box-shadow: 0 2px 8px rgba(2,6,23,.10), 0 1px 2px rgba(2,6,23,.06);
   cursor: pointer;
   user-select: none;
   text-decoration: none;
@@ -208,7 +231,7 @@ body {
 
 .stat-card:hover {
   transform: translateY(-3px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 8px 20px rgba(2,6,23,.13), 0 2px 6px rgba(2,6,23,.08);
 }
 
 .stat-card:active  { transform: translateY(-1px); }
@@ -241,51 +264,94 @@ body {
 .stat-closed      { background: linear-gradient(140deg, #9ca3af, #6b7280); }
 
 /* ── Categorías ──────────────────────────────────── */
-.history-cat-section { margin-top: var(--s-4); }
+.history-cat-section {
+  margin-top: var(--s-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  min-width: 0;
+  overflow: hidden;
+}
 
 .history-cat-head {
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--s-3);
-  margin-bottom: var(--s-3);
+  flex-direction: column;
+  gap: .15rem;
 }
 
 .history-cat-title { font-size: 1rem; font-weight: 900; }
-.history-cat-sub   { font-size: .78rem; font-weight: 800; color: var(--muted); }
+.history-cat-sub   { font-size: .78rem; font-weight: 800; color: var(--muted); line-height: 1.3; }
 
 .history-cat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
-  gap: clamp(.75rem, 1.5vw, 1.1rem);
-  max-width: 40rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(.65rem, 1.2vw, 1rem);
+  width: 100%;
+  min-width: 0;
+  /* FIX: mismo padding que history-grid para sombras y outlines */
+  padding: .2rem .15rem .3rem;
+}
+
+/* Si solo hay 1 card, que ocupe la mitad — no todo el ancho */
+.history-cat-grid > .stat-cat:only-child {
+  grid-column: span 1;
+  max-width: 100%;
 }
 
 .stat-cat {
-  min-height: 7rem;
+  min-height: 6rem;
   height: auto;
-  padding: var(--s-4);
+  padding: var(--s-4) var(--s-3);
+  border-radius: var(--r-lg);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: .25rem;
-  max-width: 12.5rem;
-  justify-self: start;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(2,6,23,.10), 0 1px 2px rgba(2,6,23,.06);
+  cursor: pointer;
+  user-select: none;
+  /* FIX: como ahora son <a>, quitar decoración */
+  text-decoration: none !important;
+  color: inherit;
+  background: rgba(255,255,255,.95);
+  border: 1px solid rgba(15,23,42,.08);
+  transition:
+    transform    var(--t-fast) var(--ease),
+    box-shadow   var(--t-med)  var(--ease),
+    outline-color var(--t-med) var(--ease);
 }
 
-.stat-cat:only-child { max-width: 13.5rem; }
+.stat-cat:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(2,6,23,.13), 0 2px 6px rgba(2,6,23,.08);
+  color: inherit;
+  text-decoration: none;
+}
+
+.stat-cat.is-active {
+  outline: .18rem solid rgba(244,122,33,.55);
+  outline-offset: .15rem;
+}
 
 .stat-cat--warn {
   justify-content: flex-start;
+  align-items: center;
   padding-top: var(--s-4);
   outline: .18rem solid rgba(255,159,0,.50);
   outline-offset: .15rem;
   box-shadow: 0 1.1rem 2.4rem rgba(255,159,0,.14);
 }
 
+.stat-cat--warn.is-active {
+  outline: .18rem solid rgba(244,122,33,.75);
+}
+
 .stat-cat--warn .stat-num {
-  font-size: clamp(2.1rem, 2.3vw + 1rem, 2.8rem);
+  font-size: clamp(1.9rem, 2.2vw + .9rem, 2.4rem);
 }
 
 .cat-warn {
@@ -321,6 +387,9 @@ body {
   min-width: 0;
   min-height: 0;
   gap: var(--s-4);
+  /* FIX: la columna derecha debe ocupar todo el alto del shell */
+  height: 100%;
+  overflow: hidden;
 }
 
 .history-right__top {
@@ -329,6 +398,8 @@ body {
   justify-content: space-between;
   gap: var(--s-4);
   flex-wrap: wrap;
+  /* FIX: no dejar que el header comprima la tabla */
+  flex-shrink: 0;
 }
 
 .history-right__title { font-size: 1.1rem; font-weight: 900; }
@@ -357,6 +428,36 @@ body {
 .chip-view    { background: rgba(15,23,42,.06); }
 .chip-creator { background: rgba(255,255,255,.88); border: 1px solid rgba(15,23,42,.08); }
 
+.chip-cat {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .32rem .55rem .32rem .6rem;
+  border-radius: 999px;
+  font-size: .78rem;
+  font-weight: 800;
+  background: rgba(244,122,33,.14);
+  border: 1px solid rgba(244,122,33,.28);
+  color: var(--rhr-orange-dark);
+}
+
+.chip-cat__clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: rgba(209,75,22,.15);
+  color: var(--rhr-orange-dark);
+  font-size: .8rem;
+  line-height: 1;
+  text-decoration: none;
+  font-weight: 900;
+  transition: background var(--t-fast) var(--ease);
+}
+.chip-cat__clear:hover { background: rgba(209,75,22,.30); }
+
 .history-user-filter .form-select {
   width: min(100%, 18rem);
   border-radius: var(--r-md);
@@ -373,6 +474,7 @@ body {
   border: 1px solid rgba(15,23,42,.07);
   box-shadow: var(--shadow-lg);
   overflow: auto;
+  /* FIX: flex: 1 + min-height: 0 para que la tabla ocupe el espacio restante */
   flex: 1;
   min-height: 0;
 }
@@ -466,6 +568,8 @@ body {
 .history-footer {
   display: flex;
   justify-content: center;
+  /* FIX: no dejar que el footer se comprima */
+  flex-shrink: 0;
 }
 
 .btn-download {
@@ -610,24 +714,36 @@ body {
 
 /* ── Breakpoints ─────────────────────────────────── */
 @media (max-width: 78rem) {
-  .history-shell { grid-template-columns: 1fr; }
+  .history-shell {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+    height: auto;
+  }
+  .history-panel { height: auto; min-height: calc(100vh - 3.5rem); overflow: visible; }
+  .history-right { height: auto; min-height: 32rem; }
+  .history-table-wrap { min-height: 24rem; }
   .history-grid, .history-cat-grid { max-width: 100%; }
 }
 
 @media (max-width: 48rem) {
   .history-right__top { align-items: flex-start; }
   .history-user-filter .form-select { width: 100%; }
-  .history-grid, .history-cat-grid {
-    grid-template-columns: repeat(2, minmax(0,1fr));
+  .history-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .history-cat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 32.5rem) {
   .date-pill-input, .date-range-input { font-size: 1rem; }
-  .history-grid, .history-cat-grid   { grid-template-columns: 1fr; }
+  .history-grid   { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .history-cat-grid { grid-template-columns: 1fr; }
   .td-ellipsis { max-width: 11rem; }
 }
 
 @media (max-width: 520px) {
-  .history-date { width: 100%; }
+  .history-dates { flex-wrap: wrap; }
+  .history-date { flex: 1 1 100%; }
 }
