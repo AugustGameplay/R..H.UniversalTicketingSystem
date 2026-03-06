@@ -444,20 +444,20 @@ $fieldLabels = [
           <div class="history-left">
 
             <div class="history-left__header">
-              <div class="history-h1">Historial</div>
-              <div class="history-sub">Consulta y descarga tickets por fecha / estatus.</div>
+              <div class="history-h1">History</div>
+              <div class="history-sub">View and download tickets by date/status.</div>
             </div>
 
             <!-- FECHAS -->
             <div class="history-dates">
               <div class="history-date" id="pillStart" role="button" aria-label="Fecha inicio">
                 <i class="fa-solid fa-calendar-days"></i>
-                <span class="pill-label">Inicio</span>
+                <span class="pill-label">Start</span>
                 <input id="startDate" class="date-pill-input" type="text" value="<?= esc($startText) ?>" readonly />
               </div>
               <div class="history-date" id="pillEnd" role="button" aria-label="Fecha fin">
                 <i class="fa-solid fa-calendar-days"></i>
-                <span class="pill-label">Fin</span>
+                <span class="pill-label">End</span>
                 <input id="endDate" class="date-pill-input" type="text" value="<?= esc($endText) ?>" readonly />
               </div>
             </div>
@@ -566,7 +566,7 @@ $fieldLabels = [
                     <input type="hidden" name="end"     value="<?= esc($end) ?>">
                     <input type="hidden" name="view"    value="<?= esc($view) ?>">
                     <select class="form-select" name="creator" onchange="this.form.submit()">
-                      <option value="">Todos los creadores</option>
+                      <option value="">All creators</option>
                       <?php foreach ($usersList as $uu): ?>
                         <option value="<?= (int)$uu['id_user'] ?>"
                           <?= ((int)$uu['id_user']===(int)$creatorId)?'selected':'' ?>>
@@ -584,19 +584,19 @@ $fieldLabels = [
                 <thead>
                   <tr>
                     <th style="width:90px;">ID</th>
-                    <th style="width:170px;">Creado</th>
-                    <th style="width:170px;">Cerrado</th>
-                    <th>Área</th>
-                    <th style="width:120px;">Prioridad</th>
+                    <th style="width:170px;">Create</th>
+                    <th style="width:170px;">Closed</th>
+                    <th>Area</th>
+                    <th style="width:120px;">Priority</th>
                     <th style="width:140px;">Status</th>
                     <th style="width:190px;">Assigned to</th>
-                    <th style="width:220px;">Creado por</th>
+                    <th style="width:220px;">Created for</th>
                     <th style="width:120px; text-align:right;">Mods</th>
                   </tr>
                 </thead>
                 <tbody>
                   <?php if (!$rows): ?>
-                    <tr><td colspan="9" class="empty-row">No hay tickets para este filtro.</td></tr>
+                    <tr><td colspan="9" class="empty-row">There are no tickets for this filter.</td></tr>
                   <?php else: ?>
                     <?php foreach ($rows as $r): ?>
                       <?php
@@ -650,18 +650,18 @@ $fieldLabels = [
       <div class="modal-content mods-modal">
         <div class="modal-header">
           <div>
-            <h5 class="modal-title" id="modsTitle">Historial de modificaciones</h5>
+            <h5 class="modal-title" id="modsTitle">Modification history</h5>
             <div class="mods-sub" id="modsSub">—</div>
           </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body">
           <div id="modsBody" class="mods-body">
-            <div class="mods-loading">Cargando…</div>
+            <div class="mods-loading">Loading…</div>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>
@@ -769,17 +769,17 @@ $fieldLabels = [
         if (!modal) return;
         const tid = btn.getAttribute('data-ticket-id');
         if (!tid) return;
-        titleEl.textContent = 'Historial de modificaciones';
+        titleEl.textContent = 'Modification history';
         subEl.textContent   = `Ticket #${tid}`;
-        bodyEl.innerHTML    = `<div class="mods-loading">Cargando…</div>`;
+        bodyEl.innerHTML    = `<div class="mods-loading">Loading…</div>`;
         modal.show();
         try {
           const res  = await fetch(`history.php?ajax=mods&ticket_id=${encodeURIComponent(tid)}`);
           const data = await res.json();
           data?.ok ? renderMods(data.items)
-                   : (bodyEl.innerHTML = `<div class="mods-empty">No se pudo cargar el historial.</div>`);
+                   : (bodyEl.innerHTML = `<div class="mods-empty">The history could not be loaded.</div>`);
         } catch {
-          bodyEl.innerHTML = `<div class="mods-empty">No se pudo cargar el historial.</div>`;
+          bodyEl.innerHTML = `<div class="mods-empty">The history could not be loaded.</div>`;
         }
       });
     });

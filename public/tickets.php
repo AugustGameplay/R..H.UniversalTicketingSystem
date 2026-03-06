@@ -467,14 +467,14 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
 
             <div class="col-12 col-md-3">
               <select class="form-select filter-select" name="order" onchange="this.form.submit()">
-                <option value="id_desc" <?= $order==='id_desc' ? 'selected':''; ?>>ID: mayor a menor</option>
-                <option value="id_asc" <?= $order==='id_asc' ? 'selected':''; ?>>ID: menor a mayor</option>
-                <option value="date_desc" <?= $order==='date_desc' ? 'selected':''; ?>>Fecha: más reciente</option>
-                <option value="date_asc" <?= $order==='date_asc' ? 'selected':''; ?>>Fecha: más antiguo primero</option>
-                <option value="area_asc" <?= $order==='area_asc' ? 'selected':''; ?>>Alfabeto (Área): A–Z</option>
-                <option value="area_desc" <?= $order==='area_desc' ? 'selected':''; ?>>Alfabeto (Área): Z–A</option>
-                <option value="creator_asc" <?= $order==='creator_asc' ? 'selected':''; ?>>Alfabeto (Creador): A–Z</option>
-                <option value="creator_desc" <?= $order==='creator_desc' ? 'selected':''; ?>>Alfabeto (Creador): Z–A</option>
+                <option value="id_desc" <?= $order==='id_desc' ? 'selected':''; ?>>ID: highest to lowest</option>
+                <option value="id_asc" <?= $order==='id_asc' ? 'selected':''; ?>>ID: lowest to highest</option>
+                <option value="date_desc" <?= $order==='date_desc' ? 'selected':''; ?>>Date: newest first</option>
+                <option value="date_asc" <?= $order==='date_asc' ? 'selected':''; ?>>Date: oldest first</option>
+                <option value="area_asc" <?= $order==='area_asc' ? 'selected':''; ?>>Alphabetical (Area): A–Z</option>
+                <option value="area_desc" <?= $order==='area_desc' ? 'selected':''; ?>>Alphabetical (Area): Z–A</option>
+                <option value="creator_asc" <?= $order==='creator_asc' ? 'selected':''; ?>>Alphabetical (Creator): A–Z</option>
+                <option value="creator_desc" <?= $order==='creator_desc' ? 'selected':''; ?>>Alphabetical (Creator): Z–A</option>
               </select>
             </div>
 
@@ -602,7 +602,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
             $to = min($offset + $perPage, $total);
           ?>
           <div class="table-foot d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 mt-3">
-            <span class="foot-text">Mostrando <?= (int)$from ?>–<?= (int)$to ?> de <?= (int)$total ?> tickets</span>
+            <span class="foot-text">Showing <?= (int)$from ?>–<?= (int)$to ?> of <?= (int)$total ?> tickets</span>
 
             <nav aria-label="Paginación">
               <ul class="pagination pagination-sm mb-0">
@@ -669,10 +669,10 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
 
             <div class="d-flex gap-2">
               <a id="evOpenNew" class="btn btn-outline-primary ev-open" href="#" target="_blank" rel="noopener" title="Abrir en nueva pestaña">
-                <i class="fa-solid fa-up-right-from-square me-2"></i>Abrir
+                <i class="fa-solid fa-up-right-from-square me-2"></i>Open
               </a>
               <a id="evDownload" class="btn btn-outline-secondary ev-open" href="#" download title="Descargar">
-                <i class="fa-solid fa-download me-2"></i>Descargar
+                <i class="fa-solid fa-download me-2"></i>Download
               </a>
             </div>
           </div>
@@ -681,7 +681,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
             <!-- IMG/IFRAME dinámico -->
           </div>
           <div class="evidence-tip mt-2">
-            Tip: usa los botones para hacer zoom en imágenes. En PDF puedes usar el zoom del navegador.
+            Tip: Use the buttons to zoom in on images. For PDFs, you can use your browser's zoom function.
           </div>
         </div>
       </div>
@@ -694,12 +694,12 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
       <div class="modal-content delete-modal">
         <div class="modal-header">
           <h5 class="modal-title" id="deleteModalLabel">
-            <i class="fa-regular fa-trash-can me-2"></i>Eliminar ticket <span id="delTicketCode" class="fw-bold"></span>
+            <i class="fa-regular fa-trash-can me-2"></i>Delete ticket <span id="delTicketCode" class="fw-bold"></span>
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body">
-          ¿Seguro que quieres eliminar este ticket? Esta acción no se puede deshacer.
+          Are you sure you want to delete this ticket? This action cannot be undone.
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
@@ -708,7 +708,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
             <input type="hidden" name="action" value="delete_ticket">
             <input type="hidden" name="id_ticket" id="delTicketId" value="">
             <button type="submit" class="btn btn-danger">
-              <i class="fa-regular fa-trash-can me-2"></i>Eliminar
+              <i class="fa-regular fa-trash-can me-2"></i>Delete
             </button>
           </form>
         </div>
