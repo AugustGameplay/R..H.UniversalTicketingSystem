@@ -164,255 +164,330 @@ function build_url(array $overrides = []): string {
     <script defer src="./assets/js/sidebar.js"></script>
 
     <style>
+        /* ── Premium HQ "Linear" Theme for mis_tickets ─────────────────────────────── */
+        :root {
+          --slate-50:  #f8fafc;
+          --slate-100: #f1f5f9;
+          --slate-200: #e2e8f0;
+          --slate-300: #cbd5e1;
+          --slate-400: #94a3b8;
+          --slate-500: #64748b;
+          --slate-600: #475569;
+          --slate-700: #334155;
+          --slate-800: #1e293b;
+          --slate-900: #0f172a;
+          --brand: #0f5a8a;
+          --brand-hover: #0a4267;
+          --radius-lg: 16px;
+          --radius-md: 12px;
+          --radius-sm: 8px;
+        }
+
+        body.tickets-page {
+          background: var(--slate-50);
+          font-family: 'Inter', system-ui, -apple-system, sans-serif;
+          color: var(--slate-800);
+        }
+
+        /* Container adjustments */
+        .tickets-hq-wrapper {
+          max-width: 1040px;
+          margin: 0 auto;
+          padding: 2rem 1rem;
+          width: 100%;
+        }
+
+        .hq-title {
+          font-size: 1.6rem;
+          font-weight: 800;
+          color: var(--slate-900);
+          letter-spacing: -0.02em;
+        }
+
+        .hq-subtitle {
+          color: var(--slate-500);
+          font-weight: 500;
+          font-size: 0.9rem;
+        }
+
         /* ── Summary cards ─────────────────────────────── */
         .mis-summary {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-            gap: 12px;
-            margin-bottom: 20px;
+            gap: 16px;
+            margin-bottom: 32px;
         }
 
         .mis-stat {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 4px;
-            padding: 14px 10px 12px;
-            border-radius: 16px;
-            border: 1.5px solid rgba(15,23,42,.07);
+            gap: 6px;
+            padding: 20px 16px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--slate-200);
             background: #fff;
-            box-shadow: 0 4px 14px rgba(15,23,42,.06);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
             cursor: pointer;
             text-decoration: none;
-            transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+            transition: all 0.2s ease;
         }
         .mis-stat:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 22px rgba(15,23,42,.10);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            border-color: var(--slate-300);
         }
         .mis-stat.is-active {
-            border-color: var(--rhr-cyan, #18A9C8);
-            box-shadow: 0 0 0 3px rgba(24,169,200,.18), 0 8px 22px rgba(15,23,42,.10);
+            border-color: var(--brand);
+            box-shadow: 0 0 0 3px rgba(15, 90, 138, 0.1), 0 4px 6px -1px rgba(0,0,0,0.05);
         }
 
         .mis-stat__num {
-            font-size: 28px;
-            font-weight: 900;
+            font-size: 2rem;
+            font-weight: 800;
             line-height: 1;
-            letter-spacing: -.5px;
-            color: #0f172a;
+            color: var(--slate-900);
         }
         .mis-stat__label {
-            font-size: 11px;
+            font-size: 0.75rem;
             font-weight: 700;
-            letter-spacing: .06em;
+            letter-spacing: 0.05em;
             text-transform: uppercase;
-            color: rgba(15,23,42,.45);
+            color: var(--slate-500);
         }
 
-        /* Status color accents */
-        .mis-stat--total    .mis-stat__num { color: var(--rhr-navy,   #0a3d63); }
-        .mis-stat--pendiente .mis-stat__num { color: #d97706; }
-        .mis-stat--proceso   .mis-stat__num { color: var(--rhr-cyan,  #18A9C8); }
-        .mis-stat--resuelto  .mis-stat__num { color: #16a34a; }
-        .mis-stat--cerrado   .mis-stat__num { color: rgba(15,23,42,.38); }
-
-        /* ── Empty state ────────────────────────────────── */
-        .mis-empty {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 48px 20px;
-            color: rgba(15,23,42,.38);
-        }
-        .mis-empty i { font-size: 42px; opacity: .35; }
-        .mis-empty p { font-size: 14px; font-weight: 600; margin: 0; }
-
-        /* ── Ticket card list (mobile-first) ────────────── */
-        .mis-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .mis-card {
-            background: #fff;
-            border: 1.5px solid rgba(15,23,42,.07);
-            border-radius: 16px;
-            padding: 14px 16px 12px;
-            box-shadow: 0 2px 10px rgba(15,23,42,.05);
-            transition: box-shadow .15s ease, transform .15s ease;
-            position: relative;
-        }
-        .mis-card:hover {
-            box-shadow: 0 6px 20px rgba(15,23,42,.09);
-            transform: translateY(-1px);
-        }
-
-        /* Accent bar izquierda según estado */
-        .mis-card::before {
-            content: '';
-            position: absolute;
-            left: 0; top: 12px; bottom: 12px;
-            width: 4px;
-            border-radius: 0 4px 4px 0;
-            background: var(--rhr-cyan, #18A9C8);
-        }
-        .mis-card.status-Pendiente::before  { background: #d97706; }
-        .mis-card.status-En\ Proceso::before { background: var(--rhr-cyan, #18A9C8); }
-        .mis-card.status-Resuelto::before   { background: #16a34a; }
-        .mis-card.status-Cerrado::before    { background: rgba(15,23,42,.20); }
-
-        .mis-card__top {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 8px;
-            margin-bottom: 6px;
-        }
-
-        .mis-card__id {
-            font-size: 11px;
-            font-weight: 800;
-            letter-spacing: .06em;
-            text-transform: uppercase;
-            color: rgba(15,23,42,.38);
-        }
-
-        .mis-card__badges {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-
-        .mis-card__title {
-            font-size: 14px;
-            font-weight: 700;
-            color: #0f172a;
-            margin-bottom: 4px;
-            line-height: 1.35;
-        }
-        .mis-card__title span {
-            color: var(--rhr-orange, #F47A21);
-        }
-
-        .mis-card__comments {
-            font-size: 13px;
-            color: rgba(15,23,42,.55);
-            line-height: 1.5;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            margin-bottom: 8px;
-        }
-
-        .mis-card__meta {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .mis-card__meta-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 11.5px;
-            color: rgba(15,23,42,.50);
-            font-weight: 600;
-        }
-        .mis-card__meta-item i {
-            font-size: 11px;
-            opacity: .65;
-        }
+        /* Accentos de color */
+        .mis-stat--pendiente .mis-stat__num { color: #b45309; }
+        .mis-stat--proceso   .mis-stat__num { color: #1d4ed8; }
+        .mis-stat--resuelto  .mis-stat__num { color: #047857; }
+        .mis-stat--cerrado   .mis-stat__num { color: var(--slate-400); }
 
         /* ── Filtros y search ───────────────────────────── */
         .mis-filters {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             flex-wrap: wrap;
-            margin-bottom: 16px;
+            margin-bottom: 24px;
         }
 
         .mis-search-wrap {
             display: flex;
             align-items: center;
-            gap: 8px;
-            background: rgba(15,23,42,.04);
-            border: 1.5px solid rgba(15,23,42,.08);
-            border-radius: 12px;
-            padding: 6px 14px;
+            gap: 10px;
+            background: #fff;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-md);
+            padding: 10px 16px;
             flex: 1;
-            min-width: 180px;
+            min-width: 200px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.01) inset;
+            transition: all 0.2s ease;
         }
-        .mis-search-wrap i { color: rgba(15,23,42,.35); font-size: 13px; }
+        .mis-search-wrap:focus-within {
+            border-color: rgba(15, 90, 138, 0.5);
+            box-shadow: 0 0 0 3px rgba(15, 90, 138, 0.1);
+        }
+        .mis-search-wrap i { color: var(--slate-400); font-size: 14px; }
         .mis-search-input {
             background: transparent;
             border: 0;
             outline: none;
-            font-size: 13.5px;
-            color: #0f172a;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--slate-800);
             width: 100%;
         }
-        .mis-search-input::placeholder { color: rgba(15,23,42,.35); }
+        .mis-search-input::placeholder { color: var(--slate-400); font-weight: 500; }
 
         .mis-filter-chip {
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-            padding: 6px 14px;
-            border-radius: 20px;
-            border: 1.5px solid rgba(15,23,42,.10);
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 99px;
+            border: 1px solid var(--slate-200);
             background: #fff;
-            font-size: 12px;
+            font-size: 0.8rem;
             font-weight: 700;
-            letter-spacing: .03em;
-            color: rgba(15,23,42,.55);
+            color: var(--slate-600);
             text-decoration: none;
             cursor: pointer;
-            transition: border-color .13s ease, color .13s ease, background .13s ease;
-            white-space: nowrap;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
         }
         .mis-filter-chip:hover {
-            border-color: var(--rhr-orange, #F47A21);
-            color: var(--rhr-orange, #F47A21);
+            background: var(--slate-50);
+            border-color: var(--slate-300);
+            color: var(--slate-900);
         }
-        .mis-filter-chip.is-active {
-            background: var(--rhr-orange, #F47A21);
-            border-color: var(--rhr-orange, #F47A21);
-            color: #fff;
+
+        /* ── Ticket card list ────────────── */
+        .mis-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
         }
+
+        .mis-card {
+            background: #fff;
+            border: 1px solid var(--slate-200);
+            border-radius: var(--radius-lg);
+            padding: 20px 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            transition: all 0.2s ease;
+            position: relative;
+            display: block;
+            text-decoration: none;
+            color: inherit;
+        }
+        .mis-card:hover {
+            box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+            border-color: var(--slate-300);
+            transform: translateY(-1px);
+        }
+
+        .mis-card__top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .mis-card__id {
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--slate-500);
+            background: var(--slate-50);
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--slate-200);
+            letter-spacing: 0.05em;
+        }
+
+        .mis-card__badges {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hq-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 99px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            border: 1px solid transparent;
+        }
+        .hq-badge-status-pending { background: #fffbeb; color: #b45309; border-color: #fce7f3; }
+        .hq-badge-status-process { background: #eff6ff; color: #1d4ed8; border-color: #dbeafe; }
+        .hq-badge-status-resolved { background: #ecfdf5; color: #047857; border-color: #d1fae5; }
+        .hq-badge-status-closed { background: var(--slate-100); color: var(--slate-600); border-color: var(--slate-200); }
+        .hq-badge-prio-low { background: #f8fafc; color: #64748b; border-color: #e2e8f0; }
+        .hq-badge-prio-medium { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+        .hq-badge-prio-high { background: #fff7ed; color: #c2410c; border-color: #ffedd5; }
+        .hq-badge-prio-urgent { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+
+        .mis-card__title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--slate-900);
+            margin-bottom: 8px;
+        }
+
+        .mis-card__comments {
+            font-size: 0.9rem;
+            color: var(--slate-500);
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .mis-card__meta {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            border-top: 1px dashed var(--slate-200);
+            padding-top: 16px;
+        }
+
+        .mis-card__meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--slate-500);
+        }
+        .mis-card__meta-item i { font-size: 0.85rem; opacity: 0.7; }
+
+        .mis-card__meta-item.text-brand { color: var(--brand); }
+        .mis-card__meta-item.text-brand i { color: var(--brand); opacity: 1; }
+        .mis-card__meta-item.text-brand:hover { text-decoration: underline; }
 
         /* ── New ticket CTA ─────────────────────────────── */
         .mis-cta {
             display: inline-flex;
             align-items: center;
-            gap: 7px;
-            padding: 7px 18px;
-            border-radius: 12px;
-            background: var(--rhr-orange, #F47A21);
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(180deg, var(--brand), var(--brand-hover));
             color: #fff;
-            font-size: 13px;
+            font-size: 0.9rem;
             font-weight: 700;
             text-decoration: none;
-            border: 0;
-            cursor: pointer;
-            transition: background .15s ease, transform .1s ease, box-shadow .15s ease;
-            box-shadow: 0 4px 14px rgba(244,122,33,.28);
-            white-space: nowrap;
+            border: 1px solid var(--brand-hover);
+            box-shadow: 0 1px 2px rgba(15, 90, 138, 0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .mis-cta:hover {
-            background: #d95f0a;
+            background: linear-gradient(180deg, #116a9e, var(--brand-hover));
+            box-shadow: 0 4px 10px rgba(15, 90, 138, 0.2), inset 0 1px 0 rgba(255,255,255,0.15);
             color: #fff;
-            transform: translateY(-1px);
-            box-shadow: 0 6px 18px rgba(244,122,33,.36);
         }
-        .mis-cta:active { transform: translateY(1px); }
+        .mis-cta:active { transform: scale(0.97); }
+
+        /* Empty state */
+        .mis-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            padding: 80px 20px;
+            color: var(--slate-400);
+            background: #fff;
+            border: 1px dashed var(--slate-300);
+            border-radius: var(--radius-lg);
+        }
+        .mis-empty i { font-size: 48px; opacity: 0.5; margin-bottom: 8px; color: var(--slate-300); }
+        .mis-empty p { font-size: 1rem; font-weight: 600; margin: 0; color: var(--slate-500); }
+        
+        /* Pagination overrides */
+        .pagination .page-link {
+          color: var(--slate-600);
+          border-color: var(--slate-200);
+          font-weight: 500;
+        }
+        .pagination .page-item.active .page-link {
+          background-color: var(--brand);
+          border-color: var(--brand);
+          color: white;
+        }
+        .pagination .page-link:hover {
+          background-color: var(--slate-50);
+          color: var(--slate-900);
+        }
     </style>
 </head>
 
@@ -423,207 +498,208 @@ function build_url(array $overrides = []): string {
     <?php include __DIR__ . '/partials/menu.php'; ?>
 
     <!-- MAIN -->
-    <main class="main flex-grow-1 d-flex justify-content-center align-items-start">
-        <div class="tickets-page tickets-wrap" style="width:100%;">
+    <main class="main flex-grow-1 p-0 p-md-4">
+        <div class="tickets-hq-wrapper">
 
-            <section class="panel card tickets-panel" style="max-width:900px;">
-
-                <!-- ── Header ──────────────────────────────── -->
-                <div class="tickets-head d-flex justify-content-between align-items-center gap-2 flex-wrap">
-                    <div>
-                        <h1 class="panel__title m-0">My Tickets</h1>
-                        <p class="text-muted small m-0 mt-1">
-                            Personal history of your requests
-                        </p>
-                    </div>
-                    <a href="generarTickets.php" class="mis-cta">
-                        <i class="fa-solid fa-plus"></i> New Ticket
-                    </a>
+            <!-- ── Header ──────────────────────────────── -->
+            <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-4">
+                <div>
+                    <h1 class="hq-title m-0">Mis Tickets</h1>
+                    <p class="hq-subtitle m-0 mt-1">
+                        Historial personal de tus solicitudes
+                    </p>
                 </div>
+                <a href="generarTickets.php" class="mis-cta">
+                    <i class="fa-solid fa-plus"></i> Nuevo Ticket
+                </a>
+            </div>
 
-                <!-- ── Summary cards ───────────────────────── -->
-                <div class="mis-summary mt-3">
+            <!-- ── Summary cards ───────────────────────── -->
+            <div class="mis-summary">
 
-                    <a href="<?= esc(build_url(['status' => '', 'page' => 1])) ?>"
-                       class="mis-stat mis-stat--total<?= $filterStatus === '' ? ' is-active' : '' ?>">
-                        <div class="mis-stat__num"><?= $totalAll ?></div>
-                        <div class="mis-stat__label">Total</div>
-                    </a>
+                <a href="<?= esc(build_url(['status' => '', 'page' => 1])) ?>"
+                   class="mis-stat mis-stat--total<?= $filterStatus === '' ? ' is-active' : '' ?>">
+                    <div class="mis-stat__num"><?= $totalAll ?></div>
+                    <div class="mis-stat__label">Total</div>
+                </a>
 
-                    <a href="<?= esc(build_url(['status' => 'Pendiente', 'page' => 1])) ?>"
-                       class="mis-stat mis-stat--pendiente<?= $filterStatus === 'Pendiente' ? ' is-active' : '' ?>">
-                        <div class="mis-stat__num"><?= $statusCounts['Pendiente'] ?></div>
-                        <div class="mis-stat__label">Pending</div>
-                    </a>
+                <a href="<?= esc(build_url(['status' => 'Pendiente', 'page' => 1])) ?>"
+                   class="mis-stat mis-stat--pendiente<?= $filterStatus === 'Pendiente' ? ' is-active' : '' ?>">
+                    <div class="mis-stat__num"><?= $statusCounts['Pendiente'] ?></div>
+                    <div class="mis-stat__label">Pendiente</div>
+                </a>
 
-                    <a href="<?= esc(build_url(['status' => 'En Proceso', 'page' => 1])) ?>"
-                       class="mis-stat mis-stat--proceso<?= $filterStatus === 'En Proceso' ? ' is-active' : '' ?>">
-                        <div class="mis-stat__num"><?= $statusCounts['En Proceso'] ?></div>
-                        <div class="mis-stat__label">In Progress</div>
-                    </a>
+                <a href="<?= esc(build_url(['status' => 'En Proceso', 'page' => 1])) ?>"
+                   class="mis-stat mis-stat--proceso<?= $filterStatus === 'En Proceso' ? ' is-active' : '' ?>">
+                    <div class="mis-stat__num"><?= $statusCounts['En Proceso'] ?></div>
+                    <div class="mis-stat__label">En Proceso</div>
+                </a>
 
-                    <a href="<?= esc(build_url(['status' => 'Resuelto', 'page' => 1])) ?>"
-                       class="mis-stat mis-stat--resuelto<?= $filterStatus === 'Resuelto' ? ' is-active' : '' ?>">
-                        <div class="mis-stat__num"><?= $statusCounts['Resuelto'] ?></div>
-                        <div class="mis-stat__label">Resolved</div>
-                    </a>
+                <a href="<?= esc(build_url(['status' => 'Resuelto', 'page' => 1])) ?>"
+                   class="mis-stat mis-stat--resuelto<?= $filterStatus === 'Resuelto' ? ' is-active' : '' ?>">
+                    <div class="mis-stat__num"><?= $statusCounts['Resuelto'] ?></div>
+                    <div class="mis-stat__label">Resuelto</div>
+                </a>
 
-                    <a href="<?= esc(build_url(['status' => 'Cerrado', 'page' => 1])) ?>"
-                       class="mis-stat mis-stat--cerrado<?= $filterStatus === 'Cerrado' ? ' is-active' : '' ?>">
-                        <div class="mis-stat__num"><?= $statusCounts['Cerrado'] ?></div>
-                        <div class="mis-stat__label">Closed</div>
-                    </a>
+                <a href="<?= esc(build_url(['status' => 'Cerrado', 'page' => 1])) ?>"
+                   class="mis-stat mis-stat--cerrado<?= $filterStatus === 'Cerrado' ? ' is-active' : '' ?>">
+                    <div class="mis-stat__num"><?= $statusCounts['Cerrado'] ?></div>
+                    <div class="mis-stat__label">Cerrado</div>
+                </a>
 
-                </div>
+            </div>
 
-                <!-- ── Search + filtros chip ───────────────── -->
-                <form class="mis-filters" method="GET" action="mis_tickets.php">
-                    <div class="mis-search-wrap">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                        <input class="mis-search-input"
-                               type="search"
-                               name="q"
-                               value="<?= esc($q) ?>"
-                               placeholder="Search by ID, type, area, or description…">
-                        <?php if ($filterStatus !== ''): ?>
-                            <input type="hidden" name="status" value="<?= esc($filterStatus) ?>">
-                        <?php endif; ?>
-                    </div>
-
-                    <?php if ($q !== '' || $filterStatus !== ''): ?>
-                        <a href="mis_tickets.php" class="mis-filter-chip" title="Limpiar filtros">
-                            <i class="fa-solid fa-xmark"></i> Clean
-                        </a>
+            <!-- ── Search + filtros chip ───────────────── -->
+            <form class="mis-filters" method="GET" action="mis_tickets.php">
+                <div class="mis-search-wrap">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input class="mis-search-input"
+                           type="search"
+                           name="q"
+                           value="<?= esc($q) ?>"
+                           placeholder="Buscar por ID, tipo, área o descripción…">
+                    <?php if ($filterStatus !== ''): ?>
+                        <input type="hidden" name="status" value="<?= esc($filterStatus) ?>">
                     <?php endif; ?>
-                </form>
+                </div>
 
-                <!-- ── Lista de tickets ────────────────────── -->
-                <?php if (empty($tickets)): ?>
-                    <div class="mis-empty">
-                        <i class="fa-regular fa-folder-open"></i>
-                        <?php if ($totalAll === 0): ?>
-                            <p>You don't have any tickets yet. Create your first one!</p>
-                        <?php else: ?>
-                            <p>There are no tickets with this filter.</p>
-                        <?php endif; ?>
-                    </div>
-                <?php else: ?>
-                    <div class="mis-list">
-                        <?php foreach ($tickets as $t):
-                            $idTxt    = '#' . str_pad((string)$t['id_ticket'], 3, '0', STR_PAD_LEFT);
-                            $prio     = $t['priority'] ?: 'Media';
-                            $status   = $t['status']   ?: 'Pendiente';
-                            $prioClass = ui_prio_class($prio);
-                            $stClass   = ui_status_class($status);
-                            $dateStr   = $t['created_at'] ? date('d/m/Y H:i', strtotime($t['created_at'])) : '—';
-                            $comments  = (string)($t['comments'] ?? '');
-                            $shortType = $t['type'] ?: ($t['category'] ?: 'General');
-                            $hasUrl    = !empty(trim($t['ticket_url'] ?? ''));
-                            $hasFile   = !empty(trim($t['attachment_path'] ?? ''));
-                        ?>
-                            <div class="mis-card status-<?= esc($status) ?>">
+                <?php if ($q !== '' || $filterStatus !== ''): ?>
+                    <a href="mis_tickets.php" class="mis-filter-chip" title="Limpiar filtros">
+                        <i class="fa-solid fa-xmark"></i> Limpiar Filtros
+                    </a>
+                <?php endif; ?>
+            </form>
 
-                                <div class="mis-card__top">
-                                    <span class="mis-card__id"><?= esc($idTxt) ?></span>
-                                    <div class="mis-card__badges">
-                                        <!-- Prioridad -->
-                                        <span class="badge badge-prio <?= esc($prioClass) ?>"><?= esc($prio) ?></span>
-                                        <!-- Estado -->
-                                        <span class="badge badge-status <?= esc($stClass) ?>"><?= esc(ui_status_label($status)) ?></span>
-                                    </div>
+            <!-- ── Lista de tickets ────────────────────── -->
+            <?php if (empty($tickets)): ?>
+                <div class="mis-empty">
+                    <i class="fa-regular fa-folder-open"></i>
+                    <?php if ($totalAll === 0): ?>
+                        <p>Aún no tienes tickets. ¡Crea el primero!</p>
+                    <?php else: ?>
+                        <p>No se encontraron tickets con estos filtros.</p>
+                    <?php endif; ?>
+                </div>
+            <?php else: ?>
+                <div class="mis-list">
+                    <?php foreach ($tickets as $t):
+                        $idTxt    = '#' . str_pad((string)$t['id_ticket'], 3, '0', STR_PAD_LEFT);
+                        $prio     = $t['priority'] ?: 'Media';
+                        $status   = $t['status']   ?: 'Pendiente';
+                        $dateStr  = $t['created_at'] ? date('d/m/Y H:i', strtotime($t['created_at'])) : '—';
+                        $comments = (string)($t['comments'] ?? '');
+                        $shortType = $t['type'] ?: ($t['category'] ?: 'General');
+                        $hasUrl   = !empty(trim($t['ticket_url'] ?? ''));
+                        $hasFile  = !empty(trim($t['attachment_path'] ?? ''));
+
+                        // Classes de badge
+                        $sClass = 'hq-badge-status-closed';
+                        if($status==='Pendiente') $sClass='hq-badge-status-pending';
+                        if($status==='En Proceso') $sClass='hq-badge-status-process';
+                        if($status==='Resuelto') $sClass='hq-badge-status-resolved';
+
+                        $pClass = 'hq-badge-prio-medium';
+                        if($prio==='Baja') $pClass='hq-badge-prio-low';
+                        if($prio==='Alta') $pClass='hq-badge-prio-high';
+                        if($prio==='Urgente') $pClass='hq-badge-prio-urgent';
+                    ?>
+                        <a href="ticket_edit.php?id=<?= $t['id_ticket'] ?>" class="mis-card">
+
+                            <div class="mis-card__top">
+                                <span class="mis-card__id"><?= esc($idTxt) ?></span>
+                                <div class="mis-card__badges">
+                                    <span class="hq-badge <?= $pClass ?>"><i class="fa-solid fa-bolt"></i> <?= esc($prio) ?></span>
+                                    <span class="hq-badge <?= $sClass ?>"><?= esc(ui_status_label($status)) ?></span>
                                 </div>
+                            </div>
 
-                                <!-- Tipo + Área -->
-                                <div class="mis-card__title">
-                                    <span><?= esc($shortType) ?></span>
-                                    <?php if (!empty($t['area'])): ?>
-                                        <span class="fw-normal" style="color:rgba(15,23,42,.45)">
-                                            — <?= esc($t['area']) ?>
-                                        </span>
-                                    <?php endif; ?>
-                                </div>
+                            <!-- Tipo + Área -->
+                            <div class="mis-card__title">
+                                <?= esc($shortType) ?>
+                                <?php if (!empty($t['area'])): ?>
+                                    <span class="fw-normal" style="color:var(--slate-400)">
+                                        — <?= esc($t['area']) ?>
+                                    </span>
+                                <?php endif; ?>
+                            </div>
 
-                                <!-- Descripción -->
-                                <?php if ($comments !== ''): ?>
-                                    <div class="mis-card__comments"><?= esc($comments) ?></div>
+                            <!-- Descripción -->
+                            <?php if ($comments !== ''): ?>
+                                <div class="mis-card__comments"><?= esc($comments) ?></div>
+                            <?php endif; ?>
+
+                            <!-- Meta -->
+                            <div class="mis-card__meta">
+
+                                <span class="mis-card__meta-item" title="Fecha de Creación">
+                                    <i class="fa-regular fa-calendar"></i>
+                                    <?= esc($dateStr) ?>
+                                </span>
+
+                                <?php if (!empty($t['assigned_name']) && $t['assigned_name'] !== '—'): ?>
+                                    <span class="mis-card__meta-item" title="Asignado a">
+                                        <i class="fa-solid fa-user-check"></i>
+                                        <?= esc($t['assigned_name']) ?>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="mis-card__meta-item" style="color:var(--slate-300)" title="Sin Asignar">
+                                        <i class="fa-regular fa-user"></i>
+                                        Sin asignar
+                                    </span>
                                 <?php endif; ?>
 
-                                <!-- Meta -->
-                                <div class="mis-card__meta">
-
-                                    <span class="mis-card__meta-item">
-                                        <i class="fa-regular fa-calendar"></i>
-                                        <?= esc($dateStr) ?>
+                                <?php if ($hasUrl): ?>
+                                    <span class="mis-card__meta-item text-brand">
+                                        <i class="fa-solid fa-link"></i> URL
                                     </span>
+                                <?php endif; ?>
 
-                                    <?php if (!empty($t['assigned_name']) && $t['assigned_name'] !== '—'): ?>
-                                        <span class="mis-card__meta-item">
-                                            <i class="fa-solid fa-user-check"></i>
-                                            <?= esc($t['assigned_name']) ?>
-                                        </span>
-                                    <?php else: ?>
-                                        <span class="mis-card__meta-item" style="color:rgba(15,23,42,.28)">
-                                            <i class="fa-regular fa-user"></i>
-                                            Sin asignar
-                                        </span>
-                                    <?php endif; ?>
-
-                                    <?php if ($hasUrl): ?>
-                                        <a class="mis-card__meta-item text-decoration-none"
-                                           href="<?= esc(trim($t['ticket_url'])) ?>"
-                                           target="_blank" rel="noopener"
-                                           title="Ver URL adjunta">
-                                            <i class="fa-solid fa-link"></i> URL
-                                        </a>
-                                    <?php endif; ?>
-
-                                    <?php if ($hasFile): ?>
-                                        <span class="mis-card__meta-item">
-                                            <i class="fa-solid fa-paperclip"></i> Evidence
-                                        </span>
-                                    <?php endif; ?>
-
-                                </div>
+                                <?php if ($hasFile): ?>
+                                    <span class="mis-card__meta-item text-brand">
+                                        <i class="fa-solid fa-paperclip"></i> Archivo
+                                    </span>
+                                <?php endif; ?>
 
                             </div>
-                        <?php endforeach; ?>
+
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+
+                <!-- ── Paginación ──────────────────────── -->
+                <?php if ($totalPages > 1): ?>
+                    <?php
+                        $pFrom = $total ? ($offset + 1) : 0;
+                        $pTo   = min($offset + $perPage, $total);
+                    ?>
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 mt-4 pt-3 border-top border-slate-200">
+                        <span class="text-slate-500" style="font-size: 0.9rem; font-weight: 500;">
+                            Mostrando <?= $pFrom ?> a <?= $pTo ?> de <?= $total ?> tickets
+                        </span>
+                        <nav aria-label="Paginación">
+                            <ul class="pagination pagination-sm mb-0 shadow-sm rounded-lg overflow-hidden border border-slate-200">
+                                <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
+                                    <a class="page-link px-3" href="<?= esc(build_url(['page' => max(1, $page - 1)])) ?>">Anterior</a>
+                                </li>
+                                <?php for ($p = max(1, $page - 2); $p <= min($totalPages, $page + 2); $p++): ?>
+                                    <li class="page-item <?= $p === $page ? 'active' : '' ?>">
+                                        <a class="page-link" href="<?= esc(build_url(['page' => $p])) ?>"><?= $p ?></a>
+                                    </li>
+                                <?php endfor; ?>
+                                <li class="page-item <?= $page >= $totalPages ? 'disabled' : '' ?>">
+                                    <a class="page-link px-3" href="<?= esc(build_url(['page' => min($totalPages, $page + 1)])) ?>">Siguiente</a>
+                                </li>
+                            </ul>
+                        </nav>
                     </div>
-
-                    <!-- ── Paginación ──────────────────────── -->
-                    <?php if ($totalPages > 1): ?>
-                        <?php
-                            $pFrom = $total ? ($offset + 1) : 0;
-                            $pTo   = min($offset + $perPage, $total);
-                        ?>
-                        <div class="table-foot d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 mt-3">
-                            <span class="foot-text">
-                                Showing <?= $pFrom ?>–<?= $pTo ?> of <?= $total ?> tickets
-                            </span>
-                            <nav aria-label="Paginación">
-                                <ul class="pagination pagination-sm mb-0">
-                                    <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
-                                        <a class="page-link" href="<?= esc(build_url(['page' => max(1, $page - 1)])) ?>">Back</a>
-                                    </li>
-                                    <?php for ($p = max(1, $page - 2); $p <= min($totalPages, $page + 2); $p++): ?>
-                                        <li class="page-item <?= $p === $page ? 'active' : '' ?>">
-                                            <a class="page-link" href="<?= esc(build_url(['page' => $p])) ?>"><?= $p ?></a>
-                                        </li>
-                                    <?php endfor; ?>
-                                    <li class="page-item <?= $page >= $totalPages ? 'disabled' : '' ?>">
-                                        <a class="page-link" href="<?= esc(build_url(['page' => min($totalPages, $page + 1)])) ?>">Next</a>
-                                    </li>
-                                </ul>
-                            </nav>
-                        </div>
-                    <?php else: ?>
-                        <div class="foot-text text-muted small mt-2">
-                            <?= $total ?> ticket<?= $total !== 1 ? 's' : '' ?> in total
-                        </div>
-                    <?php endif; ?>
-
+                <?php else: ?>
+                    <div class="text-slate-500 text-center mt-4 pt-4 border-top border-slate-200" style="font-size: 0.9rem; font-weight: 500;">
+                        Mostrando todos los <?= $total ?> tickets
+                    </div>
                 <?php endif; ?>
 
-            </section>
+            <?php endif; ?>
+
         </div>
     </main>
 

@@ -136,43 +136,75 @@
 .tickets-table {
   margin-top: 18px;
   border-radius: 20px;
-  border: 1px solid rgba(15,23,42,.07);
+  border: 1px solid rgba(15,23,42,.06);
   background: #fff;
-  box-shadow: var(--shadow);
+  box-shadow:
+    0 24px 60px rgba(2,6,23,.13),
+    0 4px 14px rgba(2,6,23,.07);
   padding: 0;
   overflow-x: auto;
   overflow-y: hidden;
 }
 
-/* ── Table head ─────────────────────────────────── */
+/* ── Table head — NAVY GRADIENT ────────────────── */
+.tickets-table thead tr {
+  background: linear-gradient(90deg, var(--rhr-navy) 0%, #0f5a8a 100%);
+}
+
 .tickets-table thead th {
   font-weight: 900;
   font-size: 12px;
-  letter-spacing: .04em;
+  letter-spacing: .07em;
   text-transform: uppercase;
-  color: rgba(15,23,42,.52);
+  color: rgba(255,255,255,.72);
   padding: 16px 16px !important;
-  background: rgba(248,250,253,1);
-  border-bottom: 1px solid rgba(15,23,42,.07) !important;
+  background: transparent;
+  border: none !important;
   white-space: nowrap;
   vertical-align: middle;
 }
 
-.tickets-table thead tr:first-child th:first-child  { border-radius: 20px 0 0 0; }
-.tickets-table thead tr:first-child th:last-child   { border-radius: 0 20px 0 0; }
+/* Sort links blancos sobre navy */
+.tickets-table thead th a.th-sort { color: rgba(255,255,255,.80) !important; }
+.tickets-table thead th a.th-sort:hover { color: #fff !important; text-decoration: none; }
+.tickets-table thead th .sort-ico i { color: rgba(255,255,255,.65); }
+
+.tickets-table thead tr:first-child th:first-child { border-radius: 20px 0 0 0; }
+.tickets-table thead tr:first-child th:last-child  { border-radius: 0 20px 0 0; }
 
 /* ── Rows ───────────────────────────────────────── */
 .tickets-table tbody tr {
   transition:
     background .16s ease,
+    box-shadow .16s ease,
     transform  .14s cubic-bezier(.2,.8,.2,1);
+  animation: rowFadeIn .32s cubic-bezier(.2,.8,.2,1) both;
+}
+
+/* Entrada escalonada por fila */
+.tickets-table tbody tr:nth-child(1) { animation-delay: .03s; }
+.tickets-table tbody tr:nth-child(2) { animation-delay: .06s; }
+.tickets-table tbody tr:nth-child(3) { animation-delay: .09s; }
+.tickets-table tbody tr:nth-child(4) { animation-delay: .12s; }
+.tickets-table tbody tr:nth-child(5) { animation-delay: .15s; }
+.tickets-table tbody tr:nth-child(6) { animation-delay: .18s; }
+
+@keyframes rowFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Filas alternas — separación visual suave */
+.tickets-table tbody tr:nth-child(even) td {
+  background: rgba(248,250,253,.55);
 }
 
 .tickets-table tbody tr:hover {
   background: linear-gradient(90deg,
-    rgba(244,122,33,.04) 0%,
-    rgba(8,59,92,.04)    100%);
-  transform: translateY(-1px);
+    rgba(244,122,33,.06) 0%,
+    rgba(8,59,92,.05)    100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0,0,0,.06);
 }
 
 .tickets-table tbody tr:hover td {
@@ -181,7 +213,7 @@
 
 .tickets-table tbody td {
   padding: 16px 16px !important;
-  border-top: 1px solid rgba(15,23,42,.055) !important;
+  border-top: 1px solid rgba(15,23,42,.050) !important;
   color: rgba(15,23,42,.88);
   font-weight: 700;
   font-size: 14px;
@@ -388,8 +420,8 @@
 }
 
 .tickets-table thead th:last-child {
-  background: rgba(248,250,253,1);
-  box-shadow: -10px 0 18px rgba(0,0,0,.05);
+  background: #0f5a8a;
+  box-shadow: none;
 }
 
 .tickets-table tbody td:last-child {
@@ -476,16 +508,28 @@
   border-color: rgba(220,53,69,.80) !important;
 }
 
-/* ── Modal evidencia ────────────────────────────── */
+/* ── Modal evidencia — PREMIUM ──────────────────── */
 .tickets-page .evidence-modal .modal-content {
   border-radius: 20px;
-  border: 1px solid rgba(15,23,42,.08);
+  border: none;
   overflow: hidden;
+  box-shadow: 0 30px 80px rgba(2,6,23,.20);
 }
 
 .tickets-page .evidence-modal .modal-header {
-  background: rgba(255,255,255,.96);
+  background: linear-gradient(90deg, var(--rhr-navy) 0%, #0f5a8a 100%);
+  border-bottom: none;
 }
+
+.tickets-page .evidence-modal .modal-title,
+.tickets-page .evidence-modal #evFilename,
+.tickets-page .evidence-modal .small.text-muted { color: rgba(255,255,255,.85); }
+
+.tickets-page .evidence-modal .btn-close {
+  filter: invert(1) brightness(2);
+  opacity: .80;
+}
+.tickets-page .evidence-modal .btn-close:hover { opacity: 1; }
 
 .tickets-page .evidence-toolbar {
   display: flex;
@@ -570,16 +614,27 @@
   flex-direction: column;
 }
 
-/* ── Modal eliminar ─────────────────────────────── */
+/* ── Modal eliminar — PREMIUM ───────────────────── */
 .tickets-page .delete-modal {
   border-radius: 20px;
-  border: 1px solid rgba(15,23,42,.08);
+  border: none;
   overflow: hidden;
+  box-shadow: 0 30px 80px rgba(2,6,23,.20);
 }
 
 .tickets-page .delete-modal .modal-header {
-  background: rgba(255,255,255,.96);
+  background: linear-gradient(90deg, #b91c1c 0%, #dc2626 100%);
+  border-bottom: none;
 }
+
+.tickets-page .delete-modal .modal-title,
+.tickets-page .delete-modal .modal-header i { color: #fff; }
+
+.tickets-page .delete-modal .btn-close {
+  filter: invert(1) brightness(2);
+  opacity: .80;
+}
+.tickets-page .delete-modal .btn-close:hover { opacity: 1; }
 
 /* ── Modal z-index ──────────────────────────────── */
 .tickets-page .modal         { z-index: 2000; }

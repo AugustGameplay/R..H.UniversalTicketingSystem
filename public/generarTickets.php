@@ -219,6 +219,140 @@ $stmt->execute([
   <script src="./assets/js/selects.js"></script>
 </head>
 
+<style>
+/* ── Tipo Picker Trigger ──────────────────────────────── */
+.tipo-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--slate-200);
+  background: #fcfcfd;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--slate-800);
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.01) inset;
+  transition: all 0.2s ease;
+}
+.tipo-trigger:hover { background: #fff; border-color: var(--slate-300); }
+.tipo-trigger.has-value { color: var(--slate-900); font-weight: 600; }
+.tipo-trigger .tipo-trigger__icon {
+  width: 34px; height: 34px; border-radius: 8px;
+  background: var(--slate-100); border: 1px solid var(--slate-200);
+  display: grid; place-items: center;
+  font-size: 1rem; color: var(--brand); flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+.tipo-trigger .tipo-trigger__right {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--slate-400); font-size: 0.8rem;
+}
+.tipo-trigger .chev {
+  width: 10px; height: 10px;
+  border-right: 2px solid var(--slate-400);
+  border-bottom: 2px solid var(--slate-400);
+  transform: rotate(45deg); flex-shrink: 0;
+}
+
+/* ── Modal Fallas ─────────────────────────────────────── */
+#modalFallas .modal-content {
+  border-radius: 20px;
+  border: 1px solid var(--slate-200);
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15);
+  overflow: hidden;
+}
+#modalFallas .modal-header {
+  background: #fff;
+  border-bottom: 1px solid var(--slate-100);
+  padding: 20px 24px 16px;
+}
+#modalFallas .modal-title {
+  font-size: 1.1rem; font-weight: 800; color: var(--slate-900);
+}
+.modal-back-btn {
+  background: var(--brand); border: 1px solid var(--brand-hover);
+  color: #fff; border-radius: 8px;
+  padding: 6px 14px; font-size: 0.8rem; font-weight: 700;
+  display: none; cursor: pointer; transition: all 0.15s ease;
+  align-items: center; gap: 6px;
+  box-shadow: 0 1px 3px rgba(var(--brand-rgb), 0.3);
+}
+.modal-back-btn:hover { background: var(--brand-hover); }
+.modal-back-btn.visible { display: flex; }
+
+/* ── Step 1: Categoría cards grid ─────────────────────── */
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 20px 24px;
+}
+@media (max-width: 480px) { .cat-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.cat-card {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 10px; padding: 18px 10px;
+  border-radius: 14px; border: 1.5px solid var(--slate-200);
+  background: #fff; cursor: pointer;
+  transition: all 0.18s ease; text-align: center;
+}
+.cat-card:hover {
+  border-color: rgba(var(--brand-rgb), 0.4);
+  background: rgba(var(--brand-rgb), 0.03);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+.cat-card.is-selected {
+  border-color: var(--brand);
+  background: rgba(var(--brand-rgb), 0.04);
+  box-shadow: 0 0 0 3px rgba(var(--brand-rgb), 0.1);
+}
+.cat-card__ico {
+  width: 48px; height: 48px; border-radius: 14px;
+  background: var(--slate-50); border: 1px solid var(--slate-200);
+  display: grid; place-items: center;
+  font-size: 1.4rem; color: var(--brand);
+  transition: all 0.18s ease;
+}
+.cat-card:hover .cat-card__ico { background: rgba(var(--brand-rgb), 0.08); }
+.cat-card__label { font-size: 0.82rem; font-weight: 700; color: var(--slate-700); }
+
+/* ── Step 2: Sub-fallas list ──────────────────────────── */
+.subfalla-list {
+  display: flex; flex-direction: column;
+  gap: 6px; padding: 16px 24px 24px;
+}
+.subfalla-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 16px; border-radius: 12px;
+  border: 1px solid var(--slate-200); background: #fff;
+  cursor: pointer; font-size: 0.9rem; font-weight: 600;
+  color: var(--slate-700); transition: all 0.15s ease;
+}
+.subfalla-item:hover {
+  border-color: rgba(var(--brand-rgb), 0.4);
+  background: rgba(var(--brand-rgb), 0.03);
+  color: var(--brand);
+}
+.subfalla-item__ico { width: 18px; text-align: center; color: var(--slate-400); font-size: 0.85rem; }
+.subfalla-item:hover .subfalla-item__ico { color: var(--brand); }
+.subfalla-item--other { border-style: dashed; color: var(--slate-500); }
+
+/* ── Category selected badge ──────────────────────────── */
+.cat-breadcrumb {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 24px 4px;
+  font-size: 0.8rem; font-weight: 700; color: var(--slate-500);
+}
+.cat-breadcrumb i { color: var(--brand); }
+</style>
+
 <body>
 
   <div class="layout d-flex">
@@ -252,35 +386,22 @@ $stmt->execute([
         <!-- ✅ FORM YA FUNCIONAL -->
         <form class="ticket-form mx-auto" id="ticketForm" method="POST" action="" novalidate enctype="multipart/form-data">
 
-          <!-- Category (auto, oculto) -->
+          <!-- Hidden inputs -->
           <input type="hidden" name="category" id="category">
+          <input type="hidden" name="type"     id="type">
 
-          <!-- Type -->
-          <div class="dropdown w-100">
-            <button class="select-pro dropdown-toggle w-100" type="button" id="typeBtn" data-bs-toggle="dropdown" aria-expanded="false">
-              <span id="typeText">Type</span>
-              <span class="chev" aria-hidden="true"></span>
-            </button>
+          <!-- Type (modal picker) -->
+          <button type="button" class="select-pro w-100" id="tipoTrigger" data-bs-toggle="modal" data-bs-target="#modalFallas">
+            <span id="tipoTriggerText">Type</span>
+            <span class="chev" aria-hidden="true"></span>
+          </button>
 
-            <ul class="dropdown-menu dropdown-pro w-100" aria-labelledby="typeBtn" data-target-text="#typeText" data-target-input="#type">
-              <li><button class="dropdown-item" type="button" data-value="Equipo lento">Equipo lento</button></li>
-              <li><button class="dropdown-item" type="button" data-value="No enciende">No enciende</button></li>
-              <li><button class="dropdown-item" type="button" data-value="Sin internet">Sin internet</button></li>
-              <li><button class="dropdown-item" type="button" data-value="Error de aplicación">Error de aplicación</button></li>
-              <li><button class="dropdown-item" type="button" data-value="Acceso / credenciales">Acceso / credenciales</button></li>
-              <li><button class="dropdown-item" type="button" data-value="Impresora">Impresora</button></li>
-            </ul>
-
-            <input type="hidden" name="type" id="type">
-          </div>
-
-          <!-- Area (✅ IDs únicos y name correcto) -->
+          <!-- Area -->
           <div class="dropdown w-100">
             <button class="select-pro dropdown-toggle w-100" type="button" id="areaBtn" data-bs-toggle="dropdown" aria-expanded="false">
               <span id="areaText">Area</span>
               <span class="chev" aria-hidden="true"></span>
             </button>
-
             <ul class="dropdown-menu dropdown-pro w-100" aria-labelledby="areaBtn" data-target-text="#areaText" data-target-input="#area">
               <li><button class="dropdown-item" type="button" data-value="Marketing e IT">Marketing e IT</button></li>
               <li><button class="dropdown-item" type="button" data-value="Managers">Managers</button></li>
@@ -290,28 +411,21 @@ $stmt->execute([
               <li><button class="dropdown-item" type="button" data-value="Accounting">Accounting</button></li>
               <li><button class="dropdown-item" type="button" data-value="Workers Comp">Workers Comp</button></li>
             </ul>
-
             <input type="hidden" name="area" id="area">
           </div>
-          <!-- URL (opcional) -->
+
           <!-- URL (opcional) -->
           <div class="field">
             <div class="field__row">
               <label class="field__label" for="ticket_url">URL (optional)</label>
               <span class="field__counter">Optional</span>
             </div>
-
             <div class="tc-urlwrap">
               <i class="fa-solid fa-link" aria-hidden="true"></i>
-              <input
-                class="tc-urlinput"
-                type="url"
-                id="ticket_url"
-                name="ticket_url"
+              <input class="tc-urlinput" type="url" id="ticket_url" name="ticket_url"
                 value="<?= htmlspecialchars($_POST['ticket_url'] ?? '') ?>"
                 placeholder="Paste a link (Drive, SharePoint, etc.)">
             </div>
-
             <div class="field__hint">Tip: if you paste without http/https, we normalize it automatically.</div>
             <div id="urlError" class="tc-inline-error" hidden>
               <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
@@ -325,13 +439,8 @@ $stmt->execute([
               <label class="field__label" for="attachment">Attachment/Evidence (optional)</label>
               <span class="field__counter">Máx. 10MB</span>
             </div>
-
-            <input
-              type="file"
-              id="attachment"
-              name="attachment"
-              accept=".png,.jpg,.jpeg,.pdf,.doc,.docx,.xlsx,.xls,.txt"
-              hidden>
+            <input type="file" id="attachment" name="attachment"
+              accept=".png,.jpg,.jpeg,.pdf,.doc,.docx,.xlsx,.xls,.txt" hidden>
 
             <label for="attachment" class="tc-dropzone" id="dropzone">
               <div class="tc-dropzone__icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
@@ -353,7 +462,6 @@ $stmt->execute([
                   <div class="tc-fileinfo__size" id="fileSize">0 KB</div>
                 </div>
               </div>
-
               <button type="button" class="tc-fileinfo__remove" id="fileRemove" title="Quitar archivo">
                 <i class="fa-solid fa-xmark"></i>
               </button>
@@ -362,9 +470,7 @@ $stmt->execute([
             <div class="field__hint">Tip: If it is an image, you will see a small preview.</div>
           </div>
 
-
-
-          <!-- Comments (✅ ya manda POST por tener name) -->
+          <!-- Comments -->
           <div>
             <label class="label" for="comments">Comments</label>
             <textarea class="textarea" id="comments" name="comments" rows="6" required placeholder="Describe your problem"></textarea>
@@ -378,225 +484,377 @@ $stmt->execute([
 
   </div>
 
+  <!-- ═══════════════════════════════════════════════════
+       MODAL: Selector de Tipo de Falla (2 pasos)
+  ════════════════════════════════════════════════════ -->
+  <div class="modal fade" id="modalFallas" tabindex="-1" aria-labelledby="modalFallasLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+
+        <!-- Header -->
+        <div class="modal-header">
+          <div style="display:flex;align-items:center;gap:12px;flex:1;">
+            <button type="button" class="modal-back-btn" id="modalBackBtn">
+              <i class="fa-solid fa-arrow-left"></i> Volver
+            </button>
+            <h5 class="modal-title" id="modalFallasLabel">¿Qué tiene el problema?</h5>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <!-- Body -->
+        <div class="modal-body p-0" id="modalBody">
+
+          <!-- STEP 1: Categoría grid -->
+          <div id="step1">
+            <div class="cat-grid">
+
+              <button type="button" class="cat-card" data-cat="Hardware" data-cat-label="Computadora / PC" data-cat-ico="fa-solid fa-desktop">
+                <div class="cat-card__ico"><i class="fa-solid fa-desktop"></i></div>
+                <div class="cat-card__label">Computadora / PC</div>
+              </button>
+
+              <button type="button" class="cat-card" data-cat="Hardware" data-cat-label="Monitor" data-cat-ico="fa-solid fa-tv">
+                <div class="cat-card__ico"><i class="fa-solid fa-tv"></i></div>
+                <div class="cat-card__label">Monitor</div>
+              </button>
+
+              <button type="button" class="cat-card" data-cat="Hardware" data-cat-label="Impresora" data-cat-ico="fa-solid fa-print">
+                <div class="cat-card__ico"><i class="fa-solid fa-print"></i></div>
+                <div class="cat-card__label">Impresora</div>
+              </button>
+
+              <button type="button" class="cat-card" data-cat="Network" data-cat-label="Red / Internet" data-cat-ico="fa-solid fa-wifi">
+                <div class="cat-card__ico"><i class="fa-solid fa-wifi"></i></div>
+                <div class="cat-card__label">Red / Internet</div>
+              </button>
+
+              <button type="button" class="cat-card" data-cat="Software" data-cat-label="Aplicación / Software" data-cat-ico="fa-solid fa-cubes">
+                <div class="cat-card__ico"><i class="fa-solid fa-cubes"></i></div>
+                <div class="cat-card__label">Aplicación / Software</div>
+              </button>
+
+              <button type="button" class="cat-card" data-cat="Email" data-cat-label="Correo / Acceso" data-cat-ico="fa-solid fa-envelope-circle-check">
+                <div class="cat-card__ico"><i class="fa-solid fa-envelope-circle-check"></i></div>
+                <div class="cat-card__label">Correo / Acceso</div>
+              </button>
+
+              <button type="button" class="cat-card" data-cat="Hardware" data-cat-label="Teclado / Mouse" data-cat-ico="fa-solid fa-keyboard">
+                <div class="cat-card__ico"><i class="fa-solid fa-keyboard"></i></div>
+                <div class="cat-card__label">Teclado / Mouse</div>
+              </button>
+
+              <button type="button" class="cat-card" data-cat="Hardware" data-cat-label="Teléfono / VoIP" data-cat-ico="fa-solid fa-phone-office">
+                <div class="cat-card__ico"><i class="fa-solid fa-phone"></i></div>
+                <div class="cat-card__label">Teléfono / VoIP</div>
+              </button>
+
+              <button type="button" class="cat-card" data-cat="General" data-cat-label="Otro" data-cat-ico="fa-solid fa-circle-question">
+                <div class="cat-card__ico"><i class="fa-solid fa-circle-question"></i></div>
+                <div class="cat-card__label">Otro</div>
+              </button>
+
+            </div>
+          </div>
+
+          <!-- STEP 2: Sub-fallas (se llena dinámicamente) -->
+          <div id="step2" hidden>
+            <div class="cat-breadcrumb" id="catBreadcrumb">
+              <i class="fa-solid fa-folder-open"></i>
+              <span id="catBreadcrumbLabel">Categoría</span>
+              <i class="fa-solid fa-chevron-right" style="font-size:0.6rem;opacity:0.5;"></i>
+              <span>Selecciona la falla específica</span>
+            </div>
+            <div class="subfalla-list" id="subfallaList">
+              <!-- Se genera dinámicamente -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Bootstrap Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- ✅ Binding seguro para dropdowns (no interfiere con tu CSS) -->
   <script>
-    // Convierte dropdown-items en selects: setea texto + hidden input
-    document.querySelectorAll('.dropdown-menu[data-target-text][data-target-input]').forEach(menu => {
-      const textSel = menu.getAttribute('data-target-text');
-      const inputSel = menu.getAttribute('data-target-input');
-      const textEl = document.querySelector(textSel);
-      const inputEl = document.querySelector(inputSel);
+  'use strict';
 
-      menu.querySelectorAll('.dropdown-item[data-value]').forEach(item => {
-        item.addEventListener('click', () => {
-          const val = item.getAttribute('data-value') || item.textContent.trim();
-          if (textEl) textEl.textContent = val;
-          if (inputEl) inputEl.value = val;
-        });
-      });
+  /* ─────────────────────────────────────────────────────────
+     CATÁLOGO DE FALLAS (categoría → subfallas)
+  ───────────────────────────────────────────────────────── */
+  const FALLAS = {
+    'Computadora / PC': [
+      { ico: 'fa-solid fa-power-off',          label: 'No enciende' },
+      { ico: 'fa-solid fa-gauge',              label: 'Equipo muy lento' },
+      { ico: 'fa-solid fa-fire',               label: 'Se calienta demasiado / apagado repentino' },
+      { ico: 'fa-solid fa-volume-high',        label: 'Hace ruidos extraños' },
+      { ico: 'fa-solid fa-skull-crossbones',   label: 'Pantalla azul / crash' },
+      { ico: 'fa-solid fa-rotate-right',       label: 'Se reinicia solo' },
+      { ico: 'fa-solid fa-circle-question',    label: 'Otro problema', other: true },
+    ],
+    'Monitor': [
+      { ico: 'fa-solid fa-power-off',          label: 'No enciende' },
+      { ico: 'fa-solid fa-bolt',               label: 'Parpadea / titila' },
+      { ico: 'fa-solid fa-plug',               label: 'Falla el HDMI / VGA / cable' },
+      { ico: 'fa-solid fa-expand',             label: 'Resolución incorrecta' },
+      { ico: 'fa-solid fa-eye-slash',          label: 'Sin imagen / pantalla negra' },
+      { ico: 'fa-solid fa-bars',               label: 'Líneas / manchas en pantalla' },
+      { ico: 'fa-solid fa-circle-question',    label: 'Otro problema', other: true },
+    ],
+    'Impresora': [
+      { ico: 'fa-solid fa-fill-drip',          label: 'Sin tinta / tóner' },
+      { ico: 'fa-solid fa-file-circle-xmark',  label: 'Sin hojas / papel atascado' },
+      { ico: 'fa-solid fa-link-slash',         label: 'No conecta (USB / red / WiFi)' },
+      { ico: 'fa-solid fa-ban',                label: 'No imprime / trabajo en cola' },
+      { ico: 'fa-solid fa-file-circle-exclamation', label: 'Imprime cortado o en mal formato' },
+      { ico: 'fa-solid fa-circle-question',    label: 'Otro problema', other: true },
+    ],
+    'Red / Internet': [
+      { ico: 'fa-solid fa-wifi',               label: 'Sin conexión a internet' },
+      { ico: 'fa-solid fa-gauge',              label: 'Conexión muy lenta' },
+      { ico: 'fa-solid fa-ethernet',           label: 'Cable de red desconectado / dañado' },
+      { ico: 'fa-solid fa-server',             label: 'No accede a un servidor / VPN' },
+      { ico: 'fa-solid fa-globe',              label: 'Solo algunas páginas no cargan' },
+      { ico: 'fa-solid fa-circle-question',    label: 'Otro problema', other: true },
+    ],
+    'Aplicación / Software': [
+      { ico: 'fa-solid fa-triangle-exclamation', label: 'Error al abrir la aplicación' },
+      { ico: 'fa-solid fa-bug',                label: 'Falla / cierre inesperado' },
+      { ico: 'fa-solid fa-lock',               label: 'No tengo acceso / permisos' },
+      { ico: 'fa-solid fa-download',           label: 'Necesito instalar un programa' },
+      { ico: 'fa-solid fa-rotate',             label: 'Actualización pendiente / forzada' },
+      { ico: 'fa-solid fa-circle-question',    label: 'Otro problema', other: true },
+    ],
+    'Correo / Acceso': [
+      { ico: 'fa-solid fa-key',                label: 'Olvidé mi contraseña' },
+      { ico: 'fa-solid fa-user-lock',          label: 'Cuenta bloqueada' },
+      { ico: 'fa-solid fa-paper-plane',        label: 'No recibo / no envío correos' },
+      { ico: 'fa-solid fa-id-badge',           label: 'Necesito acceso a un sistema nuevo' },
+      { ico: 'fa-solid fa-shield-halved',      label: 'Sospecha de cuenta comprometida' },
+      { ico: 'fa-solid fa-circle-question',    label: 'Otro problema', other: true },
+    ],
+    'Teclado / Mouse': [
+      { ico: 'fa-solid fa-keyboard',           label: 'Teclas no responden' },
+      { ico: 'fa-solid fa-computer-mouse',     label: 'Mouse no mueve / sin respuesta' },
+      { ico: 'fa-solid fa-battery-quarter',    label: 'Batería agotada (inalámbrico)' },
+      { ico: 'fa-solid fa-circle-exclamation', label: 'No reconocido por el equipo' },
+      { ico: 'fa-solid fa-circle-question',    label: 'Otro problema', other: true },
+    ],
+    'Teléfono / VoIP': [
+      { ico: 'fa-solid fa-phone-slash',        label: 'Sin tono / no llama' },
+      { ico: 'fa-solid fa-microphone-slash',   label: 'Sin audio en llamadas' },
+      { ico: 'fa-solid fa-signal',             label: 'Desconectado de la red VoIP' },
+      { ico: 'fa-solid fa-power-off',          label: 'No enciende / pantalla bloqueada' },
+      { ico: 'fa-solid fa-circle-question',    label: 'Otro problema', other: true },
+    ],
+    'Otro': [
+      { ico: 'fa-solid fa-wrench',             label: 'Falla de hardware no listada' },
+      { ico: 'fa-solid fa-comment-dots',       label: 'Solicitud general / consulta', other: true },
+    ],
+  };
+
+  /* ─────────────────────────────────────────────────────────
+     LÓGICA DEL MODAL (2 Pasos)
+  ───────────────────────────────────────────────────────── */
+  const modalEl      = document.getElementById('modalFallas');
+  const step1        = document.getElementById('step1');
+  const step2        = document.getElementById('step2');
+  const backBtn      = document.getElementById('modalBackBtn');
+  const modalTitle   = document.getElementById('modalFallasLabel');
+  const subfallaList = document.getElementById('subfallaList');
+  const catBLabel    = document.getElementById('catBreadcrumbLabel');
+  const triggerText  = document.getElementById('tipoTriggerText');
+  const inputType    = document.getElementById('type');
+  const inputCat     = document.getElementById('category');
+  const tipoTrigger  = document.getElementById('tipoTrigger');
+
+  let bsModal = null;
+  modalEl && (bsModal = new bootstrap.Modal(modalEl));
+
+  // Reset to step 1 whenever modal opens
+  modalEl.addEventListener('show.bs.modal', () => showStep1());
+
+  function showStep1() {
+    step1.hidden = false;
+    step2.hidden = true;
+    backBtn.classList.remove('visible');
+    modalTitle.textContent = '¿Qué tiene el problema?';
+  }
+
+  function showStep2(catLabel, catIco) {
+    step1.hidden = true;
+    step2.hidden = false;
+    backBtn.classList.add('visible');
+    modalTitle.textContent = 'Selecciona la falla específica';
+    catBLabel.textContent = catLabel;
+
+    // Build subfalla items
+    const fallas = FALLAS[catLabel] || [{ ico: 'fa-solid fa-circle-question', label: 'Otro', other: true }];
+    subfallaList.innerHTML = '';
+    fallas.forEach(f => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'subfalla-item' + (f.other ? ' subfalla-item--other' : '');
+      btn.innerHTML = `<i class="subfalla-item__ico ${f.ico}"></i> ${f.label}`;
+      btn.addEventListener('click', () => selectFalla(catLabel, f.label, catIco));
+      subfallaList.appendChild(btn);
     });
+  }
 
-    
-    // Auto-categoría según el "Type"
-    // Puedes ajustar/expandir este mapeo cuando agreguen más tipos.
-    const TYPE_TO_CATEGORY = {
-      "Impresora": "Hardware",
-      "No enciende": "Hardware",
-      "Equipo lento": "Hardware",
-      "Sin internet": "Network",
-      "Error de aplicación": "Software",
-      "Acceso / credenciales": "Email",
-    };
+  function selectFalla(catLabel, fallaLabel, catIco) {
+    // Set hidden inputs
+    const catData = document.querySelector(`.cat-card[data-cat-label="${catLabel}"]`)?.dataset?.cat || 'General';
+    inputType.value = fallaLabel;
+    inputCat.value  = catData;
 
-    const typeMenu = document.querySelector('ul[aria-labelledby="typeBtn"]');
-    const catTextEl = document.querySelector("#catText");
-    const catInputEl = document.querySelector("#category");
+    // Update trigger button text
+    triggerText.textContent = `${catLabel} — ${fallaLabel}`;
 
-    // Cuando el usuario elige un Type, se asigna la Category automáticamente
-    typeMenu?.querySelectorAll('.dropdown-item[data-value]').forEach(item => {
+    // Close modal
+    bsModal && bsModal.hide();
+  }
+
+  // Cat card clicks → go to step 2
+  document.querySelectorAll('.cat-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const label = card.dataset.catLabel;
+      const ico   = card.dataset.catIco;
+      showStep2(label, ico);
+    });
+  });
+
+  // Back button
+  backBtn.addEventListener('click', () => showStep1());
+
+  /* ─────────────────────────────────────────────────────────
+     ÁREA: Dropdown binding
+  ───────────────────────────────────────────────────────── */
+  document.querySelectorAll('.dropdown-menu[data-target-text][data-target-input]').forEach(menu => {
+    const textEl  = document.querySelector(menu.getAttribute('data-target-text'));
+    const inputEl = document.querySelector(menu.getAttribute('data-target-input'));
+    menu.querySelectorAll('.dropdown-item[data-value]').forEach(item => {
       item.addEventListener('click', () => {
-        const typeVal = item.getAttribute('data-value') || item.textContent.trim();
-        const autoCat = TYPE_TO_CATEGORY[typeVal];
-
-        if (autoCat && catInputEl) {
-          catInputEl.value = autoCat;
-          if (catTextEl) catTextEl.textContent = autoCat;
-        }
+        if (textEl)  textEl.textContent = item.getAttribute('data-value');
+        if (inputEl) inputEl.value      = item.getAttribute('data-value');
       });
     });
+  });
 
+  /* ─────────────────────────────────────────────────────────
+     AUTO-CATEGORÍA en JS (fallback igual que en PHP)
+  ───────────────────────────────────────────────────────── */
+  const TYPE_TO_CATEGORY = {
+    'Computadora / PC': 'Hardware',
+    'Monitor': 'Hardware', 'Impresora': 'Hardware',
+    'Teclado / Mouse': 'Hardware', 'Teléfono / VoIP': 'Hardware',
+    'Red / Internet': 'Network', 'Aplicación / Software': 'Software',
+    'Correo / Acceso': 'Email', 'Otro': 'General',
+  };
 
-// Validación: si falta algo, no manda POST
-    const form = document.getElementById("ticketForm");
-    form?.addEventListener("submit", (e) => {
-      const type     = document.getElementById("type").value.trim();
-      const area     = document.getElementById("area").value.trim();
-      const comments = document.getElementById("comments").value.trim();
-
-      // Si por alguna razón category viene vacía, la calculamos antes de validar/enviar
-      const catInput = document.getElementById("category");
-      if (catInput && !catInput.value.trim()) {
-        const autoCat = TYPE_TO_CATEGORY[type] || "General";
-        catInput.value = autoCat;
-      }
-
-      if (!type || !area || !comments) {
-        e.preventDefault();
-        alert("Completa todos los campos para enviar el ticket.");
-      }
-    });
-    // ===== URL: normalizar y validación ligera (solo UX) =====
-    const urlInput = document.getElementById("ticket_url");
-    const urlError = document.getElementById("urlError");
-
-    function normalizeUrl(val){
-      const v = (val || "").trim();
-      if (!v) return "";
-      if (/^https?:\/\//i.test(v)) return v;
-      // si parece dominio/ruta, le agregamos https://
-      return "https://" + v;
+  /* ─────────────────────────────────────────────────────────
+     VALIDACIÓN antes de enviar
+  ───────────────────────────────────────────────────────── */
+  const form = document.getElementById('ticketForm');
+  form?.addEventListener('submit', e => {
+    const typeVal = document.getElementById('type').value.trim();
+    const areaVal = document.getElementById('area').value.trim();
+    const commVal = document.getElementById('comments').value.trim();
+    if (!typeVal || !areaVal || !commVal) {
+      e.preventDefault();
+      alert('Por favor completa todos los campos: Tipo de falla, Área y Descripción.');
     }
+  });
 
-    function isValidUrl(val){
-      try{
-        // URL() requiere esquema; por eso normalizamos
-        new URL(normalizeUrl(val));
-        return true;
-      }catch(e){
-        return false;
-      }
+  /* ─────────────────────────────────────────────────────────
+     URL: normalizar + validación UX
+  ───────────────────────────────────────────────────────── */
+  const urlInput = document.getElementById('ticket_url');
+  const urlError = document.getElementById('urlError');
+
+  function normalizeUrl(val) {
+    const v = (val || '').trim();
+    if (!v) return '';
+    if (/^https?:\/\//i.test(v)) return v;
+    return 'https://' + v;
+  }
+  function isValidUrl(val) {
+    try { new URL(normalizeUrl(val)); return true; } catch(e) { return false; }
+  }
+  urlInput?.addEventListener('blur', () => {
+    if (!urlInput.value.trim()) { if (urlError) urlError.hidden = true; return; }
+    urlInput.value = normalizeUrl(urlInput.value);
+    if (urlError) urlError.hidden = isValidUrl(urlInput.value);
+  });
+  urlInput?.addEventListener('input', () => { if (urlError) urlError.hidden = true; });
+
+  /* ─────────────────────────────────────────────────────────
+     EVIDENCIA: nombre, tamaño, preview y quitar
+  ───────────────────────────────────────────────────────── */
+  const fileInput  = document.getElementById('attachment');
+  const dropzone   = document.getElementById('dropzone');
+  const fileInfo   = document.getElementById('fileInfo');
+  const fileNameEl = document.getElementById('fileName');
+  const fileSizeEl = document.getElementById('fileSize');
+  const filePrev   = document.getElementById('filePreview');
+  const fileIcon   = document.getElementById('fileIcon');
+  const fileRemove = document.getElementById('fileRemove');
+
+  function humanSize(bytes) {
+    const u = ['B','KB','MB','GB']; let n = bytes || 0, i = 0;
+    while (n >= 1024 && i < u.length-1) { n /= 1024; i++; }
+    return (i === 0 ? Math.round(n) : n.toFixed(1)) + ' ' + u[i];
+  }
+
+  function setFileUi(file) {
+    if (!file) return;
+    if (fileInfo) fileInfo.hidden = false;
+    if (fileNameEl) fileNameEl.textContent = file.name;
+    if (fileSizeEl) fileSizeEl.textContent = humanSize(file.size);
+    const name  = (file.name || '').toLowerCase();
+    const isImg = /^image\//.test(file.type) || /\.(png|jpe?g|gif|webp)$/i.test(name);
+    if (filePrev) { filePrev.hidden = true; filePrev.src = ''; }
+    if (fileIcon) { fileIcon.style.display = 'grid'; fileIcon.innerHTML = '<i class="fa-regular fa-file"></i>'; }
+    if (isImg && filePrev) {
+      filePrev.src = URL.createObjectURL(file); filePrev.hidden = false;
+      if (fileIcon) fileIcon.style.display = 'none';
+    } else {
+      let ico = 'fa-regular fa-file';
+      if (/\.pdf$/i.test(name))          ico = 'fa-regular fa-file-pdf';
+      else if (/\.(doc|docx)$/i.test(name)) ico = 'fa-regular fa-file-word';
+      else if (/\.(xls|xlsx)$/i.test(name)) ico = 'fa-regular fa-file-excel';
+      else if (/\.txt$/i.test(name))     ico = 'fa-regular fa-file-lines';
+      if (fileIcon) fileIcon.innerHTML = `<i class="${ico}"></i>`;
     }
+  }
 
-    urlInput?.addEventListener("blur", () => {
-      if (!urlInput.value.trim()){
-        urlError && (urlError.hidden = true);
-        return;
-      }
-      urlInput.value = normalizeUrl(urlInput.value);
-      const ok = isValidUrl(urlInput.value);
-      if (urlError) urlError.hidden = ok;
-    });
+  function clearFile() {
+    if (!fileInput) return;
+    fileInput.value = '';
+    if (fileInfo) fileInfo.hidden = true;
+    if (filePrev) { filePrev.hidden = true; filePrev.src = ''; }
+    if (fileIcon) { fileIcon.style.display = 'grid'; fileIcon.innerHTML = '<i class="fa-regular fa-file"></i>'; }
+  }
 
-    urlInput?.addEventListener("input", () => {
-      if (urlError) urlError.hidden = true;
-    });
+  fileInput?.addEventListener('change', () => {
+    const f = fileInput.files?.[0];
+    f ? setFileUi(f) : clearFile();
+  });
+  fileRemove?.addEventListener('click', () => clearFile());
 
-    // ===== Evidencia: nombre, tamaño, preview y quitar =====
-    const fileInput  = document.getElementById("attachment");
-    const dropzone   = document.getElementById("dropzone");
-    const fileInfo   = document.getElementById("fileInfo");
-    const fileNameEl = document.getElementById("fileName");
-    const fileSizeEl = document.getElementById("fileSize");
-    const filePrev   = document.getElementById("filePreview");
-    const fileIcon   = document.getElementById("fileIcon");
-    const fileRemove = document.getElementById("fileRemove");
-
-    function humanSize(bytes){
-      const units = ["B","KB","MB","GB"];
-      let n = bytes || 0;
-      let i = 0;
-      while(n >= 1024 && i < units.length-1){
-        n /= 1024; i++;
-      }
-      return (i === 0 ? Math.round(n) : n.toFixed(1)) + " " + units[i];
-    }
-
-    function setFileUi(file){
-      if (!file) return;
-      if (fileInfo) fileInfo.hidden = false;
-      if (fileNameEl) fileNameEl.textContent = file.name;
-      if (fileSizeEl) fileSizeEl.textContent = humanSize(file.size);
-
-      const name = (file.name || "").toLowerCase();
-      const isImg = /^image\//.test(file.type) || /\.(png|jpe?g|gif|webp)$/i.test(name);
-
-      // reset
-      if (filePrev){
-        filePrev.hidden = true;
-        filePrev.src = "";
-      }
-      if (fileIcon){
-        fileIcon.style.display = "grid";
-        fileIcon.innerHTML = '<i class="fa-regular fa-file"></i>';
-      }
-
-      if (isImg && filePrev){
-        const url = URL.createObjectURL(file);
-        filePrev.src = url;
-        filePrev.hidden = false;
-        if (fileIcon) fileIcon.style.display = "none";
-      } else {
-        // icon por extensión
-        let ico = "fa-regular fa-file";
-        if (/\.(pdf)$/i.test(name)) ico = "fa-regular fa-file-pdf";
-        else if (/\.(doc|docx)$/i.test(name)) ico = "fa-regular fa-file-word";
-        else if (/\.(xls|xlsx)$/i.test(name)) ico = "fa-regular fa-file-excel";
-        else if (/\.(txt)$/i.test(name)) ico = "fa-regular fa-file-lines";
-        if (fileIcon) fileIcon.innerHTML = '<i class="'+ico+'"></i>';
-      }
-    }
-
-    function clearFile(){
-      if (!fileInput) return;
-      fileInput.value = "";
-      if (fileInfo) fileInfo.hidden = true;
-      if (filePrev){
-        filePrev.hidden = true;
-        filePrev.src = "";
-      }
-      if (fileIcon){
-        fileIcon.style.display = "grid";
-        fileIcon.innerHTML = '<i class="fa-regular fa-file"></i>';
-      }
-    }
-
-    fileInput?.addEventListener("change", () => {
-      const f = fileInput.files && fileInput.files[0];
-      if (!f){
-        clearFile();
-        return;
-      }
-      setFileUi(f);
-    });
-
-    fileRemove?.addEventListener("click", () => clearFile());
-
-    // drag & drop (opcional)
-    ["dragenter","dragover"].forEach(ev => {
-      dropzone?.addEventListener(ev, (e) => {
-        e.preventDefault();
-        dropzone.classList.add("is-over");
-      });
-    });
-    ["dragleave","drop"].forEach(ev => {
-      dropzone?.addEventListener(ev, (e) => {
-        e.preventDefault();
-        dropzone.classList.remove("is-over");
-      });
-    });
-
-    dropzone?.addEventListener("drop", (e) => {
-      const dt = e.dataTransfer;
-      if (!dt || !fileInput) return;
-      if (dt.files && dt.files.length){
-        const f = dt.files[0];
-
-        // Algunos navegadores no permiten asignar fileInput.files directamente.
-        // Usamos DataTransfer para mantener compatibilidad.
-        try{
-          const dt2 = new DataTransfer();
-          dt2.items.add(f);
-          fileInput.files = dt2.files;
-        }catch(_e){
-          // fallback: al menos mostramos UI aunque no podamos setear files
-        }
-
-        setFileUi(f);
-      }
-    });
+  ['dragenter','dragover'].forEach(ev => {
+    dropzone?.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.add('is-over'); });
+  });
+  ['dragleave','drop'].forEach(ev => {
+    dropzone?.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.remove('is-over'); });
+  });
+  dropzone?.addEventListener('drop', e => {
+    const dt = e.dataTransfer;
+    if (!dt?.files?.length || !fileInput) return;
+    try { const dt2 = new DataTransfer(); dt2.items.add(dt.files[0]); fileInput.files = dt2.files; } catch(_) {}
+    setFileUi(dt.files[0]);
+  });
 
   </script>
 
