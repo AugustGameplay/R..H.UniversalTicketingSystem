@@ -484,7 +484,7 @@ function build_url(array $overrides = []): string {
                                type="search"
                                name="q"
                                value="<?= esc($q) ?>"
-                               placeholder="Buscar por ID, tipo, área o descripción…">
+                               placeholder="Search by ID, type, area, or description…">
                         <?php if ($filterStatus !== ''): ?>
                             <input type="hidden" name="status" value="<?= esc($filterStatus) ?>">
                         <?php endif; ?>
@@ -492,7 +492,7 @@ function build_url(array $overrides = []): string {
 
                     <?php if ($q !== '' || $filterStatus !== ''): ?>
                         <a href="mis_tickets.php" class="mis-filter-chip" title="Limpiar filtros">
-                            <i class="fa-solid fa-xmark"></i> Limpiar
+                            <i class="fa-solid fa-xmark"></i> Clean
                         </a>
                     <?php endif; ?>
                 </form>
@@ -502,9 +502,9 @@ function build_url(array $overrides = []): string {
                     <div class="mis-empty">
                         <i class="fa-regular fa-folder-open"></i>
                         <?php if ($totalAll === 0): ?>
-                            <p>Aún no tienes tickets. ¡Crea el primero!</p>
+                            <p>You don't have any tickets yet. Create your first one!</p>
                         <?php else: ?>
-                            <p>No hay tickets con este filtro.</p>
+                            <p>There are no tickets with this filter.</p>
                         <?php endif; ?>
                     </div>
                 <?php else: ?>
@@ -579,7 +579,7 @@ function build_url(array $overrides = []): string {
 
                                     <?php if ($hasFile): ?>
                                         <span class="mis-card__meta-item">
-                                            <i class="fa-solid fa-paperclip"></i> Evidencia
+                                            <i class="fa-solid fa-paperclip"></i> Evidence
                                         </span>
                                     <?php endif; ?>
 
@@ -597,12 +597,12 @@ function build_url(array $overrides = []): string {
                         ?>
                         <div class="table-foot d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 mt-3">
                             <span class="foot-text">
-                                Mostrando <?= $pFrom ?>–<?= $pTo ?> de <?= $total ?> tickets
+                                Showing <?= $pFrom ?>–<?= $pTo ?> of <?= $total ?> tickets
                             </span>
                             <nav aria-label="Paginación">
                                 <ul class="pagination pagination-sm mb-0">
                                     <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
-                                        <a class="page-link" href="<?= esc(build_url(['page' => max(1, $page - 1)])) ?>">Anterior</a>
+                                        <a class="page-link" href="<?= esc(build_url(['page' => max(1, $page - 1)])) ?>">Back</a>
                                     </li>
                                     <?php for ($p = max(1, $page - 2); $p <= min($totalPages, $page + 2); $p++): ?>
                                         <li class="page-item <?= $p === $page ? 'active' : '' ?>">
@@ -610,14 +610,14 @@ function build_url(array $overrides = []): string {
                                         </li>
                                     <?php endfor; ?>
                                     <li class="page-item <?= $page >= $totalPages ? 'disabled' : '' ?>">
-                                        <a class="page-link" href="<?= esc(build_url(['page' => min($totalPages, $page + 1)])) ?>">Siguiente</a>
+                                        <a class="page-link" href="<?= esc(build_url(['page' => min($totalPages, $page + 1)])) ?>">Next</a>
                                     </li>
                                 </ul>
                             </nav>
                         </div>
                     <?php else: ?>
                         <div class="foot-text text-muted small mt-2">
-                            <?= $total ?> ticket<?= $total !== 1 ? 's' : '' ?> en total
+                            <?= $total ?> ticket<?= $total !== 1 ? 's' : '' ?> in total
                         </div>
                     <?php endif; ?>
 

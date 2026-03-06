@@ -525,19 +525,19 @@ $users = $stmt->fetchAll();
 
         <!-- Alerts -->
         <?php if ($flashCreated): ?>
-          <div class="alert alert-success mb-3">Usuario creado correctamente.</div>
+          <div class="alert alert-success mb-3">User created successfully.</div>
         <?php endif; ?>
 
         <?php if ($flashPassUp): ?>
-          <div class="alert alert-success mb-3">Contraseña actualizada correctamente.</div>
+          <div class="alert alert-success mb-3">Password updated successfully.</div>
         <?php endif; ?>
 
         <?php if ($flashDeleted): ?>
-          <div class="alert alert-success mb-3">Usuario eliminado correctamente.</div>
+          <div class="alert alert-success mb-3">User deleted successfully.</div>
         <?php endif; ?>
 
         <?php if ($flashUpdated): ?>
-          <div class="alert alert-success mb-3">Usuario actualizado correctamente.</div>
+          <div class="alert alert-success mb-3">User updated successfully.</div>
         <?php endif; ?>
 
         <?php if (!empty($passErrors)): ?>
@@ -607,7 +607,7 @@ $users = $stmt->fetchAll();
           <table class="table table-borderless align-middle mb-0">
             <thead>
               <tr>
-                <th><a class="th-sort" href="<?= sort_url('name') ?>">Usuario <?= sort_icon('name') ?></a></th>
+                <th><a class="th-sort" href="<?= sort_url('name') ?>">User<?= sort_icon('name') ?></a></th>
                 <th>Area</th>
                 <th>Email</th>
                 <th>Phone</th>
@@ -619,7 +619,7 @@ $users = $stmt->fetchAll();
             <tbody>
               <?php if (empty($users)): ?>
                 <tr>
-                  <td colspan="6" class="text-center text-muted py-4">No hay usuarios.</td>
+                  <td colspan="6" class="text-center text-muted py-4">No users found.</td>
                 </tr>
               <?php else: ?>
                 <?php foreach ($users as $u): ?>
@@ -707,14 +707,14 @@ $users = $stmt->fetchAll();
         ?>
         <div class="table-foot d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 mt-3">
           <span class="foot-text">
-            Mostrando <?= e($from) ?>–<?= e($to) ?> de <?= e($totalUsers) ?> usuarios
+            Showing <?= e($from) ?>–<?= e($to) ?> of <?= e($totalUsers) ?> users
           </span>
 
           <?php if ($totalPages > 1): ?>
             <nav aria-label="Paginación">
               <ul class="pagination pagination-sm mb-0">
                 <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
-                  <a class="page-link" href="?page=<?= $page - 1 ?><?= $hasQ ? '&q=' . urlencode($q) : '' ?>">Anterior</a>
+                  <a class="page-link" href="?page=<?= $page - 1 ?><?= $hasQ ? '&q=' . urlencode($q) : '' ?>">Back</a>
                 </li>
 
                 <?php for ($i = 1; $i <= $totalPages; $i++): ?>
@@ -724,7 +724,7 @@ $users = $stmt->fetchAll();
                 <?php endfor; ?>
 
                 <li class="page-item <?= ($page >= $totalPages) ? 'disabled' : '' ?>">
-                  <a class="page-link" href="?page=<?= $page + 1 ?><?= $hasQ ? '&q=' . urlencode($q) : '' ?>">Siguiente</a>
+                  <a class="page-link" href="?page=<?= $page + 1 ?><?= $hasQ ? '&q=' . urlencode($q) : '' ?>">Next</a>
                 </li>
               </ul>
             </nav>
@@ -764,7 +764,7 @@ $users = $stmt->fetchAll();
             <div class="row g-2">
               <!-- Foto primero (como pidió el visto bueno) -->
               <div class="col-12">
-                <label class="form-label">Foto de perfil (opcional)</label>
+                <label class="form-label">Profile Photo (optionall)</label>
 
                 <div class="avatar-uploader">
                   <div class="avatar-preview" aria-hidden="true">
@@ -781,7 +781,7 @@ $users = $stmt->fetchAll();
               </div>
 
               <div class="col-12">
-                <label class="form-label">Nombre</label>
+                <label class="form-label">Name</label>
                 <input class="form-control pro-input" name="full_name" type="text" placeholder="Nombre completo" required>
               </div>
 
@@ -791,7 +791,7 @@ $users = $stmt->fetchAll();
               </div>
 
               <div class="col-12">
-                <label class="form-label">Teléfono</label>
+                <label class="form-label">Phone Number</label>
                 <input class="form-control pro-input" name="phone" type="text" placeholder="Ej. +52 999 123 4567">
               </div>
 
@@ -800,15 +800,15 @@ $users = $stmt->fetchAll();
                 <select class="form-select pro-input" name="area" required>
                   <option value="" selected disabled>Selecciona un área</option>
                   <option value="IT Support">IT Support</option>
-                  <option value="Operaciones">Operaciones</option>
+                  <option value="Operaciones">Operators</option>
                   <option value="Marketing">Marketing</option>
                 </select>
               </div>
 
               <div class="col-12">
-                <label class="form-label">Rol</label>
+                <label class="form-label">Role</label>
                 <select class="form-select pro-input" name="id_role" required>
-                  <option value="" selected disabled>Selecciona un rol</option>
+                  <option value="" selected disabled>Select a role</option>
                   <?php foreach ($roles as $r): ?>
                     <option value="<?= e($r['id_role']) ?>"><?= e($r['name']) ?></option>
                   <?php endforeach; ?>
@@ -816,7 +816,7 @@ $users = $stmt->fetchAll();
               </div>
 
               <div class="col-12">
-                <label class="form-label">Contraseña (opcional)</label>
+                <label class="form-label">Password (optional)</label>
                 <input class="form-control pro-input" name="password_plain" type="text" placeholder="Dejar vacío para generar">
               </div>
 
@@ -825,8 +825,8 @@ $users = $stmt->fetchAll();
           </div>
 
           <div class="modal-footer">
-            <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancelar</button>
-            <button class="btn-pro" type="submit">Guardar</button>
+            <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+            <button class="btn-pro" type="submit">Save</button>
           </div>
         </form>
 
@@ -854,7 +854,7 @@ $users = $stmt->fetchAll();
             <div class="row g-2">
               <!-- Foto primero -->
               <div class="col-12">
-                <label class="form-label">Foto de perfil (opcional)</label>
+                <label class="form-label">Profile Photo (optional)</label>
 
                 <div class="avatar-uploader">
                   <div class="avatar-preview" aria-hidden="true">
@@ -865,13 +865,13 @@ $users = $stmt->fetchAll();
                   <div class="flex-grow-1">
                     <input class="form-control pro-input" id="editProfilePhotoInput" name="profile_photo" type="file" accept="image/png,image/jpeg,image/webp">
                     <div class="hint">JPG, PNG o WEBP. Máx 2MB.</div>
-                    <div class="text-muted" id="editProfilePhotoPreviewText">Se conservará la foto actual si no subes una nueva.</div>
+                    <div class="text-muted" id="editProfilePhotoPreviewText">The current photo will be kept if no new one is uploaded.</div>
                   </div>
                 </div>
               </div>
 
               <div class="col-12">
-                <label class="form-label">Nombre</label>
+                <label class="form-label">Name</label>
                 <input class="form-control pro-input" id="editFullName" name="full_name" type="text" placeholder="Nombre completo" required>
               </div>
 
@@ -881,7 +881,7 @@ $users = $stmt->fetchAll();
               </div>
 
               <div class="col-12">
-                <label class="form-label">Teléfono</label>
+                <label class="form-label">Phone</label>
                 <input class="form-control pro-input" id="editPhone" name="phone" type="text" placeholder="Ej. +52 999 123 4567">
               </div>
 
@@ -890,7 +890,7 @@ $users = $stmt->fetchAll();
                 <select class="form-select pro-input" id="editArea" name="area" required>
                   <option value="" disabled>Selecciona un área</option>
                   <option value="IT Support">IT Support</option>
-                  <option value="Operaciones">Operaciones</option>
+                  <option value="Operaciones">Operators</option>
                   <option value="Marketing">Marketing</option>
                 </select>
               </div>
@@ -898,7 +898,7 @@ $users = $stmt->fetchAll();
               <div class="col-12">
                 <label class="form-label">Rol</label>
                 <select class="form-select pro-input" id="editRole" name="id_role" required>
-                  <option value="" disabled>Selecciona un rol</option>
+                  <option value="" disabled>Select a role</option>
                   <?php foreach ($roles as $r): ?>
                     <option value="<?= e($r['id_role']) ?>"><?= e($r['name']) ?></option>
                   <?php endforeach; ?>
@@ -909,8 +909,8 @@ $users = $stmt->fetchAll();
           </div>
 
           <div class="modal-footer">
-            <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancelar</button>
-            <button class="btn-pro" type="submit">Guardar cambios</button>
+            <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+            <button class="btn-pro" type="submit">Save Changes</button>
           </div>
         </form>
 
@@ -924,7 +924,7 @@ $users = $stmt->fetchAll();
     <form class="modal-content modal-pro" method="POST" action="users.php">
       <div class="modal-header">
         <h5 class="modal-title fw-bold">
-          Contraseña <span class="text-muted" id="modPassUserName" style="font-size: 14px;"></span>
+          Password <span class="text-muted" id="modPassUserName" style="font-size: 14px;"></span>
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
@@ -933,7 +933,7 @@ $users = $stmt->fetchAll();
         <input type="hidden" name="action" value="update_password">
         <input type="hidden" id="userIdToUpdate" name="id_user" value="">
 
-        <label class="form-label">Nueva contraseña</label>
+        <label class="form-label">New password</label>
 
         <div class="input-group">
           <input
@@ -941,27 +941,27 @@ $users = $stmt->fetchAll();
             id="newPassInput"
             name="new_password"
             type="text"
-            placeholder="Genera o escribe una contraseña"
+            placeholder="Generate or type a password"
             autocomplete="off"
             required
           >
           <button class="btn-pro btn-pro--sm" type="button" id="btnGenPass" title="Generar contraseña">
-            <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Generar
+            <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Generate
           </button>
         </div>
 
-        <small class="text-muted d-block mt-1">Mínimo 8 caracteres e incluir mayúscula, número y símbolo.</small>
+        <small class="text-muted d-block mt-1">Minimum 8 characters, including an uppercase letter, a number, and a symbol.</small>
 
         <div class="d-flex justify-content-end mt-3">
           <button class="btn-secondary btn-secondary--sm" type="button" id="btnCopyPass" title="Copiar contraseña">
-            <i class="fa-regular fa-copy me-1"></i>Copiar
+            <i class="fa-regular fa-copy me-1"></i>Copy to clipboard
           </button>
         </div>
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancelar</button>
-        <button class="btn-pro" type="submit">Guardar</button>
+        <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+        <button class="btn-pro" type="submit">Save</button>
       </div>
     </form>
   </div>
@@ -973,7 +973,7 @@ $users = $stmt->fetchAll();
       <form class="modal-content modal-pro" method="POST" action="users.php">
         <div class="modal-header">
           <h5 class="modal-title fw-bold">
-            Eliminar usuario <span class="text-muted" id="delUserName" style="font-size: 14px;"></span>
+            Delete user <span class="text-muted" id="delUserName" style="font-size: 14px;"></span>
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
@@ -983,14 +983,14 @@ $users = $stmt->fetchAll();
           <input type="hidden" id="userIdToDelete" name="id_user" value="">
 
           <p class="mb-0">
-            ¿Seguro que deseas eliminar este usuario? Esta acción no se puede deshacer.
+            Are you sure you want to delete this user? This action cannot be undone.
           </p>
         </div>
 
         <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancelar</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
           <button class="btn btn-danger" type="submit">
-            <i class="fa-solid fa-trash me-2"></i>Eliminar
+            <i class="fa-solid fa-trash me-2"></i>Delete
           </button>
         </div>
       </form>
