@@ -608,12 +608,30 @@ $fieldLabels = [
                         }
                       ?>
                       <tr>
-                        <td class="td-id"><?= (int)$r['id_ticket'] ?></td>
+                        <td class="td-id"><span><?= (int)$r['id_ticket'] ?></span></td>
                         <td><?= esc($createdTxt) ?></td>
                         <td><?= esc($closedTxt) ?></td>
                         <td class="td-ellipsis" title="<?= esc($r['area']) ?>"><?= esc($r['area']) ?></td>
-                        <td><?= esc($r['priority']) ?></td>
-                        <td><?= esc($r['status']) ?></td>
+                        <td class="td-priority"><?php
+                          $pri = esc($r['priority']);
+                          $priClass = match($r['priority']) {
+                            'Urgente' => 'badge-urgente',
+                            'Alta'    => 'badge-alta',
+                            'Media'   => 'badge-media',
+                            'Baja'    => 'badge-baja',
+                            default   => 'badge-media',
+                          };
+                        ?><span class="<?= $priClass ?>"><?= $pri ?></span></td>
+                        <td class="td-status"><?php
+                          $st = esc($r['status']);
+                          $stClass = match(strtolower((string)$r['status'])) {
+                            'cerrado', 'closed'  => 'badge-cerrado',
+                            'resuelto', 'done'   => 'badge-resuelto',
+                            'en proceso'         => 'badge-proceso',
+                            'pendiente'          => 'badge-pendiente',
+                            default              => 'badge-pendiente',
+                          };
+                        ?><span class="<?= $stClass ?>"><?= $st ?></span></td>
                         <td class="td-ellipsis" title="<?= esc($r['assigned_name']) ?>"><?= esc($r['assigned_name']) ?></td>
                         <td class="td-ellipsis" title="<?= esc($r['created_by_name']?:'—') ?>"><?= esc($r['created_by_name']?:'—') ?></td>
                         <td class="td-actions">

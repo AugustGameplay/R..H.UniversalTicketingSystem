@@ -52,6 +52,31 @@ function detectOrEnsurePhoneColumn(PDO $pdo): ?string {
   }
 }
 
+function detectOrEnsureExtensionColumn(PDO $pdo): ?string {
+  try {
+    $q = $pdo->prepare("
+      SELECT COLUMN_NAME
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'users'
+        AND COLUMN_NAME = 'extension'
+      LIMIT 1
+    ");
+    $q->execute();
+    if ($q->fetchColumn()) return 'extension';
+
+    // Crear columna si no existe
+    try {
+      $pdo->exec("ALTER TABLE users ADD COLUMN extension VARCHAR(20) NULL DEFAULT NULL AFTER phone");
+      return 'extension';
+    } catch (Throwable $t) {
+      return null;
+    }
+  } catch (Throwable $t) {
+    return null;
+  }
+}
+
 
 function generateStrongPassword(int $length = 12): string {
   // Asegura al menos: 1 mayúscula, 1 minúscula, 1 número, 1 símbolo
@@ -138,6 +163,7 @@ $roles = $rolesStmt->fetchAll();
 
 // Columna teléfono (detecta o crea si hace falta)
 $phoneCol = detectOrEnsurePhoneColumn($pdo);
+$extensionCol = detectOrEnsureExtensionColumn($pdo);
 
 // ============================
 // CREATE USER (POST)
@@ -148,6 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
   $area      = trim($_POST['area'] ?? '');
   $id_role   = (int)($_POST['id_role'] ?? 0);
   $phone     = trim($_POST['phone'] ?? '');
+  $extension = trim($_POST['extension'] ?? '');
 
   // Foto (opcional)
   $profilePhotoPath = null;
@@ -179,9 +206,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
     try {
       $hash = password_hash($plain_pass, PASSWORD_BCRYPT);
 
+      $extraCols = '';
+      $extraVals = '';
+      if ($phoneCol) {
+        $extraCols .= ", `" . $phoneCol . "`";
+        $extraVals .= ", :phone";
+      }
+      if ($extensionCol) {
+        $extraCols .= ", `extension`";
+        $extraVals .= ", :extension";
+      }
       $sql = "
-        INSERT INTO users (full_name, email, area, id_role, password_hash, profile_photo" . ($phoneCol ? (", `" . $phoneCol . "`") : "") . ")
-        VALUES (:full_name, :email, :area, :id_role, :password_hash, :profile_photo" . ($phoneCol ? ", :phone" : "") . ")
+        INSERT INTO users (full_name, email, area, id_role, password_hash, profile_photo{$extraCols})
+        VALUES (:full_name, :email, :area, :id_role, :password_hash, :profile_photo{$extraVals})
       ";
       $ins = $pdo->prepare($sql);
       $params = [
@@ -194,6 +231,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
       ];
       if ($phoneCol) {
         $params[':phone'] = ($phone !== '') ? $phone : null;
+      }
+      if ($extensionCol) {
+        $params[':extension'] = ($extension !== '') ? $extension : null;
       }
       $ins->execute($params);
 
@@ -231,7 +271,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
   $area      = trim($_POST['area'] ?? '');
   $id_role   = (int)($_POST['id_role'] ?? 0);
   $phone     = trim($_POST['phone'] ?? '');
-  $phone     = trim($_POST['phone'] ?? '');
+  $extension = trim($_POST['extension'] ?? '');
 
   $editErrors = [];
 
@@ -265,14 +305,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
     try {
       $pdo->beginTransaction();
 
+      $extraSet = '';
+      if ($phoneCol) {
+        $extraSet .= ", `" . $phoneCol . "` = :phone";
+      }
+      if ($extensionCol) {
+        $extraSet .= ", `extension` = :extension";
+      }
       $sql = "
         UPDATE users
         SET full_name = :full_name,
             email = :email,
             area = :area,
             id_role = :id_role,
-            profile_photo = :profile_photo" . ($phoneCol ? (",
-            `" . $phoneCol . "` = :phone") : "") . "
+            profile_photo = :profile_photo{$extraSet}
         WHERE id_user = :id_user
       ";
       $up = $pdo->prepare($sql);
@@ -289,6 +335,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
       ];
       if ($phoneCol) {
         $params[':phone'] = ($phone !== '') ? $phone : null;
+      }
+      if ($extensionCol) {
+        $params[':extension'] = ($extension !== '') ? $extension : null;
       }
       $up->execute($params);
 
@@ -462,6 +511,7 @@ $offset = ($page - 1) * $limit;
 // LISTADO USERS (con LIMIT/OFFSET + búsqueda + teléfono)
 // ============================
 $phoneSelect = $phoneCol ? ("u.`" . $phoneCol . "` AS phone") : "NULL AS phone";
+$extensionSelect = $extensionCol ? "u.`extension` AS extension" : "NULL AS extension";
 
 $whereSql = $hasQ ? "WHERE u.full_name LIKE :q" : "";
 
@@ -474,6 +524,7 @@ $sql = "
     u.area,
     u.email,
     $phoneSelect,
+    $extensionSelect,
     r.name AS rol
   FROM users u
   JOIN roles r ON r.id_role = u.id_role
@@ -660,6 +711,7 @@ $users = $stmt->fetchAll();
                           data-user-name="<?= e($u['full_name']) ?>"
                           data-user-email="<?= e($u['email']) ?>"
                           data-user-phone="<?= e($u['phone'] ?? '') ?>"
+                          data-user-extension="<?= e($u['extension'] ?? '') ?>"
                           data-user-area="<?= e($u['area']) ?>"
                           data-user-role="<?= e($u['id_role']) ?>"
                           data-user-photo="<?= e($u['profile_photo'] ?? '') ?>"
@@ -796,6 +848,11 @@ $users = $stmt->fetchAll();
               </div>
 
               <div class="col-12">
+                <label class="form-label">Extension</label>
+                <input class="form-control pro-input" name="extension" type="text" placeholder="Ej. 101">
+              </div>
+
+              <div class="col-12">
                 <label class="form-label">Area</label>
                 <select class="form-select pro-input" name="area" required>
                   <option value="" selected disabled>Selecciona un área</option>
@@ -883,6 +940,11 @@ $users = $stmt->fetchAll();
               <div class="col-12">
                 <label class="form-label">Phone</label>
                 <input class="form-control pro-input" id="editPhone" name="phone" type="text" placeholder="Ej. +52 999 123 4567">
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Extension</label>
+                <input class="form-control pro-input" id="editExtension" name="extension" type="text" placeholder="Ej. 101">
               </div>
 
               <div class="col-12">
@@ -1127,6 +1189,7 @@ $users = $stmt->fetchAll();
           const name = btn?.getAttribute('data-user-name') || '';
           const email = btn?.getAttribute('data-user-email') || '';
           const phone = btn?.getAttribute('data-user-phone') || '';
+          const extension = btn?.getAttribute('data-user-extension') || '';
           const area = btn?.getAttribute('data-user-area') || '';
           const role = btn?.getAttribute('data-user-role') || '';
           const photo = btn?.getAttribute('data-user-photo') || '';
@@ -1135,6 +1198,7 @@ $users = $stmt->fetchAll();
           const editFullName = document.getElementById('editFullName');
           const editEmail = document.getElementById('editEmail');
           const editPhone = document.getElementById('editPhone');
+          const editExtension = document.getElementById('editExtension');
           const editArea = document.getElementById('editArea');
           const editRole = document.getElementById('editRole');
           const editUserTitleName = document.getElementById('editUserTitleName');
@@ -1143,6 +1207,7 @@ $users = $stmt->fetchAll();
           if (editFullName) editFullName.value = name;
           if (editEmail) editEmail.value = email;
           if (editPhone) editPhone.value = phone;
+          if (editExtension) editExtension.value = extension;
           if (editUserTitleName) editUserTitleName.textContent = name ? `(${name})` : '';
 
           // Set selects
