@@ -835,242 +835,289 @@ $creatorName = userNameById($pdo, (int)($ticket['id_user'] ?? 0));
     <?php include __DIR__ . '/partials/menu.php'; ?>
 
     <!-- MAIN -->
-    <main class="main flex-grow-1 d-flex justify-content-center align-items-start">
-      <div class="ticket-edit-page" style="width: 100%; max-width: 980px;">
+    <main class="main flex-grow-1 ticket-edit-hq p-0 p-md-4" style="background: var(--slate-50); min-height: 100vh;">
+      <div class="container-fluid mx-auto" style="max-width: 1200px;">
+        
+        <!-- Header Hero -->
+        <header class="mb-4 mt-3 mt-md-0 px-3 px-md-0">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                <span class="hq-badge hq-badge-id"><i class="fa-solid fa-ticket"></i> <?= esc($ticketCode) ?></span>
+                
+                <?php
+                  $sClass = 'hq-badge-status-default';
+                  if($ticket['status']==='Pendiente') $sClass='hq-badge-status-pending';
+                  if($ticket['status']==='En Proceso') $sClass='hq-badge-status-process';
+                  if($ticket['status']==='Resuelto') $sClass='hq-badge-status-resolved';
+                  if($ticket['status']==='Cerrado') $sClass='hq-badge-status-closed';
 
-        <section class="panel card" style="width:100%;">
-
-          <!-- Header -->
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h1 class="panel__title m-0">Asignar Ticket</h1>
-            <a href="tickets.php" class="btn btn-outline-secondary btn-sm">
+                  $pClass = 'hq-badge-prio-default';
+                  if($ticket['priority']==='Baja') $pClass='hq-badge-prio-low';
+                  if($ticket['priority']==='Media') $pClass='hq-badge-prio-medium';
+                  if($ticket['priority']==='Alta') $pClass='hq-badge-prio-high';
+                  if($ticket['priority']==='Urgente') $pClass='hq-badge-prio-urgent';
+                ?>
+                <span class="hq-badge <?= $sClass ?>"><?= esc($ticket['status']) ?></span>
+                <span class="hq-badge <?= $pClass ?>"><i class="fa-solid fa-bolt"></i> <?= esc($ticket['priority']) ?></span>
+              </div>
+              <h1 class="hq-title mb-0">
+                <?= esc($ticket['category']) ?> 
+                <span class="hq-title-sub">/ <?= esc((string)($ticket['type'] ?? 'General')) ?></span>
+              </h1>
+            </div>
+            <a href="tickets.php" class="hq-btn hq-btn-ghost mt-1">
               <i class="fa-solid fa-arrow-left me-2"></i>Volver
             </a>
           </div>
+        </header>
 
-          <?php if ($errors): ?>
-            <div class="alert alert-danger">
-              <b>Revisa esto:</b>
-              <ul class="mb-0">
-                <?php foreach ($errors as $e): ?>
-                  <li><?= esc($e) ?></li>
-                <?php endforeach; ?>
-              </ul>
-            </div>
-          <?php endif; ?>
+        <?php if ($errors): ?>
+          <div class="hq-alert-danger mb-4 mx-3 mx-md-0">
+            <div class="d-flex align-items-center gap-2 fw-bold mb-1"><i class="fa-solid fa-triangle-exclamation"></i> Revisa los siguientes errores:</div>
+            <ul class="mb-0 ps-4">
+              <?php foreach ($errors as $e): ?>
+                <li><?= esc($e) ?></li>
+              <?php endforeach; ?>
+            </ul>
+          </div>
+        <?php endif; ?>
 
-          <!-- Resumen -->
-          <div class="card p-3 mb-3 ticket-summary">
-            <div class="row g-3">
-              <div class="col-md-3"><b>ID:</b> <?= esc($ticketCode) ?></div>
-              <div class="col-md-3"><b>Area:</b>
-  <div class="dropdown w-100 d-inline-block">
-    <button class="select-pro dropdown-toggle w-100" type="button" id="areaBtnEdit" data-bs-toggle="dropdown" aria-expanded="false">
-      <span id="areaTextEdit"><?= esc((string)($ticket['area'] ?? '')) ?: 'Area' ?></span>
-      <span class="chev" aria-hidden="true"></span>
-    </button>
-
-    <ul class="dropdown-menu dropdown-pro w-100" aria-labelledby="areaBtnEdit" id="areaMenuEdit">
-      <?php if (empty($areasOptions)): ?>
-        <li><button class="dropdown-item" type="button" data-value="<?= esc((string)($ticket['area'] ?? '')) ?>"><?= esc((string)($ticket['area'] ?? '—')) ?></button></li>
-      <?php else: ?>
-        <?php foreach ($areasOptions as $a): $a=(string)$a; ?>
-          <li><button class="dropdown-item" type="button" data-value="<?= esc($a) ?>"><?= esc($a) ?></button></li>
-        <?php endforeach; ?>
-      <?php endif; ?>
-    </ul>
-
-    <input type="hidden" name="area" id="areaEdit" form="ticketForm" value="<?= esc((string)($ticket['area'] ?? '')) ?>">
-  </div>
-</div>
-              <div class="col-md-3"><b>Categoría:</b> <?= esc($ticket['category']) ?></div>
-              <div class="col-md-3"><b>Tipo:</b>
-  <div class="dropdown w-100 d-inline-block">
-    <button class="select-pro dropdown-toggle w-100" type="button" id="typeBtnEdit" data-bs-toggle="dropdown" aria-expanded="false">
-      <span id="typeTextEdit"><?= esc((string)($ticket['type'] ?? '')) ?: 'Type' ?></span>
-      <span class="chev" aria-hidden="true"></span>
-    </button>
-
-    <ul class="dropdown-menu dropdown-pro w-100" aria-labelledby="typeBtnEdit" id="typeMenuEdit">
-      <?php if (empty($typeOptionsForCategory)): ?>
-        <li><button class="dropdown-item" type="button" data-value="<?= esc((string)($ticket['type'] ?? '')) ?>"><?= esc((string)($ticket['type'] ?? '—')) ?></button></li>
-      <?php else: ?>
-        <?php foreach ($typeOptionsForCategory as $topt): $topt=(string)$topt; ?>
-          <li><button class="dropdown-item" type="button" data-value="<?= esc($topt) ?>"><?= esc($topt) ?></button></li>
-        <?php endforeach; ?>
-      <?php endif; ?>
-    </ul>
-
-    <input type="hidden" name="type" id="typeEdit" form="ticketForm" value="<?= esc((string)($ticket['type'] ?? '')) ?>">
-  </div>
-</div>
-
-              
-
-              <div class="col-md-6">
-                <b>URL:</b>
-                <?php if (!empty($ticketUrl)): ?>
-                  <?php
-                    $urlHref = $ticketUrl;
-                    if (!preg_match('~^https?://~i', $urlHref)) {
-                      $urlHref = 'https://' . $urlHref;
-                    }
-                  ?>
-                  <a href="<?= esc($urlHref) ?>" target="_blank" rel="noopener noreferrer">
-                    <?= esc($ticketUrl) ?>
-                  </a>
-                <?php else: ?>
-                  <span class="text-muted">Sin URL</span>
-                <?php endif; ?>
-              </div>
-
-              <div class="col-md-6">
-                <b>Evidencia:</b>
-                <?php if (!empty($ticketEvidence)): ?>
-                  <?php
-                    $evHref = localHref($ticketEvidence, $basePath);
-                    $ext = strtolower(pathinfo($ticketEvidence, PATHINFO_EXTENSION));
-                    $evType = ($ext === 'pdf') ? 'pdf' : 'img';
-                    $evName = basename($ticketEvidence);
-                  ?>
-                  <a href="#" 
-                     class="evidence-link"
-                     data-bs-toggle="modal"
-                     data-bs-target="#evidenceModal"
-                     data-ev-src="<?= esc($evHref) ?>"
-                     data-ev-type="<?= esc($evType) ?>"
-                     data-ev-name="<?= esc($evName) ?>">
-                    <i class="fa-solid fa-paperclip"></i> Ver evidencia
-                  </a>
-                <?php else: ?>
-                  <span class="text-muted">Sin evidencia</span>
-                <?php endif; ?>
-              </div>
-<div class="col-md-4">
-                <span class="chip brand">
-                  <i class="fa-solid fa-user-check"></i>
-                  <span><b>Asignado:</b> <?= esc($assignedName) ?></span>
-                </span>
-              </div>
-
-              <div class="col-md-4">
-                <span class="chip warn">
-                  <i class="fa-solid fa-triangle-exclamation"></i>
-                  <span><b>Prioridad:</b> <?= esc($ticket['priority']) ?></span>
-                </span>
-              </div>
-
-              <div class="col-md-4">
-                <span class="chip ok">
-                  <i class="fa-solid fa-circle-info"></i>
-                  <span><b>Status:</b> <?= esc($ticket['status']) ?></span>
-                </span>
-              </div>
-
-              <div class="col-12" id="comments">
-                <div class="d-flex align-items-center justify-content-between">
-                  <b>Comentarios:</b>
-                  <span class="text-muted small">Historial interno (solo en Edit)</span>
+        <div class="row g-4 px-3 px-md-0">
+          
+          <!-- LEFT COL: Info & Comments -->
+          <div class="col-lg-8 d-flex flex-column gap-4">
+            
+            <!-- Info Card -->
+            <div class="hq-card p-4">
+              <h3 class="hq-section-head"><i class="fa-solid fa-circle-info me-2 text-muted"></i> Información del Ticket</h3>
+              <div class="row g-4 mt-1">
+                <div class="col-sm-6">
+                  <div class="hq-field">
+                    <label>Área</label>
+                    <div class="dropdown w-100">
+                      <button class="hq-select-btn dropdown-toggle w-100 text-start d-flex justify-content-between align-items-center" type="button" id="areaBtnEdit" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span id="areaTextEdit"><?= esc((string)($ticket['area'] ?? '')) ?: 'Seleccionar Area' ?></span>
+                      </button>
+                      <ul class="dropdown-menu shadow-sm border-0 w-100" aria-labelledby="areaBtnEdit" id="areaMenuEdit">
+                        <?php if (empty($areasOptions)): ?>
+                          <li><button class="dropdown-item" type="button" data-value="<?= esc((string)($ticket['area'] ?? '')) ?>"><?= esc((string)($ticket['area'] ?? '—')) ?></button></li>
+                        <?php else: ?>
+                          <?php foreach ($areasOptions as $a): $a=(string)$a; ?>
+                            <li><button class="dropdown-item" type="button" data-value="<?= esc($a) ?>"><?= esc($a) ?></button></li>
+                          <?php endforeach; ?>
+                        <?php endif; ?>
+                      </ul>
+                      <input type="hidden" name="area" id="areaEdit" form="ticketForm" value="<?= esc((string)($ticket['area'] ?? '')) ?>">
+                    </div>
+                  </div>
                 </div>
 
-                <div class="mt-2 comment-thread" id="commentThread" data-ticket-id="<?= (int)$ticketId ?>" data-last-id="<?= (int)$lastInternalId ?>" style="display:flex;flex-direction:column;gap:10px;max-height:520px;overflow-y:auto;padding-right:6px;">
-                  <!-- Comentario original -->
-                  <div style="background:rgba(13,110,253,.06);border:1px solid rgba(13,110,253,.18);border-radius:16px;padding:12px 14px;box-shadow:0 10px 22px rgba(0,0,0,.06);">
-                    <div class="text-muted small d-flex justify-content-between" style="gap:10px;">
-                      <span><b>Original</b> — <?= esc($creatorName) ?></span>
-                      <span><?= esc(fmtDT($ticket['created_at'] ?? '')) ?></span>
+                <div class="col-sm-6">
+                  <div class="hq-field">
+                    <label>Tipo</label>
+                    <div class="dropdown w-100">
+                      <button class="hq-select-btn dropdown-toggle w-100 text-start d-flex justify-content-between align-items-center" type="button" id="typeBtnEdit" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span id="typeTextEdit"><?= esc((string)($ticket['type'] ?? '')) ?: 'Seleccionar Tipo' ?></span>
+                      </button>
+                      <ul class="dropdown-menu shadow-sm border-0 w-100" aria-labelledby="typeBtnEdit" id="typeMenuEdit">
+                        <?php if (empty($typeOptionsForCategory)): ?>
+                          <li><button class="dropdown-item" type="button" data-value="<?= esc((string)($ticket['type'] ?? '')) ?>"><?= esc((string)($ticket['type'] ?? '—')) ?></button></li>
+                        <?php else: ?>
+                          <?php foreach ($typeOptionsForCategory as $topt): $topt=(string)$topt; ?>
+                            <li><button class="dropdown-item" type="button" data-value="<?= esc($topt) ?>"><?= esc($topt) ?></button></li>
+                          <?php endforeach; ?>
+                        <?php endif; ?>
+                      </ul>
+                      <input type="hidden" name="type" id="typeEdit" form="ticketForm" value="<?= esc((string)($ticket['type'] ?? '')) ?>">
                     </div>
-                    <div style="margin-top:6px;">
+                  </div>
+                </div>
+
+                <div class="col-12">
+                  <div class="hq-field">
+                    <label>URL de Referencia</label>
+                    <div class="hq-value-box">
+                      <?php if (!empty($ticketUrl)): ?>
+                        <?php
+                          $urlHref = $ticketUrl;
+                          if (!preg_match('~^https?://~i', $urlHref)) {
+                            $urlHref = 'https://' . $urlHref;
+                          }
+                        ?>
+                        <a href="<?= esc($urlHref) ?>" target="_blank" rel="noopener noreferrer" class="hq-link">
+                          <i class="fa-solid fa-link me-2 text-muted"></i><?= esc($ticketUrl) ?>
+                        </a>
+                      <?php else: ?>
+                        <span class="text-muted"><i class="fa-solid fa-ban me-2"></i>Sin URL adjunta</span>
+                      <?php endif; ?>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-12">
+                  <div class="hq-field mb-0">
+                    <label>Evidencia Adjunta</label>
+                    <div class="hq-evidence-box">
+                      <?php if (!empty($ticketEvidence)): ?>
+                        <?php
+                          $evHref = localHref($ticketEvidence, $basePath);
+                          $ext = strtolower(pathinfo($ticketEvidence, PATHINFO_EXTENSION));
+                          $evType = ($ext === 'pdf') ? 'pdf' : 'img';
+                          $evName = basename($ticketEvidence);
+                        ?>
+                        <div class="d-flex align-items-center gap-3">
+                          <div class="hq-evidence-icon">
+                            <i class="fa-solid <?= $evType === 'pdf' ? 'fa-file-pdf text-danger' : 'fa-image text-primary' ?>"></i>
+                          </div>
+                          <div class="flex-grow-1 overflow-hidden">
+                            <div class="text-truncate fw-semibold text-dark" style="font-size: 14px;"><?= esc($evName) ?></div>
+                            <div class="text-muted" style="font-size: 13px;">Previsualiza este archivo</div>
+                          </div>
+                          <button type="button" class="hq-btn hq-btn-light hq-btn-sm" data-bs-toggle="modal" data-bs-target="#evidenceModal" data-ev-src="<?= esc($evHref) ?>" data-ev-type="<?= esc($evType) ?>" data-ev-name="<?= esc($evName) ?>">
+                            <i class="fa-solid fa-eye me-2"></i>Ver archivo
+                          </button>
+                        </div>
+                      <?php else: ?>
+                        <div class="text-muted d-flex align-items-center">
+                          <i class="fa-regular fa-folder-open me-2"></i> No se adjuntó evidencia
+                        </div>
+                      <?php endif; ?>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Thread Activity -->
+            <div class="hq-card p-4 d-flex flex-column h-100" id="comments">
+              <div class="d-flex justify-content-between align-items-center mb-4 pb-2" style="border-bottom: 1px solid var(--slate-100)">
+                <h3 class="hq-section-head border-0 p-0 m-0"><i class="fa-regular fa-comments me-2 text-muted"></i> Historial y Notas</h3>
+                <span class="badge" style="background: var(--slate-100); color: var(--slate-500); border: 1px solid var(--slate-200); font-weight: 600;">Solo interno</span>
+              </div>
+
+              <div class="hq-thread flex-grow-1" id="commentThread" data-ticket-id="<?= (int)$ticketId ?>" data-last-id="<?= (int)$lastInternalId ?>">
+                
+                <!-- Original -->
+                <div class="hq-thread-item original">
+                  <div class="hq-avatar border-brand text-brand bg-brand-light">
+                    <?= esc(strtoupper(substr($creatorName, 0, 1))) ?>
+                  </div>
+                  <div class="hq-thread-content">
+                    <div class="hq-thread-meta">
+                      <span class="fw-bold text-dark"><?= esc($creatorName) ?></span> <span class="text-muted">creó el caso</span>
+                      <span class="hq-time ms-auto"><?= esc(fmtDT($ticket['created_at'] ?? '')) ?></span>
+                    </div>
+                    <div class="hq-thread-body mt-2">
                       <?= nl2br(esc((string)($ticket['comments'] ?? ''))) ?>
                     </div>
                   </div>
+                </div>
 
-                  <!-- Comentarios internos agregados -->
-                  <?php if (!empty($internalComments)): ?>
-                    <?php foreach ($internalComments as $c): ?>
-                      <div style="background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:16px;padding:12px 14px;box-shadow:0 10px 22px rgba(0,0,0,.06);">
-                        <div class="text-muted small d-flex justify-content-between" style="gap:10px;">
-                          <span><b><?= esc($c['author']) ?></b></span>
-                          <span><?= esc(fmtDT($c['created_at'] ?? '')) ?></span>
+                <!-- Internal -->
+                <?php if (!empty($internalComments)): ?>
+                  <?php foreach ($internalComments as $c): ?>
+                    <div class="hq-thread-item">
+                      <div class="hq-avatar border">
+                        <?= esc(strtoupper(substr($c['author'], 0, 1))) ?>
+                      </div>
+                      <div class="hq-thread-content">
+                        <div class="hq-thread-meta">
+                          <span class="fw-bold text-dark"><?= esc($c['author']) ?></span> <span class="text-muted">añadió una nota</span>
+                          <span class="hq-time ms-auto"><?= esc(fmtDT($c['created_at'] ?? '')) ?></span>
                         </div>
-                        <div style="margin-top:6px;">
+                        <div class="hq-thread-body mt-2">
                           <?= nl2br(esc((string)$c['comment'])) ?>
                         </div>
                       </div>
-                    <?php endforeach; ?>
-                  <?php else: ?>
-                    <div class="text-muted small">Aún no hay notas internas agregadas.</div>
-                  <?php endif; ?>
-                </div>
+                    </div>
+                  <?php endforeach; ?>
+                <?php endif; ?>
+              </div>
 
-                <!-- Agregar nota -->
-                <form method="POST" action="ticket_edit.php?id=<?= (int)$ticketId ?>#comments" class="mt-3">
+              <!-- Add Comment Form -->
+              <div class="hq-comment-box">
+                <form method="POST" action="ticket_edit.php?id=<?= (int)$ticketId ?>#comments">
                   <input type="hidden" name="add_comment" value="1">
-                  <label class="form-label mb-1">Agregar nota interna</label>
-                  <textarea name="new_comment" class="form-control" rows="3" placeholder="Ej: Es fallo general, hay que esperar..." maxlength="2000"></textarea>
-                  <div class="d-flex justify-content-end mt-2">
-                    <button type="submit" class="btn btn-outline-primary btn-sm">
-                      <i class="fa-solid fa-plus"></i> Agregar
-                    </button>
+                  <div class="d-flex gap-3">
+                    <div class="hq-avatar text-white border-0 shadow-sm mt-1" style="background: var(--slate-800);">
+                      <?= esc(strtoupper(substr($_SESSION['user_name'] ?? 'U', 0, 1))) ?>
+                    </div>
+                    <div class="flex-grow-1">
+                      <textarea name="new_comment" class="hq-textarea w-100" rows="2" placeholder="Establece actualizaciones del caso o notas internas..." required style="resize:none;"></textarea>
+                      <div class="d-flex justify-content-end mt-2">
+                        <button type="submit" class="hq-btn hq-btn-primary hq-btn-sm px-4">
+                          <i class="fa-solid fa-paper-plane me-2"></i> Publicar nota
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </form>
               </div>
             </div>
+
           </div>
 
-          <!-- Form Asignación -->
-          <form id="ticketForm" method="POST" class="card p-3">
-            <div class="row g-3">
-
-              <div class="col-md-6">
-                <label class="form-label">Assigned to (solo IT Support)</label>
-                <select name="assigned_user_id" class="form-select">
-                  <option value="0">— Sin asignar —</option>
-                  <?php foreach ($itUsers as $u): ?>
-                    <option value="<?= (int)$u['id_user'] ?>"
-                      <?= ((int)$ticket['assigned_user_id'] === (int)$u['id_user']) ? 'selected' : '' ?>>
-                      <?= esc($u['full_name']) ?> (<?= esc($u['email']) ?>)
-                    </option>
-                  <?php endforeach; ?>
-                </select>
-                <small class="text-muted">Solo aparecen usuarios activos con AREA = IT Support.</small>
+          <!-- RIGHT COL: Actions -->
+          <div class="col-lg-4">
+            <form id="ticketForm" method="POST" class="hq-card p-4 hq-sticky-sidebar">
+              <h3 class="hq-section-head mb-4"><i class="fa-solid fa-sliders me-2 text-muted"></i> Gestión Operativa</h3>
+              
+              <div class="hq-field mb-4">
+                <label>Responsable</label>
+                <div class="hq-select-wrapper">
+                  <select name="assigned_user_id" class="hq-select">
+                    <option value="0">— Sin asignar —</option>
+                    <?php foreach ($itUsers as $u): ?>
+                      <option value="<?= (int)$u['id_user'] ?>" <?= ((int)$ticket['assigned_user_id'] === (int)$u['id_user']) ? 'selected' : '' ?>>
+                        <?= esc($u['full_name']) ?>
+                      </option>
+                    <?php endforeach; ?>
+                  </select>
+                  <i class="fa-solid fa-chevron-down hq-select-icon"></i>
+                </div>
+                <div class="mt-2 text-muted" style="font-size: 0.75rem;"><i class="fa-solid fa-circle-info me-1"></i> Lista activa de IT Support.</div>
               </div>
 
-              <div class="col-md-3">
-                <label class="form-label">Priority</label>
-                <select name="priority" class="form-select">
-                  <?php foreach (['Baja','Media','Alta','Urgente'] as $p): ?>
-                    <option value="<?= esc($p) ?>" <?= ($ticket['priority'] === $p) ? 'selected' : '' ?>>
-                      <?= esc($p) ?>
-                    </option>
-                  <?php endforeach; ?>
-                </select>
+              <div class="hq-field mb-4">
+                <label>Prioridad</label>
+                <div class="hq-select-wrapper">
+                  <select name="priority" class="hq-select">
+                    <?php foreach (['Baja','Media','Alta','Urgente'] as $p): ?>
+                      <option value="<?= esc($p) ?>" <?= ($ticket['priority'] === $p) ? 'selected' : '' ?>><?= esc($p) ?></option>
+                    <?php endforeach; ?>
+                  </select>
+                  <i class="fa-solid fa-chevron-down hq-select-icon"></i>
+                </div>
               </div>
 
-              <div class="col-md-3">
-                <label class="form-label">Status</label>
-                <select name="status" class="form-select">
-                  <?php foreach (['Pendiente','En Proceso','Resuelto','Cerrado'] as $s): ?>
-                    <option value="<?= esc($s) ?>" <?= ($ticket['status'] === $s) ? 'selected' : '' ?>>
-                      <?= esc($s) ?>
-                    </option>
-                  <?php endforeach; ?>
-                </select>
+              <div class="hq-field mb-4">
+                <label>Estado del Ticket</label>
+                <div class="hq-select-wrapper">
+                  <select name="status" class="hq-select hq-select-status">
+                    <?php foreach (['Pendiente','En Proceso','Resuelto','Cerrado'] as $s): ?>
+                      <option value="<?= esc($s) ?>" <?= ($ticket['status'] === $s) ? 'selected' : '' ?>><?= esc($s) ?></option>
+                    <?php endforeach; ?>
+                  </select>
+                  <i class="fa-solid fa-chevron-down hq-select-icon"></i>
+                </div>
               </div>
 
-              <div class="col-12 d-flex justify-content-end gap-2">
-                <a href="tickets.php" class="btn btn-outline-secondary">
-                  Cancelar
-                </a>
-                <button class="btn btn-primary" type="submit">
-                  <i class="fa-solid fa-floppy-disk me-2"></i>Guardar
+              <hr class="hq-divider mb-4 mt-2">
+
+              <div class="d-flex flex-column gap-3">
+                <button type="submit" class="hq-btn hq-btn-brand w-100 py-2 fs-6">
+                  Guardar Cambios
                 </button>
+                <a href="tickets.php" class="hq-btn hq-btn-ghost w-100 text-center py-2" style="font-size:0.9rem;">
+                  Descartar
+                </a>
               </div>
+            </form>
+          </div>
 
-            </div>
-          </form>
+        </div>
 
-        </section>
       </div>
     </main>
 
