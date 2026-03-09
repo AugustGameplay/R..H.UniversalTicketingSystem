@@ -63,11 +63,11 @@ $offset = ($page - 1) * $perPage;
 // UI: Abierto, En proceso, En espera, Resuelto, Cancelado
 // ===============================
 $mapStateUItoDB = [
-  'Abierto'     => 'Pendiente',
-  'En proceso'  => 'En Proceso',
-  'En espera'   => 'Pendiente',  // si aún no tienes "En espera" como estado real
-  'Resuelto'    => 'Resuelto',
-  'Cancelado'   => 'Cerrado',
+  'Open'        => 'Pendiente',
+  'In progress' => 'En Proceso',
+  'On hold'     => 'Pendiente',
+  'Resolved'    => 'Resuelto',
+  'Cancelled'   => 'Cerrado',
 ];
 
 function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
@@ -84,23 +84,33 @@ function build_url($overrides = []) {
 // UI helpers
 function ui_status_label($dbStatus){
   $map = [
-    'Pendiente'   => 'Abierto',
-    'En Proceso'  => 'En proceso',
-    'Resuelto'    => 'Resuelto',
-    'Cerrado'     => 'Cerrado',
+    'Pendiente'   => 'Open',
+    'En Proceso'  => 'In progress',
+    'Resuelto'    => 'Resolved',
+    'Cerrado'     => 'Closed',
   ];
   return $map[$dbStatus] ?? $dbStatus;
 }
 
 function ui_status_class($uiStatus){
   $map = [
-    'Abierto'     => 'st-open',
-    'En proceso'  => 'st-progress',
-    'En espera'   => 'st-wait',
-    'Resuelto'    => 'st-done',
-    'Cerrado'   => 'st-cancel',
+    'Open'        => 'st-open',
+    'In progress' => 'st-progress',
+    'On hold'     => 'st-wait',
+    'Resolved'    => 'st-done',
+    'Closed'      => 'st-cancel',
   ];
   return $map[$uiStatus] ?? 'badge-status';
+}
+
+function ui_prio_label($prio){
+  $map = [
+    'Baja'    => 'Low',
+    'Media'   => 'Medium',
+    'Alta'    => 'High',
+    'Urgente' => 'Urgent',
+  ];
+  return $map[$prio] ?? $prio;
 }
 
 function ui_prio_class($prio){
@@ -366,7 +376,7 @@ $updated = isset($_GET['updated']) ? (int)$_GET['updated'] : 0;
 $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -433,13 +443,13 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
           <!-- Alerts -->
           <?php if ($updated === 1): ?>
             <div class="alert alert-success mt-3 mb-0">
-              ✅ Ticket actualizado correctamente.
+              ✅ Ticket updated successfully.
             </div>
           <?php endif; ?>
 
           <?php if ($created === 1): ?>
             <div class="alert alert-success mt-3 mb-0">
-              ✅ Ticket creado correctamente.
+              ✅ Ticket created successfully.
             </div>
           <?php endif; ?>
 
@@ -450,7 +460,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
             <div class="col-12 col-md-3">
               <select class="form-select filter-select" name="state" onchange="this.form.submit()">
                 <option value="" <?= $stateUI==='' ? 'selected':''; ?> disabled hidden>Filter by status</option>
-                <?php foreach (['Abierto','En proceso','Resuelto','Cerrado'] as $opt): ?>
+                <?php foreach (['Open','In progress','Resolved','Closed'] as $opt): ?>
                   <option value="<?= esc($opt) ?>" <?= $stateUI===$opt ? 'selected':''; ?>><?= esc($opt) ?></option>
                 <?php endforeach; ?>
               </select>
@@ -460,7 +470,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
               <select class="form-select filter-select" name="priority" onchange="this.form.submit()">
                 <option value="" <?= $priority==='' ? 'selected':''; ?> disabled hidden>Priority</option>
                 <?php foreach (['Baja','Media','Alta','Urgente'] as $opt): ?>
-                  <option value="<?= esc($opt) ?>" <?= $priority===$opt ? 'selected':''; ?>><?= esc($opt) ?></option>
+                  <option value="<?= esc($opt) ?>" <?= $priority===$opt ? 'selected':''; ?>><?= esc(ui_prio_label($opt)) ?></option>
                 <?php endforeach; ?>
               </select>
             </div>
@@ -506,7 +516,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
                 <?php if (!$tickets): ?>
                   <tr>
                     <td colspan="8" class="text-center py-4" style="color: rgba(0,0,0,.55); font-weight:800;">
-                      No hay tickets para mostrar.
+                      No tickets to display.
                     </td>
                   </tr>
                 <?php else: ?>
@@ -536,7 +546,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
 
                       <td>
                         <span class="badge badge-prio <?= esc($prioClass) ?>">
-                          <?= esc($prio) ?>
+                          <?= esc(ui_prio_label($prio)) ?>
                         </span>
                       </td>
 

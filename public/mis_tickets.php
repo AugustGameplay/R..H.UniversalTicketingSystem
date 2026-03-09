@@ -112,10 +112,10 @@ try {
 // ── Helpers UI ───────────────────────────────────────────────
 function ui_status_label(string $db): string {
     return match ($db) {
-        'Pendiente'  => 'Pendiente',
-        'En Proceso' => 'En proceso',
-        'Resuelto'   => 'Resuelto',
-        'Cerrado'    => 'Cerrado',
+        'Pendiente'  => 'Pending',
+        'En Proceso' => 'In Progress',
+        'Resuelto'   => 'Resolved',
+        'Cerrado'    => 'Closed',
         default      => $db,
     };
 }
@@ -127,6 +127,16 @@ function ui_status_class(string $db): string {
         'Resuelto'   => 'st-done',
         'Cerrado'    => 'st-cancel',
         default      => 'st-open',
+    };
+}
+
+function ui_prio_label(string $prio): string {
+    return match ($prio) {
+        'Baja'    => 'Low',
+        'Media'   => 'Medium',
+        'Alta'    => 'High',
+        'Urgente' => 'Urgent',
+        default   => $prio,
     };
 }
 
@@ -147,11 +157,11 @@ function build_url(array $overrides = []): string {
 }
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mis Tickets | RH&amp;R Ticketing</title>
+    <title>My Tickets | RH&amp;R Ticketing</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
@@ -406,7 +416,6 @@ function build_url(array $overrides = []): string {
             color: var(--slate-500);
             line-height: 1.5;
             display: -webkit-box;
-            -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
             margin-bottom: 16px;
@@ -504,13 +513,13 @@ function build_url(array $overrides = []): string {
             <!-- ── Header ──────────────────────────────── -->
             <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-4">
                 <div>
-                    <h1 class="hq-title m-0">Mis Tickets</h1>
+                    <h1 class="hq-title m-0">My Tickets</h1>
                     <p class="hq-subtitle m-0 mt-1">
-                        Historial personal de tus solicitudes
+                        Personal history of your requests
                     </p>
                 </div>
                 <a href="generarTickets.php" class="mis-cta">
-                    <i class="fa-solid fa-plus"></i> Nuevo Ticket
+                    <i class="fa-solid fa-plus"></i> New Ticket
                 </a>
             </div>
 
@@ -526,25 +535,25 @@ function build_url(array $overrides = []): string {
                 <a href="<?= esc(build_url(['status' => 'Pendiente', 'page' => 1])) ?>"
                    class="mis-stat mis-stat--pendiente<?= $filterStatus === 'Pendiente' ? ' is-active' : '' ?>">
                     <div class="mis-stat__num"><?= $statusCounts['Pendiente'] ?></div>
-                    <div class="mis-stat__label">Pendiente</div>
+                    <div class="mis-stat__label">Pending</div>
                 </a>
 
                 <a href="<?= esc(build_url(['status' => 'En Proceso', 'page' => 1])) ?>"
                    class="mis-stat mis-stat--proceso<?= $filterStatus === 'En Proceso' ? ' is-active' : '' ?>">
                     <div class="mis-stat__num"><?= $statusCounts['En Proceso'] ?></div>
-                    <div class="mis-stat__label">En Proceso</div>
+                    <div class="mis-stat__label">In Progress</div>
                 </a>
 
                 <a href="<?= esc(build_url(['status' => 'Resuelto', 'page' => 1])) ?>"
                    class="mis-stat mis-stat--resuelto<?= $filterStatus === 'Resuelto' ? ' is-active' : '' ?>">
                     <div class="mis-stat__num"><?= $statusCounts['Resuelto'] ?></div>
-                    <div class="mis-stat__label">Resuelto</div>
+                    <div class="mis-stat__label">Resolved</div>
                 </a>
 
                 <a href="<?= esc(build_url(['status' => 'Cerrado', 'page' => 1])) ?>"
                    class="mis-stat mis-stat--cerrado<?= $filterStatus === 'Cerrado' ? ' is-active' : '' ?>">
                     <div class="mis-stat__num"><?= $statusCounts['Cerrado'] ?></div>
-                    <div class="mis-stat__label">Cerrado</div>
+                    <div class="mis-stat__label">Closed</div>
                 </a>
 
             </div>
@@ -557,15 +566,15 @@ function build_url(array $overrides = []): string {
                            type="search"
                            name="q"
                            value="<?= esc($q) ?>"
-                           placeholder="Buscar por ID, tipo, área o descripción…">
+                           placeholder="Search by ID, type, area or description…">
                     <?php if ($filterStatus !== ''): ?>
                         <input type="hidden" name="status" value="<?= esc($filterStatus) ?>">
                     <?php endif; ?>
                 </div>
 
                 <?php if ($q !== '' || $filterStatus !== ''): ?>
-                    <a href="mis_tickets.php" class="mis-filter-chip" title="Limpiar filtros">
-                        <i class="fa-solid fa-xmark"></i> Limpiar Filtros
+                    <a href="mis_tickets.php" class="mis-filter-chip" title="Clear filters">
+                        <i class="fa-solid fa-xmark"></i> Clear Filters
                     </a>
                 <?php endif; ?>
             </form>
@@ -575,9 +584,9 @@ function build_url(array $overrides = []): string {
                 <div class="mis-empty">
                     <i class="fa-regular fa-folder-open"></i>
                     <?php if ($totalAll === 0): ?>
-                        <p>Aún no tienes tickets. ¡Crea el primero!</p>
+                        <p>You don't have any tickets yet. Create your first one!</p>
                     <?php else: ?>
-                        <p>No se encontraron tickets con estos filtros.</p>
+                        <p>No tickets found matching these filters.</p>
                     <?php endif; ?>
                 </div>
             <?php else: ?>
@@ -608,7 +617,7 @@ function build_url(array $overrides = []): string {
                             <div class="mis-card__top">
                                 <span class="mis-card__id"><?= esc($idTxt) ?></span>
                                 <div class="mis-card__badges">
-                                    <span class="hq-badge <?= $pClass ?>"><i class="fa-solid fa-bolt"></i> <?= esc($prio) ?></span>
+                                    <span class="hq-badge <?= $pClass ?>"><i class="fa-solid fa-bolt"></i> <?= esc(ui_prio_label($prio)) ?></span>
                                     <span class="hq-badge <?= $sClass ?>"><?= esc(ui_status_label($status)) ?></span>
                                 </div>
                             </div>
@@ -631,20 +640,20 @@ function build_url(array $overrides = []): string {
                             <!-- Meta -->
                             <div class="mis-card__meta">
 
-                                <span class="mis-card__meta-item" title="Fecha de Creación">
+                                <span class="mis-card__meta-item" title="Creation Date">
                                     <i class="fa-regular fa-calendar"></i>
                                     <?= esc($dateStr) ?>
                                 </span>
 
                                 <?php if (!empty($t['assigned_name']) && $t['assigned_name'] !== '—'): ?>
-                                    <span class="mis-card__meta-item" title="Asignado a">
+                                    <span class="mis-card__meta-item" title="Assigned to">
                                         <i class="fa-solid fa-user-check"></i>
                                         <?= esc($t['assigned_name']) ?>
                                     </span>
                                 <?php else: ?>
-                                    <span class="mis-card__meta-item" style="color:var(--slate-300)" title="Sin Asignar">
+                                    <span class="mis-card__meta-item" style="color:var(--slate-300)" title="Unassigned">
                                         <i class="fa-regular fa-user"></i>
-                                        Sin asignar
+                                        Unassigned
                                     </span>
                                 <?php endif; ?>
 
@@ -656,7 +665,7 @@ function build_url(array $overrides = []): string {
 
                                 <?php if ($hasFile): ?>
                                     <span class="mis-card__meta-item text-brand">
-                                        <i class="fa-solid fa-paperclip"></i> Archivo
+                                        <i class="fa-solid fa-paperclip"></i> File
                                     </span>
                                 <?php endif; ?>
 
@@ -674,12 +683,12 @@ function build_url(array $overrides = []): string {
                     ?>
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 mt-4 pt-3 border-top border-slate-200">
                         <span class="text-slate-500" style="font-size: 0.9rem; font-weight: 500;">
-                            Mostrando <?= $pFrom ?> a <?= $pTo ?> de <?= $total ?> tickets
+                            Showing <?= $pFrom ?> to <?= $pTo ?> of <?= $total ?> tickets
                         </span>
-                        <nav aria-label="Paginación">
+                        <nav aria-label="Pagination">
                             <ul class="pagination pagination-sm mb-0 shadow-sm rounded-lg overflow-hidden border border-slate-200">
                                 <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
-                                    <a class="page-link px-3" href="<?= esc(build_url(['page' => max(1, $page - 1)])) ?>">Anterior</a>
+                                    <a class="page-link px-3" href="<?= esc(build_url(['page' => max(1, $page - 1)])) ?>">Previous</a>
                                 </li>
                                 <?php for ($p = max(1, $page - 2); $p <= min($totalPages, $page + 2); $p++): ?>
                                     <li class="page-item <?= $p === $page ? 'active' : '' ?>">
@@ -687,14 +696,14 @@ function build_url(array $overrides = []): string {
                                     </li>
                                 <?php endfor; ?>
                                 <li class="page-item <?= $page >= $totalPages ? 'disabled' : '' ?>">
-                                    <a class="page-link px-3" href="<?= esc(build_url(['page' => min($totalPages, $page + 1)])) ?>">Siguiente</a>
+                                    <a class="page-link px-3" href="<?= esc(build_url(['page' => min($totalPages, $page + 1)])) ?>">Next</a>
                                 </li>
                             </ul>
                         </nav>
                     </div>
                 <?php else: ?>
                     <div class="text-slate-500 text-center mt-4 pt-4 border-top border-slate-200" style="font-size: 0.9rem; font-weight: 500;">
-                        Mostrando todos los <?= $total ?> tickets
+                        Showing all <?= $total ?> tickets
                     </div>
                 <?php endif; ?>
 

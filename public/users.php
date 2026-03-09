@@ -183,11 +183,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
   $plain_pass = trim($_POST['password_plain'] ?? '');
 
   // Validaciones
-  if ($full_name === '') $createErrors[] = "El nombre es obligatorio.";
-  if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) $createErrors[] = "Email inválido.";
-  if (!in_array($area, ['IT Support', 'Operaciones', 'Marketing'], true)) $createErrors[] = "Área inválida.";
-  if ($id_role <= 0) $createErrors[] = "Rol inválido.";
-  if ($phone !== '' && !preg_match('/^[0-9+\-\s()]{7,20}$/', $phone)) $createErrors[] = "Teléfono inválido.";
+  if ($full_name === '') $createErrors[] = "Name is required.";
+  if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) $createErrors[] = "Invalid email.";
+  if (!in_array($area, ['IT Support', 'Operaciones', 'Marketing'], true)) $createErrors[] = "Invalid area.";
+  if ($id_role <= 0) $createErrors[] = "Invalid role.";
+  if ($phone !== '' && !preg_match('/^[0-9+\-\s()]{7,20}$/', $phone)) $createErrors[] = "Invalid phone number.";
 
   if ($plain_pass === '') {
     $plain_pass = 'RHR-' . generateStrongPassword(10);
@@ -252,9 +252,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
 
     } catch (PDOException $ex) {
       if (($ex->errorInfo[0] ?? '') === '23000') {
-        $createErrors[] = "Ese email ya existe.";
+        $createErrors[] = "That email already exists.";
       } else {
-        $createErrors[] = "Error al guardar: " . $ex->getMessage();
+        $createErrors[] = "Error saving: " . $ex->getMessage();
       }
     }
   }
@@ -275,12 +275,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
 
   $editErrors = [];
 
-  if ($id_user <= 0) $editErrors[] = "Usuario inválido.";
-  if ($full_name === '') $editErrors[] = "El nombre es obligatorio.";
-  if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) $editErrors[] = "Email inválido.";
-  if (!in_array($area, ['IT Support', 'Operaciones', 'Marketing'], true)) $editErrors[] = "Área inválida.";
-  if ($id_role <= 0) $editErrors[] = "Rol inválido.";
-  if ($phone !== '' && !preg_match('/^[0-9+\-\s()]{7,20}$/', $phone)) $editErrors[] = "Teléfono inválido.";
+  if ($id_user <= 0) $editErrors[] = "Invalid user.";
+  if ($full_name === '') $editErrors[] = "Name is required.";
+  if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) $editErrors[] = "Invalid email.";
+  if (!in_array($area, ['IT Support', 'Operaciones', 'Marketing'], true)) $editErrors[] = "Invalid area.";
+  if ($id_role <= 0) $editErrors[] = "Invalid role.";
+  if ($phone !== '' && !preg_match('/^[0-9+\-\s()]{7,20}$/', $phone)) $editErrors[] = "Invalid phone number.";
 
   // Obtener foto actual para conservar o reemplazar
   $currentPhoto = null;
@@ -355,9 +355,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
     } catch (PDOException $ex) {
       if ($pdo->inTransaction()) $pdo->rollBack();
       if (($ex->errorInfo[0] ?? '') === '23000') {
-        $editErrors[] = "Ese email ya existe.";
+        $editErrors[] = "That email already exists.";
       } else {
-        $editErrors[] = "Error al actualizar: " . $ex->getMessage();
+        $editErrors[] = "Error updating: " . $ex->getMessage();
       }
     }
   }
@@ -374,10 +374,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
   // Reglas: min 8, 1 mayúscula, 1 número, 1 símbolo
   $isStrong = (bool)preg_match('/^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/', $new_pass);
 
-  if ($id_user <= 0) $passErrors[] = "Usuario inválido.";
-  if ($new_pass === '') $passErrors[] = "La contraseña no puede ir vacía.";
+  if ($id_user <= 0) $passErrors[] = "Invalid user.";
+  if ($new_pass === '') $passErrors[] = "Password cannot be empty.";
   if ($new_pass !== '' && !$isStrong) {
-    $passErrors[] = "Contraseña débil: mínimo 8 caracteres e incluir mayúscula, número y símbolo.";
+    $passErrors[] = "Weak password: minimum 8 characters, including an uppercase letter, a number, and a symbol.";
   }
 
   if (!$passErrors) {
@@ -394,7 +394,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
       exit;
 
     } catch (PDOException $ex) {
-      $passErrors[] = "Error al actualizar contraseña: " . $ex->getMessage();
+      $passErrors[] = "Error updating password: " . $ex->getMessage();
     }
   }
 }
@@ -406,9 +406,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
   $id_user = (int)($_POST['id_user'] ?? 0);
   $currentUserId = (int)($_SESSION['user_id'] ?? 0);
 
-  if ($id_user <= 0) $deleteErrors[] = "Usuario inválido.";
+  if ($id_user <= 0) $deleteErrors[] = "Invalid user.";
   if ($currentUserId > 0 && $id_user === $currentUserId) {
-    $deleteErrors[] = "No puedes eliminar tu propio usuario.";
+    $deleteErrors[] = "You cannot delete your own user.";
   }
 
   if (!$deleteErrors) {
@@ -420,7 +420,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
       exit;
 
     } catch (PDOException $ex) {
-      $deleteErrors[] = "Error al eliminar usuario: " . $ex->getMessage();
+      $deleteErrors[] = "Error deleting user: " . $ex->getMessage();
     }
   }
 }
@@ -634,10 +634,10 @@ $users = $stmt->fetchAll();
                   type="text"
                   name="q"
                   value="<?= e($q) ?>"
-                  placeholder="Buscar por nombre..."
+                  placeholder="Search by name..."
                 >
                 <?php if ($hasQ): ?>
-                  <a class="users-search__clear" href="users.php" title="Limpiar búsqueda">
+                  <a class="users-search__clear" href="users.php" title="Clear search">
                     <i class="fa-solid fa-xmark"></i>
                   </a>
                 <?php endif; ?>
@@ -679,7 +679,7 @@ $users = $stmt->fetchAll();
                       <div class="user-cell">
                         <div class="user-avatar" aria-hidden="true">
                           <?php if (!empty($u['profile_photo'])): ?>
-                            <img src="<?= e($u['profile_photo']) ?>" alt="Foto">
+                            <img src="<?= e($u['profile_photo']) ?>" alt="Photo">
                           <?php else: ?>
                             <i class="fa-solid fa-user"></i>
                           <?php endif; ?>
@@ -704,7 +704,7 @@ $users = $stmt->fetchAll();
                         <button
                           class="icon-action"
                           type="button"
-                          title="Editar usuario"
+                          title="Edit user"
                           data-bs-toggle="modal"
                           data-bs-target="#editUserModal"
                           data-user-id="<?= e($u['id_user']) ?>"
@@ -722,7 +722,7 @@ $users = $stmt->fetchAll();
                         <button
                           class="icon-action icon-action--pass"
                           type="button"
-                          title="Cambiar contraseña"
+                          title="Change password"
                           data-bs-toggle="modal"
                           data-bs-target="#modPassModal"
                           data-user-id="<?= e($u['id_user']) ?>"
@@ -734,7 +734,7 @@ $users = $stmt->fetchAll();
                         <button
                           class="icon-action icon-action--danger"
                           type="button"
-                          title="Eliminar usuario"
+                          title="Delete user"
                           data-bs-toggle="modal"
                           data-bs-target="#deleteUserModal"
                           data-user-id="<?= e($u['id_user']) ?>"
@@ -795,7 +795,7 @@ $users = $stmt->fetchAll();
 
         <div class="modal-header">
           <h5 class="modal-title fw-bold">Create User</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
 
         <form method="POST" action="users.php" enctype="multipart/form-data">
@@ -816,48 +816,48 @@ $users = $stmt->fetchAll();
             <div class="row g-2">
               <!-- Foto primero (como pidió el visto bueno) -->
               <div class="col-12">
-                <label class="form-label">Profile Photo (optionall)</label>
+                <label class="form-label">Profile Photo (optional)</label>
 
                 <div class="avatar-uploader">
                   <div class="avatar-preview" aria-hidden="true">
-                    <img id="profilePhotoPreview" alt="Vista previa" style="display:none;">
+                    <img id="profilePhotoPreview" alt="Preview" style="display:none;">
                     <span class="initials" id="profilePhotoPreviewFallback"><i class="fa-solid fa-user"></i></span>
                   </div>
 
                   <div class="flex-grow-1">
                     <input class="form-control pro-input" id="profilePhotoInput" name="profile_photo" type="file" accept="image/png,image/jpeg,image/webp">
-                    <div class="hint">JPG, PNG o WEBP. Máx 2MB.</div>
-                    <div class="text-muted" id="profilePhotoPreviewText">Sin foto seleccionada.</div>
+                    <div class="hint">JPG, PNG or WEBP. Max 2MB.</div>
+                    <div class="text-muted" id="profilePhotoPreviewText">No photo selected.</div>
                   </div>
                 </div>
               </div>
 
               <div class="col-12">
                 <label class="form-label">Name</label>
-                <input class="form-control pro-input" name="full_name" type="text" placeholder="Nombre completo" required>
+                <input class="form-control pro-input" name="full_name" type="text" placeholder="Full name" required>
               </div>
 
               <div class="col-12">
                 <label class="form-label">Email</label>
-                <input class="form-control pro-input" name="email" type="email" placeholder="correo@dominio.com" required>
+                <input class="form-control pro-input" name="email" type="email" placeholder="email@domain.com" required>
               </div>
 
               <div class="col-12">
                 <label class="form-label">Phone Number</label>
-                <input class="form-control pro-input" name="phone" type="text" placeholder="Ej. +52 999 123 4567">
+                <input class="form-control pro-input" name="phone" type="text" placeholder="E.g. +52 999 123 4567">
               </div>
 
               <div class="col-12">
                 <label class="form-label">Extension</label>
-                <input class="form-control pro-input" name="extension" type="text" placeholder="Ej. 101">
+                <input class="form-control pro-input" name="extension" type="text" placeholder="E.g. 101">
               </div>
 
               <div class="col-12">
                 <label class="form-label">Area</label>
                 <select class="form-select pro-input" name="area" required>
-                  <option value="" selected disabled>Selecciona un área</option>
+                  <option value="" selected disabled>Select an area</option>
                   <option value="IT Support">IT Support</option>
-                  <option value="Operaciones">Operators</option>
+                  <option value="Operaciones">Operations</option>
                   <option value="Marketing">Marketing</option>
                 </select>
               </div>
@@ -874,7 +874,7 @@ $users = $stmt->fetchAll();
 
               <div class="col-12">
                 <label class="form-label">Password (optional)</label>
-                <input class="form-control pro-input" name="password_plain" type="text" placeholder="Dejar vacío para generar">
+                <input class="form-control pro-input" name="password_plain" type="text" placeholder="Leave empty to generate">
               </div>
 
               <!-- (quitamos el bloque viejo de foto porque ya está arriba) -->
@@ -899,7 +899,7 @@ $users = $stmt->fetchAll();
 
         <div class="modal-header">
           <h5 class="modal-title fw-bold">Edit User <span class="text-muted" id="editUserTitleName" style="font-size: 14px;"></span></h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
 
         <form method="POST" action="users.php" enctype="multipart/form-data">
@@ -915,13 +915,13 @@ $users = $stmt->fetchAll();
 
                 <div class="avatar-uploader">
                   <div class="avatar-preview" aria-hidden="true">
-                    <img id="editProfilePhotoPreview" alt="Vista previa" style="display:none;">
+                    <img id="editProfilePhotoPreview" alt="Preview" style="display:none;">
                     <span class="initials" id="editProfilePhotoPreviewFallback"><i class="fa-solid fa-user"></i></span>
                   </div>
 
                   <div class="flex-grow-1">
                     <input class="form-control pro-input" id="editProfilePhotoInput" name="profile_photo" type="file" accept="image/png,image/jpeg,image/webp">
-                    <div class="hint">JPG, PNG o WEBP. Máx 2MB.</div>
+                    <div class="hint">JPG, PNG or WEBP. Max 2MB.</div>
                     <div class="text-muted" id="editProfilePhotoPreviewText">The current photo will be kept if no new one is uploaded.</div>
                   </div>
                 </div>
@@ -929,30 +929,30 @@ $users = $stmt->fetchAll();
 
               <div class="col-12">
                 <label class="form-label">Name</label>
-                <input class="form-control pro-input" id="editFullName" name="full_name" type="text" placeholder="Nombre completo" required>
+                <input class="form-control pro-input" id="editFullName" name="full_name" type="text" placeholder="Full name" required>
               </div>
 
               <div class="col-12">
                 <label class="form-label">Email</label>
-                <input class="form-control pro-input" id="editEmail" name="email" type="email" placeholder="correo@dominio.com" required>
+                <input class="form-control pro-input" id="editEmail" name="email" type="email" placeholder="email@domain.com" required>
               </div>
 
               <div class="col-12">
                 <label class="form-label">Phone</label>
-                <input class="form-control pro-input" id="editPhone" name="phone" type="text" placeholder="Ej. +52 999 123 4567">
+                <input class="form-control pro-input" id="editPhone" name="phone" type="text" placeholder="E.g. +52 999 123 4567">
               </div>
 
               <div class="col-12">
                 <label class="form-label">Extension</label>
-                <input class="form-control pro-input" id="editExtension" name="extension" type="text" placeholder="Ej. 101">
+                <input class="form-control pro-input" id="editExtension" name="extension" type="text" placeholder="E.g. 101">
               </div>
 
               <div class="col-12">
                 <label class="form-label">Area</label>
                 <select class="form-select pro-input" id="editArea" name="area" required>
-                  <option value="" disabled>Selecciona un área</option>
+                  <option value="" disabled>Select an area</option>
                   <option value="IT Support">IT Support</option>
-                  <option value="Operaciones">Operators</option>
+                  <option value="Operaciones">Operations</option>
                   <option value="Marketing">Marketing</option>
                 </select>
               </div>
@@ -988,7 +988,7 @@ $users = $stmt->fetchAll();
         <h5 class="modal-title fw-bold">
           Password <span class="text-muted" id="modPassUserName" style="font-size: 14px;"></span>
         </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
       <div class="modal-body">
@@ -1007,7 +1007,7 @@ $users = $stmt->fetchAll();
             autocomplete="off"
             required
           >
-          <button class="btn-pro btn-pro--sm" type="button" id="btnGenPass" title="Generar contraseña">
+          <button class="btn-pro btn-pro--sm" type="button" id="btnGenPass" title="Generate password">
             <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Generate
           </button>
         </div>
@@ -1015,7 +1015,7 @@ $users = $stmt->fetchAll();
         <small class="text-muted d-block mt-1">Minimum 8 characters, including an uppercase letter, a number, and a symbol.</small>
 
         <div class="d-flex justify-content-end mt-3">
-          <button class="btn-secondary btn-secondary--sm" type="button" id="btnCopyPass" title="Copiar contraseña">
+          <button class="btn-secondary btn-secondary--sm" type="button" id="btnCopyPass" title="Copy password">
             <i class="fa-regular fa-copy me-1"></i>Copy to clipboard
           </button>
         </div>
@@ -1037,7 +1037,7 @@ $users = $stmt->fetchAll();
           <h5 class="modal-title fw-bold">
             Delete user <span class="text-muted" id="delUserName" style="font-size: 14px;"></span>
           </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
 
         <div class="modal-body">
@@ -1086,7 +1086,7 @@ $users = $stmt->fetchAll();
           if (!file) {
             if (photoPreview) photoPreview.style.display = 'none';
             if (photoPreviewFallback) photoPreviewFallback.style.display = 'inline-flex';
-            if (photoPreviewText) photoPreviewText.textContent = 'Sin foto seleccionada.';
+            if (photoPreviewText) photoPreviewText.textContent = 'No photo selected.';
             return;
           }
           const url = URL.createObjectURL(file);
@@ -1110,7 +1110,7 @@ $users = $stmt->fetchAll();
           if (!file) {
             if (editPhotoPreview) editPhotoPreview.style.display = 'none';
             if (editPhotoPreviewFallback) editPhotoPreviewFallback.style.display = 'inline-flex';
-            if (editPhotoPreviewText) editPhotoPreviewText.textContent = 'Se conservará la foto actual si no subes una nueva.';
+            if (editPhotoPreviewText) editPhotoPreviewText.textContent = 'The current photo will be kept if no new one is uploaded.';
             return;
           }
           const url = URL.createObjectURL(file);
@@ -1163,7 +1163,7 @@ $users = $stmt->fetchAll();
           }
 
           const old = btnCopyPass.innerHTML;
-          btnCopyPass.innerHTML = '<i class="fa-solid fa-check"></i> Copiado';
+          btnCopyPass.innerHTML = '<i class="fa-solid fa-check"></i> Copied';
           setTimeout(() => btnCopyPass.innerHTML = old, 1200);
         });
       }
@@ -1229,11 +1229,11 @@ $users = $stmt->fetchAll();
               editPhotoPreview.style.display = 'block';
             }
             if (editPhotoPreviewFallback) editPhotoPreviewFallback.style.display = 'none';
-            if (editPhotoPreviewText) editPhotoPreviewText.textContent = 'Foto actual cargada. Sube otra para reemplazar.';
+            if (editPhotoPreviewText) editPhotoPreviewText.textContent = 'Current photo loaded. Upload another to replace it.';
           } else {
             if (editPhotoPreview) editPhotoPreview.style.display = 'none';
             if (editPhotoPreviewFallback) editPhotoPreviewFallback.style.display = 'inline-flex';
-            if (editPhotoPreviewText) editPhotoPreviewText.textContent = 'Sin foto. Puedes subir una si quieres.';
+            if (editPhotoPreviewText) editPhotoPreviewText.textContent = 'No photo. You can upload one if you want.';
           }
         });
       }
