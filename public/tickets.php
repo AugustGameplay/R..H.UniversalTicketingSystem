@@ -434,7 +434,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
               <?php if($order!==''): ?><input type="hidden" name="order" value="<?= esc($order) ?>"><?php endif; ?>
 </form>
 
-              <button class="avatar-btn" type="button" title="Perfil">
+              <button class="avatar-btn" type="button" title="Profile">
                 <span class="avatar-dot"></span>
               </button>
             </div>
@@ -563,7 +563,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
                         <div class="action-wrap">
                           <a class="icon-action text-decoration-none"
                              href="ticket_edit.php?id=<?= (int)$t['id_ticket'] ?>"
-                             title="Asignar / Editar">
+                             title="Assign / Edit">
                             <i class="fa-regular fa-pen-to-square"></i>
                           </a>
 
@@ -571,7 +571,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
                             <a class="icon-action text-decoration-none"
                                href="<?= esc($ticketUrl) ?>"
                                target="_blank" rel="noopener"
-                               title="Abrir URL">
+                               title="Open URL">
                               <i class="fa-solid fa-link"></i>
                             </a>
                           <?php endif; ?>
@@ -583,7 +583,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
                                     data-bs-target="#evidenceModal"
                                     data-file="<?= esc($evidence) ?>"
                                     data-ticket="<?= esc($idTxt) ?>"
-                                    title="Ver evidencia">
+                                    title="View Evidence">
                               <i class="fa-solid fa-paperclip"></i>
                             </button>
                           <?php endif; ?>
@@ -593,7 +593,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
                                     data-bs-target="#deleteModal"
                                     data-id="<?= (int)$t['id_ticket'] ?>"
                                     data-ticket="<?= esc($idTxt) ?>"
-                                    title="Eliminar ticket">
+                                    title="Delete Ticket">
                               <i class="fa-regular fa-trash-can"></i>
                           </button>
                         </div>
@@ -653,14 +653,14 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
         <div class="modal-header align-items-center">
           <div class="d-flex flex-column">
             <h5 class="modal-title mb-0" id="evidenceModalLabel">
-              Evidencia: <span id="evFilename" class="fw-bold"></span>
+              Evidence: <span id="evFilename" class="fw-bold"></span>
             </h5>
             <div class="small text-muted">
               Ticket <span id="evTicketCode" class="fw-bold"></span>
             </div>
           </div>
 
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
 
         <div class="modal-body">
@@ -669,7 +669,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
               <button type="button" class="btn btn-light ev-toolbtn" id="evZoomOut" title="Zoom -">
                 <i class="fa-solid fa-magnifying-glass-minus"></i>
               </button>
-              <button type="button" class="btn btn-light ev-toolbtn" id="evReset" title="Reiniciar zoom">
+              <button type="button" class="btn btn-light ev-toolbtn" id="evReset" title="Reset zoom">
                 <i class="fa-solid fa-rotate-left"></i>
               </button>
               <button type="button" class="btn btn-light ev-toolbtn" id="evZoomIn" title="Zoom +">
@@ -678,10 +678,10 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
             </div>
 
             <div class="d-flex gap-2">
-              <a id="evOpenNew" class="btn btn-outline-primary ev-open" href="#" target="_blank" rel="noopener" title="Abrir en nueva pestaña">
+              <a id="evOpenNew" class="btn btn-outline-primary ev-open" href="#" target="_blank" rel="noopener" title="Open in new tab">
                 <i class="fa-solid fa-up-right-from-square me-2"></i>Open
               </a>
-              <a id="evDownload" class="btn btn-outline-secondary ev-open" href="#" download title="Descargar">
+              <a id="evDownload" class="btn btn-outline-secondary ev-open" href="#" download title="Download">
                 <i class="fa-solid fa-download me-2"></i>Download
               </a>
             </div>
@@ -706,13 +706,13 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
           <h5 class="modal-title" id="deleteModalLabel">
             <i class="fa-regular fa-trash-can me-2"></i>Delete ticket <span id="delTicketCode" class="fw-bold"></span>
           </h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           Are you sure you want to delete this ticket? This action cannot be undone.
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
 
           <form method="POST" class="m-0">
             <input type="hidden" name="action" value="delete_ticket">
@@ -799,7 +799,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
 
         if(!file){
           evFilename.textContent = '';
-          evCanvas.innerHTML = '<div class="alert alert-warning mb-0">No se encontró la evidencia.</div>';
+          evCanvas.innerHTML = '<div class="alert alert-warning mb-0">Evidence not found.</div>';
           evOpenNew.href = '#';
           evDownload.href = '#';
           setZoomControls(false);
@@ -816,7 +816,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
         if(['png','jpg','jpeg','webp','gif'].includes(ext)){
           imgEl = document.createElement('img');
           imgEl.src = url;
-          imgEl.alt = 'Evidencia';
+          imgEl.alt = 'Evidence';
           evCanvas.appendChild(imgEl);
           setZoomControls(true);
 
@@ -830,7 +830,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
           setZoomControls(false);
           evCanvas.innerHTML = `
             <div class="alert alert-info mb-0">
-              Vista previa no disponible para <b>.${ext || 'archivo'}</b>. Puedes abrirlo o descargarlo.
+              Preview not available for <b>.${ext || 'file'}</b>. You can open or download it.
             </div>
           `;
         }

@@ -250,7 +250,7 @@ function fmtDT(?string $dt): string {
 }
 // Helper: validar si un usuario pertenece a IT Support (con la lista ya cargada)
 function isItSupportUser(array $itUsers, ?int $id): bool {
-  if ($id === null) return true; // null = sin asignar
+  if ($id === null) return true; // null = unassigned
   foreach ($itUsers as $u) {
     if ((int)$u['id_user'] === (int)$id) return true;
   }
@@ -330,22 +330,22 @@ function ensureTicketCommentsTable(PDO $pdo): bool {
 }
 
 function userNameById(PDO $pdo, ?int $id): string {
-  if (!$id) return 'Sin asignar';
+  if (!$id) return 'Unassigned';
   static $cache = [];
   if (isset($cache[$id])) return $cache[$id];
   try {
     $st = $pdo->prepare("SELECT full_name FROM users WHERE id_user = :id LIMIT 1");
     $st->execute([':id' => $id]);
     $name = $st->fetchColumn();
-    $cache[$id] = $name ? (string)$name : ('Usuario #' . $id);
+    $cache[$id] = $name ? (string)$name : ('User #' . $id);
     return $cache[$id];
   } catch (Throwable $e) {
-    return 'Usuario #' . $id;
+    return 'User #' . $id;
   }
 }
 
 function assignedLabel(PDO $pdo, ?int $id): string {
-  return $id ? userNameById($pdo, $id) : 'Sin asignar';
+  return $id ? userNameById($pdo, $id) : 'Unassigned';
 }
 
 
@@ -358,16 +358,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   if (isset($_POST['add_comment'])) {
     $newComment = trim((string)($_POST['new_comment'] ?? ''));
     if ($newComment === '') {
-      $errors[] = 'Escribe un comentario antes de agregar.';
+      $errors[] = 'Write a comment before adding.';
     } elseif (mb_strlen($newComment) > 2000) {
-      $errors[] = 'El comentario es demasiado largo (máx. 2000 caracteres).';
+      $errors[] = 'The comment is too long (max 2000 characters).';
     } elseif (empty($commentsOk)) {
-      $errors[] = 'No se pudo habilitar el historial de comentarios en BD.';
+      $errors[] = 'Could not enable comment history in DB.';
     }
 
     if (!$errors) {
       $authorId = getLoggedUserId();
-      $authorName = $authorId ? userNameById($pdo, (int)$authorId) : 'Sistema';
+      $authorName = $authorId ? userNameById($pdo, (int)$authorId) : 'System';
       try {
         $ins = $pdo->prepare("INSERT INTO ticket_comments (ticket_id, comment, created_by_user_id, created_by_name) VALUES (:t, :c, :uid, :uname)");
         $ins->execute([
@@ -379,7 +379,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: ticket_edit.php?id=' . $ticketId . '#comments');
         exit;
       } catch (Throwable $e) {
-        $errors[] = 'No se pudo guardar el comentario: ' . $e->getMessage();
+        $errors[] = 'Could not save the comment: ' . $e->getMessage();
       }
     }
   }
@@ -399,23 +399,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   // Validación: solo IT Support
   if (!isItSupportUser($itUsers, $assigned_user_id)) {
-    $errors[] = "Solo puedes asignar tickets a usuarios de IT Support.";
+    $errors[] = "You can only assign tickets to IT Support users.";
   }
 
   // Validación enums
   $validPriority = ['Baja', 'Media', 'Alta', 'Urgente'];
   if (!in_array($priority, $validPriority, true)) {
-    $errors[] = "Prioridad inválida.";
+    $errors[] = "Invalid priority.";
   }
 
   $validStatus = ['Pendiente', 'En Proceso', 'Resuelto', 'Cerrado'];
   if (!in_array($status, $validStatus, true)) {
-    $errors[] = "Estatus inválido.";
+    $errors[] = "Invalid status.";
   }
 
   // Validación suave: longitudes
-  if (mb_strlen($area) > 60) { $errors[] = "Area demasiado larga."; }
-  if (mb_strlen($type) > 80) { $errors[] = "Tipo demasiado largo."; }
+  if (mb_strlen($area) > 60) { $errors[] = "Area is too long."; }
+  if (mb_strlen($type) > 80) { $errors[] = "Type is too long."; }
 
   if (!$errors) {
     // Auditoría: registrar cambios (quién modificó, qué cambió, cuándo)
@@ -537,10 +537,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
           // Nota opcional para cambios de estatus a cerrado/resuelto
           if ($c['field_name'] === 'status' && !$wasClosed && $willClosed) {
-            $note = 'Ticket cerrado';
+            $note = 'Ticket closed';
           }
           if ($c['field_name'] === 'status' && $wasClosed && !$willClosed) {
-            $note = 'Ticket reabierto';
+            $note = 'Ticket reopened';
           }
 
           $ins->execute([
@@ -564,7 +564,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
           // Destinatario: creador del ticket.
           $creatorEmail = '';
-          $creatorNameForMail = 'Usuario';
+          $creatorNameForMail = 'User';
           if (!empty($ticket['id_user'])) {
             $stCreator = $pdo->prepare("SELECT full_name, email FROM users WHERE id_user = :id LIMIT 1");
             $stCreator->execute([':id' => (int)$ticket['id_user']]);
@@ -659,7 +659,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
           // Destinatario: creador del ticket
           $creatorEmail = '';
-          $creatorNameForMail = 'Usuario';
+          $creatorNameForMail = 'User';
           if (!empty($ticket['id_user'])) {
             $stCreator = $pdo->prepare("SELECT full_name, email FROM users WHERE id_user = :id LIMIT 1");
             $stCreator->execute([':id' => (int)$ticket['id_user']]);
@@ -677,7 +677,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $closedAt  = (string)($times['closed_at'] ?? date('Y-m-d H:i:s'));
 
             // Texto de resolucion (ultma nota interna, si existe)
-            $resolutionDescription = 'El ticket fue marcado como cerrado por el equipo de soporte.';
+            $resolutionDescription = 'The ticket was marked as closed by the support team.';
             $interactionsCount = 1;
             if (!empty($commentsOk)) {
               try {
@@ -714,7 +714,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               $resolutionTime = 'N/A';
             }
 
-            $resolvedBy = $assigned_user_id ? userNameById($pdo, $assigned_user_id) : ($modifierId ? userNameById($pdo, $modifierId) : 'Mesa de Ayuda IT');
+            $resolvedBy = $assigned_user_id ? userNameById($pdo, $assigned_user_id) : ($modifierId ? userNameById($pdo, $modifierId) : 'IT Help Desk');
             $titleForMail = trim(($type !== '' ? $type : 'Ticket') . ' | ' . ($area !== '' ? $area : 'Area N/A'));
             $reopenUrl = function_exists('my_tickets_url') ? my_tickets_url() : '';
 
@@ -749,7 +749,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     } catch (Throwable $e) {
       if ($pdo->inTransaction()) $pdo->rollBack();
-      $errors[] = "Error al guardar en BD: " . $e->getMessage();
+      $errors[] = "Error saving to DB: " . $e->getMessage();
     }
   }
 // Si hubo errores, re-pintar valores enviados
@@ -796,7 +796,7 @@ if (!empty($commentsOk)) {
         c.comment,
         c.created_at,
         c.created_by_user_id,
-        COALESCE(u.full_name, c.created_by_name, CONCAT('Usuario #', c.created_by_user_id)) AS author
+        COALESCE(u.full_name, c.created_by_name, CONCAT('User #', c.created_by_user_id)) AS author
       FROM ticket_comments c
       LEFT JOIN users u ON u.id_user = c.created_by_user_id
       WHERE c.ticket_id = :id

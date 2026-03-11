@@ -19,6 +19,35 @@ function roleClass($rol) {
   return 'role-user';
 }
 
+function getRoleNameEn($rol) {
+  return match($rol) {
+    'Superadmin', 'Super admin' => 'Super Admin',
+    'Admin', 'Administrador' => 'Admin',
+    'Usuario General', 'User' => 'General User',
+    default => $rol
+  };
+}
+
+function getAreaNameEn($area) {
+  return match($area) {
+    'Marketing e IT', 'Marketing and IT' => 'Marketing and IT',
+    'RH', 'HR'                           => 'HR',
+    'Operaciones', 'Operations'          => 'Operations',
+    'Contabilidad', 'Accounting'         => 'Accounting',
+    'Ventas', 'Sales'                    => 'Sales',
+    'Soporte TI', 'IT Support'           => 'IT Support',
+    'Recursos Humanos'                   => 'Human Resources',
+    'Finanzas', 'Finance'                => 'Finance',
+    'Legal'                              => 'Legal',
+    'Marketing'                          => 'Marketing',
+    'Managers'                           => 'Managers',
+    'Corporate'                          => 'Corporate',
+    'Recruiters'                         => 'Recruiters',
+    'Workers Comp'                       => 'Workers Comp',
+    default => $area
+  };
+}
+
 function detectOrEnsurePhoneColumn(PDO $pdo): ?string {
   // Intentamos detectar una columna existente para teléfono.
   $candidates = ['phone', 'telefono', 'phone_number', 'mobile', 'cellphone', 'tel', 'telephone'];
@@ -185,7 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
   // Validaciones
   if ($full_name === '') $createErrors[] = "Name is required.";
   if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) $createErrors[] = "Invalid email.";
-  if (!in_array($area, ['IT Support', 'Operaciones', 'Marketing'], true)) $createErrors[] = "Invalid area.";
+  if (!in_array($area, ['Accounting', 'Corporate', 'HR', 'IT Support', 'Managers', 'Marketing and IT', 'Operations', 'Recruiters', 'Workers Comp'], true)) $createErrors[] = "Invalid area.";
   if ($id_role <= 0) $createErrors[] = "Invalid role.";
   if ($phone !== '' && !preg_match('/^[0-9+\-\s()]{7,20}$/', $phone)) $createErrors[] = "Invalid phone number.";
 
@@ -278,7 +307,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
   if ($id_user <= 0) $editErrors[] = "Invalid user.";
   if ($full_name === '') $editErrors[] = "Name is required.";
   if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) $editErrors[] = "Invalid email.";
-  if (!in_array($area, ['IT Support', 'Operaciones', 'Marketing'], true)) $editErrors[] = "Invalid area.";
+  if (!in_array($area, ['Accounting', 'Corporate', 'HR', 'IT Support', 'Managers', 'Marketing and IT', 'Operations', 'Recruiters', 'Workers Comp'], true)) $editErrors[] = "Invalid area.";
   if ($id_role <= 0) $editErrors[] = "Invalid role.";
   if ($phone !== '' && !preg_match('/^[0-9+\-\s()]{7,20}$/', $phone)) $editErrors[] = "Invalid phone number.";
 
@@ -543,7 +572,7 @@ $stmt->execute();
 $users = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -561,6 +590,42 @@ $users = $stmt->fetchAll();
 
   <!-- Users -->
   <link rel="stylesheet" href="./assets/css/users.css?v=2">
+
+  <style>
+    /* Force English text on file inputs regardless of browser language */
+    input[type="file"].pro-input {
+      color: transparent; /* hides 'No file chosen' */
+    }
+    input[type="file"].pro-input::-webkit-file-upload-button {
+      visibility: hidden;
+    }
+    input[type="file"].pro-input::before {
+      content: 'Choose file';
+      display: inline-block;
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      padding: 5px 12px;
+      outline: none;
+      white-space: nowrap;
+      -webkit-user-select: none;
+      cursor: pointer;
+      font-weight: 500;
+      color: #212529;
+      visibility: visible;
+      margin-right: 8px;
+    }
+    input[type="file"].pro-input:hover::before {
+      background: #e2e6ea;
+    }
+    input[type="file"].pro-input::after {
+      content: 'No file chosen';
+      color: #6c757d;
+      font-size: 0.9em;
+      visibility: visible;
+      pointer-events: none;
+    }
+  </style>
 </head>
 
 <body>
@@ -659,7 +724,7 @@ $users = $stmt->fetchAll();
             <thead>
               <tr>
                 <th><a class="th-sort" href="<?= sort_url('name') ?>">User<?= sort_icon('name') ?></a></th>
-                <th>Area</th>
+                <th>Department/Area</th>
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Role</th>
@@ -689,13 +754,13 @@ $users = $stmt->fetchAll();
                         </div>
                       </div>
                     </td>
-                    <td><?= e($u['area']) ?></td>
+                    <td><?= e(getAreaNameEn($u['area'])) ?></td>
                     <td class="col-email"><?= e($u['email']) ?></td>
                     <td class="col-phone"><?= e($u['phone'] ?? '—') ?></td>
 
                     <td>
                       <span class="badge role-badge <?= e(roleClass($u['rol'])) ?>">
-                        <?= e($u['rol']) ?>
+                        <?= e(getRoleNameEn($u['rol'])) ?>
                       </span>
                     </td>
 
@@ -867,7 +932,7 @@ $users = $stmt->fetchAll();
                 <select class="form-select pro-input" name="id_role" required>
                   <option value="" selected disabled>Select a role</option>
                   <?php foreach ($roles as $r): ?>
-                    <option value="<?= e($r['id_role']) ?>"><?= e($r['name']) ?></option>
+                    <option value="<?= e($r['id_role']) ?>"><?= e(getRoleNameEn($r['name'])) ?></option>
                   <?php endforeach; ?>
                 </select>
               </div>
@@ -951,18 +1016,24 @@ $users = $stmt->fetchAll();
                 <label class="form-label">Area</label>
                 <select class="form-select pro-input" id="editArea" name="area" required>
                   <option value="" disabled>Select an area</option>
+                  <option value="Accounting">Accounting</option>
+                  <option value="Corporate">Corporate</option>
+                  <option value="HR">HR</option>
                   <option value="IT Support">IT Support</option>
-                  <option value="Operaciones">Operations</option>
-                  <option value="Marketing">Marketing</option>
+                  <option value="Managers">Managers</option>
+                  <option value="Marketing and IT">Marketing and IT</option>
+                  <option value="Operations">Operations</option>
+                  <option value="Recruiters">Recruiters</option>
+                  <option value="Workers Comp">Workers Comp</option>
                 </select>
               </div>
 
               <div class="col-12">
-                <label class="form-label">Rol</label>
+                <label class="form-label">Role</label>
                 <select class="form-select pro-input" id="editRole" name="id_role" required>
                   <option value="" disabled>Select a role</option>
                   <?php foreach ($roles as $r): ?>
-                    <option value="<?= e($r['id_role']) ?>"><?= e($r['name']) ?></option>
+                    <option value="<?= e($r['id_role']) ?>"><?= e(getRoleNameEn($r['name'])) ?></option>
                   <?php endforeach; ?>
                 </select>
               </div>

@@ -149,10 +149,27 @@
 }
 
 .users-table tbody tr {
-  transition: background .14s ease;
+  transition:
+    background .16s ease,
+    box-shadow .16s ease,
+    transform  .14s cubic-bezier(.2,.8,.2,1);
+  animation: rowFadeIn .32s cubic-bezier(.2,.8,.2,1) both;
 }
 
-.users-table tbody tr:hover { background: rgba(255,255,255,.42); }
+/* Entrada escalonada por fila */
+.users-table tbody tr:nth-child(1) { animation-delay: .03s; }
+.users-table tbody tr:nth-child(2) { animation-delay: .06s; }
+.users-table tbody tr:nth-child(3) { animation-delay: .09s; }
+.users-table tbody tr:nth-child(4) { animation-delay: .12s; }
+.users-table tbody tr:nth-child(5) { animation-delay: .15s; }
+.users-table tbody tr:nth-child(6) { animation-delay: .18s; }
+
+@keyframes rowFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.users-table tbody tr:hover { background: rgba(255,255,255,.42); transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,.06); }
 
 .th-center { text-align: center; }
 
@@ -253,6 +270,12 @@
   background: var(--glass-strong);
   backdrop-filter: blur(12px);
   overflow: hidden;
+  animation: modalSlideUp .35s cubic-bezier(.2,.9,.2,1) both;
+}
+
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .modal-pro .modal-header { border-bottom: 1px solid var(--stroke); padding: 16px 20px; }
@@ -280,6 +303,40 @@
 select.form-select.pro-input option:checked {
   background: var(--rhr-orange-dark);
   color: #fff;
+}
+
+/* Force English text on file inputs regardless of browser language */
+input[type="file"].pro-input {
+  color: transparent; /* hides 'No file chosen' */
+}
+input[type="file"].pro-input::-webkit-file-upload-button {
+  visibility: hidden;
+}
+input[type="file"].pro-input::before {
+  content: 'Choose file';
+  display: inline-block;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 5px 12px;
+  outline: none;
+  white-space: nowrap;
+  -webkit-user-select: none;
+  cursor: pointer;
+  font-weight: 500;
+  color: #212529;
+  visibility: visible;
+  margin-right: 8px;
+}
+input[type="file"].pro-input:hover::before {
+  background: #e2e6ea;
+}
+input[type="file"].pro-input::after {
+  content: 'No file chosen';
+  color: #6c757d;
+  font-size: 0.9em;
+  visibility: visible;
+  pointer-events: none;
 }
 
 /* ── Avatar uploader ─────────────────────────────── */

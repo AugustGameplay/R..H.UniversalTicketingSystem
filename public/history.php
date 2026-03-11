@@ -6,6 +6,35 @@ require __DIR__ . '/config/db.php';
 
 function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
+function getStatusEn($st) {
+  return match(strtolower((string)$st)) {
+    'cerrado', 'closed' => 'Closed',
+    'resuelto', 'done' => 'Resolved',
+    'en proceso', 'in progress' => 'In Progress',
+    'pendiente', 'pending' => 'Pending',
+    default => ucfirst((string)$st)
+  };
+}
+
+function getPriorityEn($pri) {
+  return match(strtolower((string)$pri)) {
+    'urgente', 'urgent' => 'Urgent',
+    'alta', 'high' => 'High',
+    'media', 'medium' => 'Medium',
+    'baja', 'low' => 'Low',
+    'alta/media', 'high/medium' => 'High/Medium',
+    default => ucfirst((string)$pri)
+  };
+}
+
+function getTypeEn($t) {
+  return match(strtolower((string)$t)) {
+    'falla', 'fault' => 'Fault',
+    'solicitud', 'request' => 'Request',
+    default => $t
+  };
+}
+
 // =====================================================
 // Fechas (GET) - inicio y fin
 // =====================================================
@@ -278,7 +307,16 @@ if (isset($_GET['download']) && $_GET['download'] == '1') {
   ");
   $stmt->execute($params);
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    fputcsv($out, [$row['id_ticket'],$row['created_at'],$row['closed_at']?:'',$row['area'],$row['priority'],$row['status'],$row['assigned_name'],$row['created_by_name']]);
+    fputcsv($out, [
+      $row['id_ticket'],
+      $row['created_at'],
+      $row['closed_at']?:'',
+      $row['area'],
+      getPriorityEn($row['priority']),
+      getStatusEn($row['status']),
+      $row['assigned_name'],
+      $row['created_by_name']
+    ]);
   }
   fclose($out);
   exit;
@@ -396,8 +434,8 @@ if ($creatorIdField){
   } catch (Throwable $e) { $usersList = []; }
 }
 
-$startText = (new DateTime($start))->format('d/m/Y');
-$endText   = (new DateTime($end))->format('d/m/Y');
+$startText = (new DateTime($start))->format('m/d/Y');
+$endText   = (new DateTime($end))->format('m/d/Y');
 
 function build_qs(array $pairs): string {
   $pairs = array_filter($pairs, fn($v) => $v !== null && $v !== '' && $v !== 0);
@@ -525,7 +563,7 @@ $fieldLabels = [
                         <div class="cat-warn">
                           <i class="fa-solid fa-triangle-exclamation"></i>
                           <span>
-                            Possible general issue: <b><?= esc($alert['type'] ?? '') ?></b>
+                            Possible general issue: <b><?= esc(getTypeEn($alert['type'] ?? '')) ?></b>
                             <span class="muted">(<?= (int)($alert['total'] ?? 0) ?>)</span>
                             <span class="muted"><?= esc($alert['dia'] ?? '') ?></span>
                           </span>
@@ -601,9 +639,9 @@ $fieldLabels = [
                     <?php foreach ($rows as $r): ?>
                       <?php
                         $createdTxt = '—'; $closedTxt = '—';
-                        try { $createdTxt = (new DateTime($r['created_at']))->format('d/m/Y H:i'); } catch (Throwable $e) {}
+                        try { $createdTxt = (new DateTime($r['created_at']))->format('m/d/Y H:i'); } catch (Throwable $e) {}
                         if (!empty($r['closed_at'])){
-                          try { $closedTxt = (new DateTime($r['closed_at']))->format('d/m/Y H:i'); }
+                          try { $closedTxt = (new DateTime($r['closed_at']))->format('m/d/Y H:i'); }
                           catch (Throwable $e) { $closedTxt = esc((string)$r['closed_at']); }
                         }
                       ?>
@@ -614,6 +652,7 @@ $fieldLabels = [
                         <td class="td-ellipsis" title="<?= esc($r['area']) ?>"><?= esc($r['area']) ?></td>
                         <td class="td-priority"><?php
                           $pri = esc($r['priority']);
+                          $priEn = getPriorityEn($r['priority']);
                           $priClass = match($r['priority']) {
                             'Urgente' => 'badge-urgente',
                             'Alta'    => 'badge-alta',
@@ -621,9 +660,10 @@ $fieldLabels = [
                             'Baja'    => 'badge-baja',
                             default   => 'badge-media',
                           };
-                        ?><span class="<?= $priClass ?>"><?= $pri ?></span></td>
+                        ?><span class="<?= $priClass ?>"><?= esc($priEn) ?></span></td>
                         <td class="td-status"><?php
                           $st = esc($r['status']);
+                          $stEn = getStatusEn($r['status']);
                           $stClass = match(strtolower((string)$r['status'])) {
                             'cerrado', 'closed'  => 'badge-cerrado',
                             'resuelto', 'done'   => 'badge-resuelto',
@@ -631,7 +671,7 @@ $fieldLabels = [
                             'pendiente'          => 'badge-pendiente',
                             default              => 'badge-pendiente',
                           };
-                        ?><span class="<?= $stClass ?>"><?= $st ?></span></td>
+                        ?><span class="<?= $stClass ?>"><?= esc($stEn) ?></span></td>
                         <td class="td-ellipsis" title="<?= esc($r['assigned_name']) ?>"><?= esc($r['assigned_name']) ?></td>
                         <td class="td-ellipsis" title="<?= esc($r['created_by_name']?:'—') ?>"><?= esc($r['created_by_name']?:'—') ?></td>
                         <td class="td-actions">
@@ -718,7 +758,7 @@ $fieldLabels = [
     };
 
     const fpStart = flatpickr(startEl, {
-      dateFormat: "d/m/Y", defaultDate: startEl.value,
+      dateFormat: "m/d/Y", defaultDate: startEl.value,
       allowInput: false, locale: { firstDayOfWeek: 1 },
       onChange: sel => {
         if (!sel?.[0]) return;
@@ -729,7 +769,7 @@ $fieldLabels = [
     });
 
     const fpEnd = flatpickr(endEl, {
-      dateFormat: "d/m/Y", defaultDate: endEl.value,
+      dateFormat: "m/d/Y", defaultDate: endEl.value,
       allowInput: false, locale: { firstDayOfWeek: 1 },
       onChange: sel => {
         if (!sel?.[0]) return;
@@ -754,11 +794,35 @@ $fieldLabels = [
       if (!s) return '—';
       const p = String(s).replace('T',' ').split(' ');
       const d = (p[0]||'').split('-');
-      return d.length !== 3 ? s : `${d[2]}/${d[1]}/${d[0]} ${(p[1]||'').slice(0,5)}`;
+      return d.length !== 3 ? s : `${d[1]}/${d[2]}/${d[0]} ${(p[1]||'').slice(0,5)}`;
     };
 
     const e = s => String(s??'').replace(/[&<>'"]/g, c =>
       ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));
+
+    const translateVal = (field, val) => {
+      if(!val) return val;
+      const f = (field||'').toLowerCase();
+      const v = String(val).trim().toLowerCase();
+      if(f === 'status') {
+        if(v === 'cerrado' || v === 'closed') return 'Closed';
+        if(v === 'resuelto' || v === 'done') return 'Resolved';
+        if(v === 'en proceso') return 'In Progress';
+        if(v === 'pendiente') return 'Pending';
+      }
+      if(f === 'priority') {
+        if(v === 'urgente') return 'Urgent';
+        if(v === 'alta') return 'High';
+        if(v === 'media') return 'Medium';
+        if(v === 'baja') return 'Low';
+        if(v === 'alta/media') return 'High/Medium';
+      }
+      if(f === 'type') {
+        if(v === 'falla') return 'Fault';
+        if(v === 'solicitud') return 'Request';
+      }
+      return val;
+    };
 
     const renderMods = items => {
       if (!items?.length){
@@ -774,9 +838,9 @@ $fieldLabels = [
           <div class="mod-body">
             <div class="mod-field">${e(FL[(it.field_name||'').toLowerCase()]||it.field_name||'Field')}</div>
             <div class="mod-diff">
-              <span class="mod-old">${e(it.old_value??'—')}</span>
+              <span class="mod-old">${e(translateVal(it.field_name, it.old_value??'—'))}</span>
               <span class="mod-arrow">→</span>
-              <span class="mod-new">${e(it.new_value??'—')}</span>
+              <span class="mod-new">${e(translateVal(it.field_name, it.new_value??'—'))}</span>
             </div>
           </div>
         </div>`).join('')}</div>`;

@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 if (!$errors) {
     try {
       
-      // ====== Upload de evidencia (opcional) ======
+        // ====== Upload de evidencia (opcional) ======
       if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] !== UPLOAD_ERR_NO_FILE) {
         if ($_FILES['attachment']['error'] !== UPLOAD_ERR_OK) {
           throw new Exception('Error uploading file (code: ' . $_FILES['attachment']['error'] . ').');
@@ -403,12 +403,12 @@ $stmt->execute([
               <span class="chev" aria-hidden="true"></span>
             </button>
             <ul class="dropdown-menu dropdown-pro w-100" aria-labelledby="areaBtn" data-target-text="#areaText" data-target-input="#area">
-              <li><button class="dropdown-item" type="button" data-value="Marketing e IT">Marketing e IT</button></li>
-              <li><button class="dropdown-item" type="button" data-value="Managers">Managers</button></li>
-              <li><button class="dropdown-item" type="button" data-value="Corporate">Corporate</button></li>
-              <li><button class="dropdown-item" type="button" data-value="Recruiters">Recruiters</button></li>
-              <li><button class="dropdown-item" type="button" data-value="RH">RH</button></li>
               <li><button class="dropdown-item" type="button" data-value="Accounting">Accounting</button></li>
+              <li><button class="dropdown-item" type="button" data-value="Corporate">Corporate</button></li>
+              <li><button class="dropdown-item" type="button" data-value="HR">HR</button></li>
+              <li><button class="dropdown-item" type="button" data-value="Managers">Managers</button></li>
+              <li><button class="dropdown-item" type="button" data-value="Marketing and IT">Marketing and IT</button></li>
+              <li><button class="dropdown-item" type="button" data-value="Recruiters">Recruiters</button></li>
               <li><button class="dropdown-item" type="button" data-value="Workers Comp">Workers Comp</button></li>
             </ul>
             <input type="hidden" name="area" id="area">
@@ -437,7 +437,7 @@ $stmt->execute([
           <div class="field">
             <div class="field__row">
               <label class="field__label" for="attachment">Attachment/Evidence (optional)</label>
-              <span class="field__counter">Máx. 10MB</span>
+              <span class="field__counter">Max. 10MB</span>
             </div>
             <input type="file" id="attachment" name="attachment"
               accept=".png,.jpg,.jpeg,.pdf,.doc,.docx,.xlsx,.xls,.txt" hidden>

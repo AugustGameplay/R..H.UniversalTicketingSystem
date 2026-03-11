@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * public/config/mailer.php
  * Unified mailer:
@@ -253,16 +253,16 @@ function notify_ticket_created(array $ticket, ?string $toEmail = null, string $t
     $html = render_mail_template($templateHtml, $templateVars);
   } else {
     $html = "
-      <h2>Se abrio un nuevo ticket</h2>
+      <h2>A new ticket was opened</h2>
       <p><b>ID:</b> " . e_mail((string)$id) . "</p>
-      <p><b>Titulo:</b> " . e_mail((string)$titulo) . "</p>
-      " . ($category ? "<p><b>Categoria:</b> " . e_mail((string)$category) . "</p>" : "") . "
-      " . ($type ? "<p><b>Tipo:</b> " . e_mail((string)$type) . "</p>" : "") . "
-      <p><b>Area:</b> " . e_mail((string)$area) . "</p>
-      <p><b>Prioridad:</b> " . e_mail((string)$prio) . "</p>
-      " . ($status ? "<p><b>Estatus:</b> " . e_mail((string)$status) . "</p>" : "") . "
-      <p><b>Creado por:</b> " . e_mail((string)$creado) . "</p>
-      <p><b>Descripcion:</b><br>" . nl2br(e_mail((string)$desc)) . "</p>
+      <p><b>Title:</b> " . e_mail((string)$titulo) . "</p>
+      " . ($category ? "<p><b>Category:</b> " . e_mail((string)$category) . "</p>" : "") . "
+      " . ($type ? "<p><b>Type:</b> " . e_mail((string)$type) . "</p>" : "") . "
+      <p><b>Department/Area:</b> " . e_mail((string)$area) . "</p>
+      <p><b>Priority:</b> " . e_mail((string)$prio) . "</p>
+      " . ($status ? "<p><b>Status:</b> " . e_mail((string)$status) . "</p>" : "") . "
+      <p><b>Created by:</b> " . e_mail((string)$creado) . "</p>
+      <p><b>Description:</b><br>" . nl2br(e_mail((string)$desc)) . "</p>
       " . ($url ? "<p><b>URL:</b> <a href='" . e_mail((string)$url) . "'>" . e_mail((string)$url) . "</a></p>" : "") . "
     ";
   }
@@ -322,12 +322,12 @@ function notify_ticket_closed(array $ticket, ?string $toEmail = null, string $to
     $html = render_mail_template($templateHtml, $templateVars);
   } else {
     $html = "
-      <h2>Tu ticket fue resuelto</h2>
+      <h2>Your ticket was resolved</h2>
       <p><b>ID:</b> " . e_mail((string)$id) . "</p>
-      <p><b>Asunto:</b> " . e_mail((string)$titulo) . "</p>
-      <p><b>Hora apertura (Merida):</b> " . e_mail(merida_time_12h($createdAt)) . "</p>
-      <p><b>Hora cierre (Merida):</b> " . e_mail(merida_time_12h($closedAt)) . "</p>
-      <p><b>Resolucion:</b><br>" . nl2br(e_mail((string)$resolutionDescription)) . "</p>
+      <p><b>Subject:</b> " . e_mail((string)$titulo) . "</p>
+      <p><b>Opening time (Merida):</b> " . e_mail(merida_time_12h($createdAt)) . "</p>
+      <p><b>Closing time (Merida):</b> " . e_mail(merida_time_12h($closedAt)) . "</p>
+      <p><b>Resolution:</b><br>" . nl2br(e_mail((string)$resolutionDescription)) . "</p>
     ";
   }
 
@@ -386,12 +386,12 @@ function notify_ticket_assigned(array $ticket, ?string $toEmail = null, string $
     $html = render_mail_template($templateHtml, $templateVars);
   } else {
     $html = "
-      <h2>Tu ticket fue asignado</h2>
+      <h2>Your ticket was assigned</h2>
       <p><b>Ticket:</b> #" . e_mail((string)$id) . "</p>
-      <p><b>Asunto:</b> " . e_mail($type) . " - " . e_mail($area) . "</p>
-      <p><b>Asignado a:</b> " . e_mail($assignedTo) . " (" . e_mail($assignedRole) . ")</p>
-      <p><b>Fecha de asignacion:</b> " . e_mail(merida_datetime_12h($assignedAt)) . "</p>
-      <p><b>Telefono:</b> " . e_mail($assignedPhone) . "</p>
+      <p><b>Subject:</b> " . e_mail($type) . " - " . e_mail($area) . "</p>
+      <p><b>Assigned to:</b> " . e_mail($assignedTo) . " (" . e_mail($assignedRole) . ")</p>
+      <p><b>Assignment date:</b> " . e_mail(merida_datetime_12h($assignedAt)) . "</p>
+      <p><b>Phone:</b> " . e_mail($assignedPhone) . "</p>
     ";
   }
 
