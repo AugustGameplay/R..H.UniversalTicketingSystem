@@ -920,9 +920,15 @@ $users = $stmt->fetchAll();
                 <label class="form-label">Area</label>
                 <select class="form-select pro-input" name="area" required>
                   <option value="" selected disabled>Select an area</option>
+                  <option value="Accounting">Accounting</option>
+                  <option value="Corporate">Corporate</option>
+                  <option value="HR">HR</option>
                   <option value="IT Support">IT Support</option>
-                  <option value="Operaciones">Operations</option>
-                  <option value="Marketing">Marketing</option>
+                  <option value="Managers">Managers</option>
+                  <option value="Marketing and IT">Marketing and IT</option>
+                  <option value="Operations">Operations</option>
+                  <option value="Recruiters">Recruiters</option>
+                  <option value="Workers Comp">Workers Comp</option>
                 </select>
               </div>
 

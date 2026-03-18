@@ -213,8 +213,39 @@ $stmt->execute([
           'attachment_path' => $attachment_path ?: '',
         ];
 
-        // Envía al correo configurado en TICKETS_NOTIFY_EMAIL (o default local)
-        notify_ticket_created($ticketMail);
+        // 1) Notify all Admins and Super Admins (batched via BCC)
+        try {
+          $stAdmins = $pdo->query("
+            SELECT u.email, u.full_name 
+            FROM users u 
+            JOIN roles r ON r.id_role = u.id_role 
+            WHERE r.name IN ('Admin', 'Superadmin', 'Super Admin') 
+              AND u.email IS NOT NULL AND u.email != ''
+          ");
+          $adminUsers = $stAdmins->fetchAll(PDO::FETCH_ASSOC);
+          $adminEmailsArray = [];
+          if (!empty($adminUsers)) {
+            foreach ($adminUsers as $adm) {
+              $admEmail = trim($adm['email']);
+              if (filter_var($admEmail, FILTER_VALIDATE_EMAIL)) {
+                $adminEmailsArray[] = ['email' => $admEmail, 'name' => $adm['full_name']];
+              }
+            }
+          }
+          
+          notify_ticket_created_admin($ticketMail, $adminEmailsArray);
+          
+        } catch (\Throwable $admErr) {
+          error_log('[MAIL] Could not query and batch admins: ' . $admErr->getMessage());
+          // Fallback a correo por defecto
+          notify_ticket_created_admin($ticketMail, []);
+        }
+
+        // 2) Send confirmation to the actual user who created the ticket
+        if (!empty($creator_email) && filter_var($creator_email, FILTER_VALIDATE_EMAIL)) {
+          $creatorMailName = $creator_name ?: ('User #' . $user_id);
+          notify_ticket_created($ticketMail, $creator_email, $creatorMailName);
+        }
 
       } catch (\Throwable $mailErr) {
         error_log('[MAIL] Could not send ticket notification: ' . $mailErr->getMessage());

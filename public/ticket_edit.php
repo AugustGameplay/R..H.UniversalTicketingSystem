@@ -574,9 +574,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           }
 
           if ($creatorEmail !== '' && function_exists('notify_ticket_assigned')) {
-            $assignedName = userNameById($pdo, $assigned_user_id);
+            // (El nombre real se carga de la base de datos justo abajo)
             $assignedRole = 'IT Support';
-            $assignedPhone = (string)(getenv('SUPPORT_PHONE') ?: 'N/A');
+            $assignedPhone = 'N/A';
 
             // Traer rol + telefono del agente (si existe alguna columna de telefono).
             try {
