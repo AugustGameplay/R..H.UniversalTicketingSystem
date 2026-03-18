@@ -8,13 +8,51 @@ require __DIR__ . '/config/db.php'; // <-- AJUSTA si no existe aquí
 $errors = [];
 $success = null;
 
+// Detectar rol y area del usuario desde la sesion
+$sessionUser = $_SESSION['user'] ?? null;
+$currentUserIdRole = null;
+$currentUserArea   = null;
+
+if (is_array($sessionUser)) {
+  $currentUserIdRole = $sessionUser['id_role'] ?? $sessionUser['id_rol'] ?? null;
+  $currentUserArea   = $sessionUser['AREA']     ?? $sessionUser['area']  ?? null;
+}
+$currentUserIdRole = $currentUserIdRole ?? ($_SESSION['id_role'] ?? $_SESSION['id_rol'] ?? null);
+$currentUserArea   = $currentUserArea   ?? ($_SESSION['AREA']    ?? $_SESSION['area']   ?? null);
+
+// Si faltan datos, buscar en BD por id_user de sesion
+$sessionUserId = null;
+if (is_array($sessionUser)) {
+  $sessionUserId = $sessionUser['id_user'] ?? $sessionUser['user_id'] ?? $sessionUser['id'] ?? null;
+}
+$sessionUserId = $sessionUserId ?? ($_SESSION['id_user'] ?? $_SESSION['user_id'] ?? null);
+
+if ((!$currentUserArea || !$currentUserIdRole) && $sessionUserId) {
+  $stmtU0 = $pdo->prepare("SELECT AREA, id_role FROM users WHERE id_user = :id LIMIT 1");
+  $stmtU0->execute([':id' => (int)$sessionUserId]);
+  $rowU0 = $stmtU0->fetch(PDO::FETCH_ASSOC);
+  if ($rowU0) {
+    if (!$currentUserArea)   $currentUserArea   = $rowU0['AREA']    ?: null;
+    if (!$currentUserIdRole) $currentUserIdRole = $rowU0['id_role'] ?? null;
+  }
+}
+
+// id_role = 3 es Usuario General
+$isGeneralUser = ((int)($currentUserIdRole ?? 0) === 3);
+
 // ✅ 2) Procesar POST (guardar ticket)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   // Campos del form
   $category = trim($_POST['category'] ?? '');
   $type     = trim($_POST['type'] ?? '');
-  $area     = trim($_POST['area'] ?? '');
+
+  // Si es General User, su área se toma de la sesión (no del POST)
+  if ($isGeneralUser && $currentUserArea) {
+    $area = trim($currentUserArea);
+  } else {
+    $area = trim($_POST['area'] ?? '');
+  }
   $comments = trim($_POST['comments'] ?? '');
 
 
@@ -92,14 +130,6 @@ if (!$errors) {
       // tickets(id, user_id, category, type, area, comments, status, created_at)
 
       // ====== Usuario creador (robusto) ======
-// En algunos módulos la sesión viene como:
-//   $_SESSION['id_user']
-//   $_SESSION['user_id']
-//   $_SESSION['user']['id_user']
-//   $_SESSION['user']['user_id']
-// etc.
-$sessionUser = $_SESSION['user'] ?? null;
-
 $user_id = null;
 $creator_name = null;
 $creator_email = null;
@@ -397,22 +427,31 @@ $stmt->execute([
           </button>
 
           <!-- Area -->
-          <div class="dropdown w-100">
-            <button class="select-pro dropdown-toggle w-100" type="button" id="areaBtn" data-bs-toggle="dropdown" aria-expanded="false">
-              <span id="areaText">Area</span>
-              <span class="chev" aria-hidden="true"></span>
-            </button>
-            <ul class="dropdown-menu dropdown-pro w-100" aria-labelledby="areaBtn" data-target-text="#areaText" data-target-input="#area">
-              <li><button class="dropdown-item" type="button" data-value="Accounting">Accounting</button></li>
-              <li><button class="dropdown-item" type="button" data-value="Corporate">Corporate</button></li>
-              <li><button class="dropdown-item" type="button" data-value="HR">HR</button></li>
-              <li><button class="dropdown-item" type="button" data-value="Managers">Managers</button></li>
-              <li><button class="dropdown-item" type="button" data-value="Marketing and IT">Marketing and IT</button></li>
-              <li><button class="dropdown-item" type="button" data-value="Recruiters">Recruiters</button></li>
-              <li><button class="dropdown-item" type="button" data-value="Workers Comp">Workers Comp</button></li>
-            </ul>
-            <input type="hidden" name="area" id="area">
-          </div>
+          <?php if ($isGeneralUser && $currentUserArea): ?>
+            <?php /* General User: área fija, no editable */ ?>
+            <div class="select-pro w-100 d-flex align-items-center justify-content-between" style="cursor:default; opacity:0.85;">
+              <span><?= htmlspecialchars($currentUserArea) ?></span>
+              <i class="fa-solid fa-lock" style="font-size:0.75rem; color:var(--slate-400);"></i>
+            </div>
+            <input type="hidden" name="area" id="area" value="<?= htmlspecialchars($currentUserArea) ?>">
+          <?php else: ?>
+            <div class="dropdown w-100">
+              <button class="select-pro dropdown-toggle w-100" type="button" id="areaBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                <span id="areaText">Area</span>
+                <span class="chev" aria-hidden="true"></span>
+              </button>
+              <ul class="dropdown-menu dropdown-pro w-100" aria-labelledby="areaBtn" data-target-text="#areaText" data-target-input="#area">
+                <li><button class="dropdown-item" type="button" data-value="Accounting">Accounting</button></li>
+                <li><button class="dropdown-item" type="button" data-value="Corporate">Corporate</button></li>
+                <li><button class="dropdown-item" type="button" data-value="HR">HR</button></li>
+                <li><button class="dropdown-item" type="button" data-value="Managers">Managers</button></li>
+                <li><button class="dropdown-item" type="button" data-value="Marketing and IT">Marketing and IT</button></li>
+                <li><button class="dropdown-item" type="button" data-value="Recruiters">Recruiters</button></li>
+                <li><button class="dropdown-item" type="button" data-value="Workers Comp">Workers Comp</button></li>
+              </ul>
+              <input type="hidden" name="area" id="area">
+            </div>
+          <?php endif; ?>
 
           <!-- URL (opcional) -->
           <div class="field">
@@ -763,11 +802,12 @@ $stmt->execute([
      VALIDACIÓN antes de enviar
   ───────────────────────────────────────────────────────── */
   const form = document.getElementById('ticketForm');
+  const isGeneralUser = <?= $isGeneralUser ? 'true' : 'false' ?>;
   form?.addEventListener('submit', e => {
     const typeVal = document.getElementById('type').value.trim();
     const areaVal = document.getElementById('area').value.trim();
     const commVal = document.getElementById('comments').value.trim();
-    if (!typeVal || !areaVal || !commVal) {
+    if (!typeVal || (!isGeneralUser && !areaVal) || !commVal) {
       e.preventDefault();
       alert('Please fill out all required fields: Issue Type, Area, and Comments.');
     }

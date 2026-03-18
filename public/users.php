@@ -608,7 +608,6 @@ $users = $stmt->fetchAll();
       padding: 5px 12px;
       outline: none;
       white-space: nowrap;
-      -webkit-user-select: none;
       cursor: pointer;
       font-weight: 500;
       color: #212529;

@@ -222,7 +222,9 @@ function notify_ticket_created(array $ticket, ?string $toEmail = null, string $t
   $titulo   = $ticket['titulo'] ?? 'Ticket';
   $desc     = $ticket['descripcion'] ?? '';
   $area     = $ticket['area'] ?? 'N/A';
-  $prio     = $ticket['prioridad'] ?? 'N/A';
+  $prio     = trim((string)($ticket['prioridad'] ?? 'N/A'));
+  $prioMap  = ['baja' => 'Low', 'media' => 'Medium', 'alta' => 'High'];
+  $prio     = $prioMap[strtolower($prio)] ?? ($prio === 'N/A' ? 'N/A' : ucfirst(strtolower($prio)));
   $creado   = $ticket['creado_por'] ?? 'N/A';
   $url      = $ticket['url'] ?? '';
   $status   = $ticket['status'] ?? '';
@@ -230,7 +232,7 @@ function notify_ticket_created(array $ticket, ?string $toEmail = null, string $t
   $type     = $ticket['type'] ?? '';
   $createdAt = isset($ticket['created_at']) ? (string)$ticket['created_at'] : null;
 
-  $subject = "Nuevo ticket #{$id} - {$titulo}";
+  $subject = "New ticket #{$id} - {$titulo}";
 
   $templateVars = [
     'nombre_usuario' => e_mail((string)$creado),
@@ -239,7 +241,7 @@ function notify_ticket_created(array $ticket, ?string $toEmail = null, string $t
     'categoria' => e_mail((string)($category ?: 'General')),
     'prioridad' => e_mail((string)$prio),
     'fecha_apertura' => e_mail(merida_time_12h($createdAt)),
-    'agente_asignado' => e_mail((string)(getenv('DEFAULT_ASSIGNEE_NAME') ?: 'Mesa de Ayuda IT')),
+    'agente_asignado' => e_mail((string)(getenv('DEFAULT_ASSIGNEE_NAME') ?: 'IT Service Desk')),
     'descripcion_ticket' => nl2br(e_mail((string)$desc)),
     'url_ticket' => e_mail(my_tickets_url()),
     'email_soporte' => e_mail((string)(getenv('SUPPORT_EMAIL') ?: (getenv('MAIL_FROM') ?: 'soporte@local.test'))),
@@ -247,7 +249,7 @@ function notify_ticket_created(array $ticket, ?string $toEmail = null, string $t
     'año' => merida_year(),
   ];
 
-  $templateHtml = load_mail_template('ticket-creado.html');
+  $templateHtml = load_mail_template('ticket-created.html');
 
   if ($templateHtml !== null) {
     $html = render_mail_template($templateHtml, $templateVars);
@@ -282,19 +284,21 @@ function notify_ticket_closed(array $ticket, ?string $toEmail = null, string $to
   $id = $ticket['id'] ?? 'N/A';
   $titulo = $ticket['titulo'] ?? 'Ticket';
   $category = $ticket['category'] ?? 'General';
-  $createdBy = $ticket['created_by'] ?? $ticket['creado_por'] ?? 'Usuario';
-  $resolvedBy = $ticket['resolved_by'] ?? 'Mesa de Ayuda IT';
-  $resolutionDescription = $ticket['resolution_description'] ?? 'Sin detalle de resolucion.';
+  $createdBy = $ticket['created_by'] ?? $ticket['creado_por'] ?? 'User';
+  $resolvedBy = $ticket['resolved_by'] ?? 'IT Service Desk';
+  $resolutionDescription = $ticket['resolution_description'] ?? 'No resolution details.';
   $createdAt = isset($ticket['created_at']) ? (string)$ticket['created_at'] : null;
   $closedAt = isset($ticket['closed_at']) ? (string)$ticket['closed_at'] : null;
   $resolutionTime = $ticket['resolution_time'] ?? 'N/A';
   $interactions = $ticket['interactions_count'] ?? '1';
-  $priority = $ticket['prioridad'] ?? 'Media';
+  $priority = trim((string)($ticket['prioridad'] ?? 'Media'));
+  $prioMap  = ['baja' => 'Low', 'media' => 'Medium', 'alta' => 'High'];
+  $priority = $prioMap[strtolower($priority)] ?? ucfirst(strtolower($priority));
   $surveyUrl = $ticket['survey_url'] ?? '#';
   $reopenUrl = $ticket['reopen_url'] ?? my_tickets_url();
   $reopenDays = $ticket['reopen_days'] ?? '7';
 
-  $subject = "Ticket resuelto #{$id} - {$titulo}";
+  $subject = "Ticket resolved #{$id} - {$titulo}";
 
   $templateVars = [
     'nombre_usuario' => e_mail((string)$createdBy),
@@ -316,7 +320,7 @@ function notify_ticket_closed(array $ticket, ?string $toEmail = null, string $to
     'año' => merida_year(),
   ];
 
-  $templateHtml = load_mail_template('ticket-cerrado.html');
+  $templateHtml = load_mail_template('ticket-closed.html');
 
   if ($templateHtml !== null) {
     $html = render_mail_template($templateHtml, $templateVars);
@@ -350,13 +354,13 @@ function notify_ticket_assigned(array $ticket, ?string $toEmail = null, string $
   $title = (string)($ticket['asunto_ticket'] ?? trim($type . ' | ' . $area));
   $createdAt = isset($ticket['created_at']) ? (string)$ticket['created_at'] : null;
   $assignedAt = isset($ticket['assigned_at']) ? (string)$ticket['assigned_at'] : null;
-  $createdBy = (string)($ticket['created_by'] ?? $ticket['creado_por'] ?? 'Usuario');
-  $assignedTo = (string)($ticket['assigned_to'] ?? 'Agente IT');
+  $createdBy = (string)($ticket['created_by'] ?? $ticket['creado_por'] ?? 'User');
+  $assignedTo = (string)($ticket['assigned_to'] ?? 'IT Agent');
   $assignedRole = (string)($ticket['assigned_role'] ?? 'IT Support');
   $assignedPhone = (string)($ticket['assigned_phone'] ?? (getenv('SUPPORT_PHONE') ?: 'N/A'));
   $ticketUrl = (string)($ticket['url_ticket'] ?? $ticket['url'] ?? my_tickets_url());
 
-  $subject = "Ticket asignado #{$id} - {$title}";
+  $subject = "Ticket assigned #{$id} - {$title}";
 
   $templateVars = [
     'nombre_usuario' => e_mail($createdBy),
@@ -377,10 +381,7 @@ function notify_ticket_assigned(array $ticket, ?string $toEmail = null, string $
     'aÃ±o' => merida_year(),
   ];
 
-  $templateHtml = load_mail_template('ticket_asignado.html');
-  if ($templateHtml === null) {
-    $templateHtml = load_mail_template('ticket-asignado.html');
-  }
+  $templateHtml = load_mail_template('ticket-assigned.html');
 
   if ($templateHtml !== null) {
     $html = render_mail_template($templateHtml, $templateVars);

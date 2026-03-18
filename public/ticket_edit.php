@@ -101,7 +101,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'comments') {
 $itStmt = $pdo->query("
   SELECT id_user, full_name, email
   FROM users
-  WHERE AREA = 'IT Support' AND is_active = 1
+  WHERE (AREA = 'IT Support' OR AREA = 'Managers') AND is_active = 1
   ORDER BY full_name ASC
 ");
 $itUsers = $itStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -399,7 +399,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   // Validación: solo IT Support
   if (!isItSupportUser($itUsers, $assigned_user_id)) {
-    $errors[] = "You can only assign tickets to IT Support users.";
+    $errors[] = "You can only assign tickets to IT Support or Managers users.";
   }
 
   // Validación enums
@@ -595,10 +595,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               $stAgent = $pdo->prepare("
                 SELECT
                   u.full_name,
-                  COALESCE(r.name, 'IT Support') AS role_name
+                  COALESCE(u.AREA, 'IT Support') AS role_name
                   {$phoneSelect}
                 FROM users u
-                LEFT JOIN roles r ON r.id_role = u.id_role
                 WHERE u.id_user = :id
                 LIMIT 1
               ");
