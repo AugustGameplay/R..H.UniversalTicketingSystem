@@ -1022,9 +1022,9 @@ $creatorName = userNameById($pdo, (int)($ticket['id_user'] ?? 0));
                 <div class="col-sm-6">
                   <div class="hq-field">
                     <label>Type</label>
-                    <button type="button" class="hq-select-btn w-100 text-start d-flex justify-content-between align-items-center" id="tipoTrigger" data-bs-toggle="modal" data-bs-target="#modalFallas">
-                      <span id="tipoTriggerText"><?= esc((string)($ticket['type'] ?? '')) ?: 'Select Type' ?></span>
-                      <i class="fa-solid fa-chevron-down text-muted" style="font-size:0.8rem;"></i>
+                    <button type="button" class="select-pro w-100 px-3" style="height:44px; font-size:0.9rem; border-radius:10px;" id="tipoTrigger" data-bs-toggle="modal" data-bs-target="#modalFallas">
+                      <span id="tipoTriggerText" class="text-truncate"><?= esc((string)($ticket['type'] ?? '')) ?: 'Select Type' ?></span>
+                      <span class="chev" aria-hidden="true" style="transform: scale(0.7) rotate(45deg);"></span>
                     </button>
                     <input type="hidden" name="type" id="typeEdit" form="ticketForm" value="<?= esc((string)($ticket['type'] ?? '')) ?>">
                     <input type="hidden" name="category" id="categoryEdit" form="ticketForm" value="<?= esc((string)($ticket['category'] ?? '')) ?>">
