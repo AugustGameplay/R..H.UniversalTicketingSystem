@@ -6,6 +6,35 @@ require __DIR__ . '/config/db.php';
 
 function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
+function getStatusEn($st) {
+  return match(strtolower((string)$st)) {
+    'cerrado', 'closed' => 'Closed',
+    'resuelto', 'done' => 'Resolved',
+    'en proceso', 'in progress' => 'In Progress',
+    'pendiente', 'pending' => 'Pending',
+    default => ucfirst((string)$st)
+  };
+}
+
+function getPriorityEn($pri) {
+  return match(strtolower((string)$pri)) {
+    'urgente', 'urgent' => 'Urgent',
+    'alta', 'high' => 'High',
+    'media', 'medium' => 'Medium',
+    'baja', 'low' => 'Low',
+    'alta/media', 'high/medium' => 'High/Medium',
+    default => ucfirst((string)$pri)
+  };
+}
+
+function getTypeEn($t) {
+  return match(strtolower((string)$t)) {
+    'falla', 'fault' => 'Fault',
+    'solicitud', 'request' => 'Request',
+    default => $t
+  };
+}
+
 // =====================================================
 // Fechas (GET) - inicio y fin
 // =====================================================
@@ -265,7 +294,7 @@ if (isset($_GET['download']) && $_GET['download'] == '1') {
   header('Content-Type: text/csv; charset=utf-8');
   header('Content-Disposition: attachment; filename="tickets_history_'.$start.'_to_'.$end.'_'.$view.'.csv"');
   $out = fopen('php://output', 'w');
-  fputcsv($out, ['ID','Creado','Cerrado','Área','Prioridad','Estatus','Asignado a','Creado por']);
+  fputcsv($out, ['ID','Created','Closed','Area','Priority','Status','Assigned to','Created by']);
   $closedSelect = $closedField ? "t.$closedField AS closed_at" : "NULL AS closed_at";
   $stmt = $pdo->prepare("
     SELECT t.id_ticket, t.created_at, $closedSelect, t.area, t.priority, t.status,
@@ -278,7 +307,16 @@ if (isset($_GET['download']) && $_GET['download'] == '1') {
   ");
   $stmt->execute($params);
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    fputcsv($out, [$row['id_ticket'],$row['created_at'],$row['closed_at']?:'',$row['area'],$row['priority'],$row['status'],$row['assigned_name'],$row['created_by_name']]);
+    fputcsv($out, [
+      $row['id_ticket'],
+      $row['created_at'],
+      $row['closed_at']?:'',
+      $row['area'],
+      getPriorityEn($row['priority']),
+      getStatusEn($row['status']),
+      $row['assigned_name'],
+      $row['created_by_name']
+    ]);
   }
   fclose($out);
   exit;
@@ -314,7 +352,7 @@ if ($view === 'closed')     { $extraWhere = " AND (t.status = 'Cerrado' OR t.sta
 
 // FIX: aplicar filtro de categoría a la query principal
 if ($cat !== '') {
-  $extraWhere .= " AND COALESCE(NULLIF(TRIM(t.category), ''), 'Sin categoría') = :cat";
+  $extraWhere .= " AND COALESCE(NULLIF(TRIM(t.category), ''), 'Uncategorized') = :cat";
   $params[':cat'] = $cat;
 }
 
@@ -324,10 +362,10 @@ if ($cat !== '') {
 $categoryCounts = [];
 try {
   $stmtCat = $pdo->prepare("
-    SELECT COALESCE(NULLIF(TRIM(t.category), ''), 'Sin categoría') AS category, COUNT(*) AS total
+    SELECT COALESCE(NULLIF(TRIM(t.category), ''), 'Uncategorized') AS category, COUNT(*) AS total
     FROM tickets t
     WHERE $whereBase $extraWhere
-    GROUP BY COALESCE(NULLIF(TRIM(t.category), ''), 'Sin categoría')
+    GROUP BY COALESCE(NULLIF(TRIM(t.category), ''), 'Uncategorized')
     ORDER BY total DESC, category ASC
   ");
   $stmtCat->execute($params);
@@ -341,21 +379,21 @@ try {
   $stmtAlert = $pdo->prepare("
     SELECT
       DATE(t.created_at) AS dia,
-      COALESCE(NULLIF(TRIM(t.category), ''), 'Sin categoría') AS category,
-      COALESCE(NULLIF(TRIM(t.type), ''), 'Sin tipo') AS type,
+      COALESCE(NULLIF(TRIM(t.category), ''), 'Uncategorized') AS category,
+      COALESCE(NULLIF(TRIM(t.type), ''), 'No type selected') AS type,
       COUNT(*) AS total,
       COUNT(DISTINCT t.id_user) AS reportantes
     FROM tickets t
     WHERE $whereBase
     GROUP BY DATE(t.created_at),
-             COALESCE(NULLIF(TRIM(t.category), ''), 'Sin categoría'),
-             COALESCE(NULLIF(TRIM(t.type), ''), 'Sin tipo')
+             COALESCE(NULLIF(TRIM(t.category), ''), 'Uncategorized'),
+             COALESCE(NULLIF(TRIM(t.type), ''), 'No type selected')
     HAVING COUNT(*) >= :thr AND COUNT(DISTINCT t.id_user) >= :minu
     ORDER BY total DESC, reportantes DESC
   ");
   $stmtAlert->execute($params + [':thr'=>$ALERT_THRESHOLD, ':minu'=>$ALERT_MIN_USERS]);
   while ($r = $stmtAlert->fetch(PDO::FETCH_ASSOC)){
-    $ck = $r['category'] ?? 'Sin categoría';
+    $ck = $r['category'] ?? 'Uncategorized';
     if (!isset($alertsByCategory[$ck])) $alertsByCategory[$ck] = $r;
   }
 } catch (Throwable $e) { $alertsByCategory = []; }
@@ -396,8 +434,8 @@ if ($creatorIdField){
   } catch (Throwable $e) { $usersList = []; }
 }
 
-$startText = (new DateTime($start))->format('d/m/Y');
-$endText   = (new DateTime($end))->format('d/m/Y');
+$startText = (new DateTime($start))->format('m/d/Y');
+$endText   = (new DateTime($end))->format('m/d/Y');
 
 function build_qs(array $pairs): string {
   $pairs = array_filter($pairs, fn($v) => $v !== null && $v !== '' && $v !== 0);
@@ -407,10 +445,10 @@ function build_qs(array $pairs): string {
 $qsBase = build_qs(['start'=>$start, 'end'=>$end, 'creator'=>$creatorId, 'cat'=>$cat]);
 
 $fieldLabels = [
-  'status'=>'Estatus','priority'=>'Prioridad','area'=>'Área',
-  'assigned_user_id'=>'Asignado a','assigned_to'=>'Asignado a',
-  'ticket_url'=>'URL','url'=>'URL','evidence'=>'Evidencia',
-  'evidence_path'=>'Evidencia','attachment'=>'Adjunto','notes'=>'Notas',
+  'status'=>'Status','priority'=>'Priority','area'=>'Area',
+  'assigned_user_id'=>'Assigned to','assigned_to'=>'Assigned to',
+  'ticket_url'=>'URL','url'=>'URL','evidence'=>'Evidence',
+  'evidence_path'=>'Evidence','attachment'=>'Attachment','notes'=>'Notes',
 ];
 ?>
 <!DOCTYPE html>
@@ -501,12 +539,12 @@ $fieldLabels = [
             <?php if (!empty($categoryCounts)): ?>
               <div class="history-cat-section">
                 <div class="history-cat-head">
-                  <div class="history-cat-title">Categorías</div>
-                  <div class="history-cat-sub">Conteo por categoría (mismo filtro actual)</div>
+                  <div class="history-cat-title">Categories</div>
+                  <div class="history-cat-sub">Count by category (same current filter)</div>
                 </div>
                 <div class="history-cat-grid">
                   <?php foreach ($categoryCounts as $cc):
-                    $catName  = $cc['category'] ?? 'Sin categoría';
+                    $catName  = $cc['category'] ?? 'Uncategorized';
                     $catTotal = (int)($cc['total'] ?? 0);
                     $alert    = $alertsByCategory[$catName] ?? null;
                     $hasAlert = !empty($alert);
@@ -518,14 +556,14 @@ $fieldLabels = [
                   ?>
                     <a href="history.php?<?= esc($catQS) ?>"
                        class="stat-card stat-total stat-cat <?= $hasAlert ? 'stat-cat--warn' : '' ?> <?= $isActive ? 'is-active' : '' ?>"
-                       role="button" aria-label="<?= esc($catName) ?>" title="<?= $isActive ? 'Quitar filtro' : 'Filtrar por '.esc($catName) ?>">
+                       role="button" aria-label="<?= esc($catName) ?>" title="<?= $isActive ? 'Clear filter' : 'Filter by '.esc($catName) ?>">
                       <div class="stat-num"><?= $catTotal ?></div>
                       <div class="stat-label"><?= esc($catName) ?></div>
                       <?php if ($hasAlert): ?>
                         <div class="cat-warn">
                           <i class="fa-solid fa-triangle-exclamation"></i>
                           <span>
-                            Posible falla general: <b><?= esc($alert['type'] ?? '') ?></b>
+                            Possible general issue: <b><?= esc(getTypeEn($alert['type'] ?? '')) ?></b>
                             <span class="muted">(<?= (int)($alert['total'] ?? 0) ?>)</span>
                             <span class="muted"><?= esc($alert['dia'] ?? '') ?></span>
                           </span>
@@ -548,14 +586,14 @@ $fieldLabels = [
                   <?php if ($cat !== ''): ?>
                     <span class="chip-cat">
                       <i class="fa-solid fa-tag"></i> <?= esc($cat) ?>
-                      <a class="chip-cat__clear" href="history.php?<?= esc(build_qs(['start'=>$start,'end'=>$end,'creator'=>$creatorId,'view'=>$view])) ?>" title="Quitar filtro de categoría">×</a>
+                      <a class="chip-cat__clear" href="history.php?<?= esc(build_qs(['start'=>$start,'end'=>$end,'creator'=>$creatorId,'view'=>$view])) ?>" title="Clear category filter">×</a>
                     </span>
                   <?php endif; ?>
                 </div>
                 <div class="history-right__meta">
-                  <?= esc("Del $startText al $endText") ?>
+                  <?= esc("From $startText to $endText") ?>
                   <?php if ($creatorIdField && $creatorId > 0 && $selectedCreatorName): ?>
-                    <span class="chip-creator">Creados por: <?= esc($selectedCreatorName) ?></span>
+                    <span class="chip-creator">Created by: <?= esc($selectedCreatorName) ?></span>
                   <?php endif; ?>
                 </div>
               </div>
@@ -601,9 +639,9 @@ $fieldLabels = [
                     <?php foreach ($rows as $r): ?>
                       <?php
                         $createdTxt = '—'; $closedTxt = '—';
-                        try { $createdTxt = (new DateTime($r['created_at']))->format('d/m/Y H:i'); } catch (Throwable $e) {}
+                        try { $createdTxt = (new DateTime($r['created_at']))->format('m/d/Y H:i'); } catch (Throwable $e) {}
                         if (!empty($r['closed_at'])){
-                          try { $closedTxt = (new DateTime($r['closed_at']))->format('d/m/Y H:i'); }
+                          try { $closedTxt = (new DateTime($r['closed_at']))->format('m/d/Y H:i'); }
                           catch (Throwable $e) { $closedTxt = esc((string)$r['closed_at']); }
                         }
                       ?>
@@ -614,6 +652,7 @@ $fieldLabels = [
                         <td class="td-ellipsis" title="<?= esc($r['area']) ?>"><?= esc($r['area']) ?></td>
                         <td class="td-priority"><?php
                           $pri = esc($r['priority']);
+                          $priEn = getPriorityEn($r['priority']);
                           $priClass = match($r['priority']) {
                             'Urgente' => 'badge-urgente',
                             'Alta'    => 'badge-alta',
@@ -621,9 +660,10 @@ $fieldLabels = [
                             'Baja'    => 'badge-baja',
                             default   => 'badge-media',
                           };
-                        ?><span class="<?= $priClass ?>"><?= $pri ?></span></td>
+                        ?><span class="<?= $priClass ?>"><?= esc($priEn) ?></span></td>
                         <td class="td-status"><?php
                           $st = esc($r['status']);
+                          $stEn = getStatusEn($r['status']);
                           $stClass = match(strtolower((string)$r['status'])) {
                             'cerrado', 'closed'  => 'badge-cerrado',
                             'resuelto', 'done'   => 'badge-resuelto',
@@ -631,14 +671,14 @@ $fieldLabels = [
                             'pendiente'          => 'badge-pendiente',
                             default              => 'badge-pendiente',
                           };
-                        ?><span class="<?= $stClass ?>"><?= $st ?></span></td>
+                        ?><span class="<?= $stClass ?>"><?= esc($stEn) ?></span></td>
                         <td class="td-ellipsis" title="<?= esc($r['assigned_name']) ?>"><?= esc($r['assigned_name']) ?></td>
                         <td class="td-ellipsis" title="<?= esc($r['created_by_name']?:'—') ?>"><?= esc($r['created_by_name']?:'—') ?></td>
                         <td class="td-actions">
                           <button type="button" class="btn-mods"
                                   data-ticket-id="<?= (int)$r['id_ticket'] ?>"
                                   <?= $modsTable ? '' : 'disabled' ?>
-                                  title="Ver historial de modificaciones">
+                                  title="View modification history">
                             <i class="fa-solid fa-clock-rotate-left"></i>
                           </button>
                         </td>
@@ -671,7 +711,7 @@ $fieldLabels = [
             <h5 class="modal-title" id="modsTitle">Modification history</h5>
             <div class="mods-sub" id="modsSub">—</div>
           </div>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div id="modsBody" class="mods-body">
@@ -718,7 +758,7 @@ $fieldLabels = [
     };
 
     const fpStart = flatpickr(startEl, {
-      dateFormat: "d/m/Y", defaultDate: startEl.value,
+      dateFormat: "m/d/Y", defaultDate: startEl.value,
       allowInput: false, locale: { firstDayOfWeek: 1 },
       onChange: sel => {
         if (!sel?.[0]) return;
@@ -729,7 +769,7 @@ $fieldLabels = [
     });
 
     const fpEnd = flatpickr(endEl, {
-      dateFormat: "d/m/Y", defaultDate: endEl.value,
+      dateFormat: "m/d/Y", defaultDate: endEl.value,
       allowInput: false, locale: { firstDayOfWeek: 1 },
       onChange: sel => {
         if (!sel?.[0]) return;
@@ -754,15 +794,39 @@ $fieldLabels = [
       if (!s) return '—';
       const p = String(s).replace('T',' ').split(' ');
       const d = (p[0]||'').split('-');
-      return d.length !== 3 ? s : `${d[2]}/${d[1]}/${d[0]} ${(p[1]||'').slice(0,5)}`;
+      return d.length !== 3 ? s : `${d[1]}/${d[2]}/${d[0]} ${(p[1]||'').slice(0,5)}`;
     };
 
     const e = s => String(s??'').replace(/[&<>'"]/g, c =>
       ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));
 
+    const translateVal = (field, val) => {
+      if(!val) return val;
+      const f = (field||'').toLowerCase();
+      const v = String(val).trim().toLowerCase();
+      if(f === 'status') {
+        if(v === 'cerrado' || v === 'closed') return 'Closed';
+        if(v === 'resuelto' || v === 'done') return 'Resolved';
+        if(v === 'en proceso') return 'In Progress';
+        if(v === 'pendiente') return 'Pending';
+      }
+      if(f === 'priority') {
+        if(v === 'urgente') return 'Urgent';
+        if(v === 'alta') return 'High';
+        if(v === 'media') return 'Medium';
+        if(v === 'baja') return 'Low';
+        if(v === 'alta/media') return 'High/Medium';
+      }
+      if(f === 'type') {
+        if(v === 'falla') return 'Fault';
+        if(v === 'solicitud') return 'Request';
+      }
+      return val;
+    };
+
     const renderMods = items => {
       if (!items?.length){
-        bodyEl.innerHTML = `<div class="mods-empty">Aún no hay modificaciones registradas para este ticket.</div>`;
+        bodyEl.innerHTML = `<div class="mods-empty">There are no modifications recorded for this ticket yet.</div>`;
         return;
       }
       bodyEl.innerHTML = `<div class="mods-list">${items.map(it => `
@@ -772,11 +836,11 @@ $fieldLabels = [
             <div class="mod-who"><i class="fa-regular fa-user"></i> ${e(it.modified_by_name||'—')}</div>
           </div>
           <div class="mod-body">
-            <div class="mod-field">${e(FL[(it.field_name||'').toLowerCase()]||it.field_name||'Campo')}</div>
+            <div class="mod-field">${e(FL[(it.field_name||'').toLowerCase()]||it.field_name||'Field')}</div>
             <div class="mod-diff">
-              <span class="mod-old">${e(it.old_value??'—')}</span>
+              <span class="mod-old">${e(translateVal(it.field_name, it.old_value??'—'))}</span>
               <span class="mod-arrow">→</span>
-              <span class="mod-new">${e(it.new_value??'—')}</span>
+              <span class="mod-new">${e(translateVal(it.field_name, it.new_value??'—'))}</span>
             </div>
           </div>
         </div>`).join('')}</div>`;

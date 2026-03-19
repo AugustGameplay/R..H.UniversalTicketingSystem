@@ -8,24 +8,62 @@ require __DIR__ . '/config/db.php'; // <-- AJUSTA si no existe aquí
 $errors = [];
 $success = null;
 
+// Detectar rol y area del usuario desde la sesion
+$sessionUser = $_SESSION['user'] ?? null;
+$currentUserIdRole = null;
+$currentUserArea   = null;
+
+if (is_array($sessionUser)) {
+  $currentUserIdRole = $sessionUser['id_role'] ?? $sessionUser['id_rol'] ?? null;
+  $currentUserArea   = $sessionUser['AREA']     ?? $sessionUser['area']  ?? null;
+}
+$currentUserIdRole = $currentUserIdRole ?? ($_SESSION['id_role'] ?? $_SESSION['id_rol'] ?? null);
+$currentUserArea   = $currentUserArea   ?? ($_SESSION['AREA']    ?? $_SESSION['area']   ?? null);
+
+// Si faltan datos, buscar en BD por id_user de sesion
+$sessionUserId = null;
+if (is_array($sessionUser)) {
+  $sessionUserId = $sessionUser['id_user'] ?? $sessionUser['user_id'] ?? $sessionUser['id'] ?? null;
+}
+$sessionUserId = $sessionUserId ?? ($_SESSION['id_user'] ?? $_SESSION['user_id'] ?? null);
+
+if ((!$currentUserArea || !$currentUserIdRole) && $sessionUserId) {
+  $stmtU0 = $pdo->prepare("SELECT AREA, id_role FROM users WHERE id_user = :id LIMIT 1");
+  $stmtU0->execute([':id' => (int)$sessionUserId]);
+  $rowU0 = $stmtU0->fetch(PDO::FETCH_ASSOC);
+  if ($rowU0) {
+    if (!$currentUserArea)   $currentUserArea   = $rowU0['AREA']    ?: null;
+    if (!$currentUserIdRole) $currentUserIdRole = $rowU0['id_role'] ?? null;
+  }
+}
+
+// id_role = 3 es Usuario General
+$isGeneralUser = ((int)($currentUserIdRole ?? 0) === 3);
+
 // ✅ 2) Procesar POST (guardar ticket)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   // Campos del form
   $category = trim($_POST['category'] ?? '');
   $type     = trim($_POST['type'] ?? '');
-  $area     = trim($_POST['area'] ?? '');
+
+  // Si es General User, su área se toma de la sesión (no del POST)
+  if ($isGeneralUser && $currentUserArea) {
+    $area = trim($currentUserArea);
+  } else {
+    $area = trim($_POST['area'] ?? '');
+  }
   $comments = trim($_POST['comments'] ?? '');
 
 
   // Auto-categoría (backend) por si el front no la llena
   $TYPE_TO_CATEGORY = [
-    'Impresora' => 'Hardware',
-    'No enciende' => 'Hardware',
-    'Equipo lento' => 'Hardware',
-    'Sin internet' => 'Network',
-    'Error de aplicación' => 'Software',
-    'Acceso / credenciales' => 'Email',
+    'Printer' => 'Hardware',
+    'Does not turn on' => 'Hardware',
+    'Very slow / freezing' => 'Hardware',
+    'No internet connection' => 'Network',
+    'Error opening application' => 'Software',
+    'Need access to new system' => 'Email',
   ];
 
   if ($category === '') {
@@ -40,26 +78,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   
   $ticket_url = trim($_POST['ticket_url'] ?? '');
   $attachment_path = null;
-// Validación  if ($type === '')     $errors[] = "Selecciona un tipo.";
-  if ($area === '')     $errors[] = "Selecciona un área.";
-  if ($comments === '') $errors[] = "Escribe un comentario.";
+// Validación  if ($type === '')     $errors[] = "Select an issue type.";
+  if ($area === '')     $errors[] = "Select an area.";
+  if ($comments === '') $errors[] = "Please provide a description.";
 
   
   if ($ticket_url !== '' && !filter_var($ticket_url, FILTER_VALIDATE_URL)) {
-    $errors[] = "La URL no es válida.";
+    $errors[] = "The URL is invalid.";
   }
 if (!$errors) {
     try {
       
-      // ====== Upload de evidencia (opcional) ======
+        // ====== Upload de evidencia (opcional) ======
       if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] !== UPLOAD_ERR_NO_FILE) {
         if ($_FILES['attachment']['error'] !== UPLOAD_ERR_OK) {
-          throw new Exception('Error al subir el archivo (código: ' . $_FILES['attachment']['error'] . ').');
+          throw new Exception('Error uploading file (code: ' . $_FILES['attachment']['error'] . ').');
         }
 
         // Tamaño máximo: 10MB
         if ($_FILES['attachment']['size'] > 10 * 1024 * 1024) {
-          throw new Exception('El archivo excede el tamaño máximo de 10MB.');
+          throw new Exception('The file exceeds the maximum size of 10MB.');
         }
 
         $allowed_ext = ['png','jpg','jpeg','pdf','doc','docx','xlsx','xls','txt'];
@@ -67,7 +105,7 @@ if (!$errors) {
         $ext = strtolower(pathinfo($original_name, PATHINFO_EXTENSION));
 
         if (!in_array($ext, $allowed_ext, true)) {
-          throw new Exception('Tipo de archivo no permitido.');
+          throw new Exception('File type not allowed.');
         }
 
         $upload_dir = __DIR__ . '/uploads/tickets';
@@ -79,7 +117,7 @@ if (!$errors) {
         $dest = $upload_dir . '/' . $safe_name;
 
         if (!move_uploaded_file($_FILES['attachment']['tmp_name'], $dest)) {
-          throw new Exception('No se pudo guardar el archivo subido.');
+          throw new Exception('Could not save the uploaded file.');
         }
 
         // Guardamos ruta relativa para BD / vistas
@@ -92,14 +130,6 @@ if (!$errors) {
       // tickets(id, user_id, category, type, area, comments, status, created_at)
 
       // ====== Usuario creador (robusto) ======
-// En algunos módulos la sesión viene como:
-//   $_SESSION['id_user']
-//   $_SESSION['user_id']
-//   $_SESSION['user']['id_user']
-//   $_SESSION['user']['user_id']
-// etc.
-$sessionUser = $_SESSION['user'] ?? null;
-
 $user_id = null;
 $creator_name = null;
 $creator_email = null;
@@ -141,7 +171,7 @@ if ($user_id && !$creator_name) {
 
 // Si todavía no hay usuario, mejor fallar con mensaje claro (evita tickets sin creador)
 if (!$user_id) {
-  throw new Exception("No se pudo identificar el usuario creador del ticket. Cierra sesión e inicia sesión de nuevo.");
+  throw new Exception("Could not identify the user creating the ticket. Please log out and log in again.");
 }
 
 
@@ -183,17 +213,48 @@ $stmt->execute([
           'attachment_path' => $attachment_path ?: '',
         ];
 
-        // Envía al correo configurado en TICKETS_NOTIFY_EMAIL (o default local)
-        notify_ticket_created($ticketMail);
+        // 1) Notify all Admins and Super Admins (batched via BCC)
+        try {
+          $stAdmins = $pdo->query("
+            SELECT u.email, u.full_name 
+            FROM users u 
+            JOIN roles r ON r.id_role = u.id_role 
+            WHERE r.name IN ('Admin', 'Superadmin', 'Super Admin') 
+              AND u.email IS NOT NULL AND u.email != ''
+          ");
+          $adminUsers = $stAdmins->fetchAll(PDO::FETCH_ASSOC);
+          $adminEmailsArray = [];
+          if (!empty($adminUsers)) {
+            foreach ($adminUsers as $adm) {
+              $admEmail = trim($adm['email']);
+              if (filter_var($admEmail, FILTER_VALIDATE_EMAIL)) {
+                $adminEmailsArray[] = ['email' => $admEmail, 'name' => $adm['full_name']];
+              }
+            }
+          }
+          
+          notify_ticket_created_admin($ticketMail, $adminEmailsArray);
+          
+        } catch (\Throwable $admErr) {
+          error_log('[MAIL] Could not query and batch admins: ' . $admErr->getMessage());
+          // Fallback a correo por defecto
+          notify_ticket_created_admin($ticketMail, []);
+        }
+
+        // 2) Send confirmation to the actual user who created the ticket
+        if (!empty($creator_email) && filter_var($creator_email, FILTER_VALIDATE_EMAIL)) {
+          $creatorMailName = $creator_name ?: ('User #' . $user_id);
+          notify_ticket_created($ticketMail, $creator_email, $creatorMailName);
+        }
 
       } catch (\Throwable $mailErr) {
-        error_log('[MAIL] No se pudo enviar notificación de ticket: ' . $mailErr->getMessage());
+        error_log('[MAIL] Could not send ticket notification: ' . $mailErr->getMessage());
       }
 
 
-      $success = "✅ Ticket enviado correctamente.";
+      $success = "✅ Ticket submitted successfully.";
     } catch (PDOException $e) {
-      $errors[] = "Error al guardar en BD: " . $e->getMessage();
+      $errors[] = "Error saving to database: " . $e->getMessage();
     }
   }
 }
@@ -220,6 +281,12 @@ $stmt->execute([
 </head>
 
 <style>
+:root {
+  --brand: #083B5C;
+  --brand-hover: #D14B16;
+  --brand-rgb: 8, 59, 92;
+}
+
 /* ── Tipo Picker Trigger ──────────────────────────────── */
 .tipo-trigger {
   width: 100%;
@@ -284,7 +351,7 @@ $stmt->execute([
   box-shadow: 0 1px 3px rgba(var(--brand-rgb), 0.3);
 }
 .modal-back-btn:hover { background: var(--brand-hover); }
-.modal-back-btn.visible { display: flex; }
+.modal-back-btn.visible { display: flex !important; }
 
 /* ── Step 1: Categoría cards grid ─────────────────────── */
 .cat-grid {
@@ -397,22 +464,31 @@ $stmt->execute([
           </button>
 
           <!-- Area -->
-          <div class="dropdown w-100">
-            <button class="select-pro dropdown-toggle w-100" type="button" id="areaBtn" data-bs-toggle="dropdown" aria-expanded="false">
-              <span id="areaText">Area</span>
-              <span class="chev" aria-hidden="true"></span>
-            </button>
-            <ul class="dropdown-menu dropdown-pro w-100" aria-labelledby="areaBtn" data-target-text="#areaText" data-target-input="#area">
-              <li><button class="dropdown-item" type="button" data-value="Marketing e IT">Marketing e IT</button></li>
-              <li><button class="dropdown-item" type="button" data-value="Managers">Managers</button></li>
-              <li><button class="dropdown-item" type="button" data-value="Corporate">Corporate</button></li>
-              <li><button class="dropdown-item" type="button" data-value="Recruiters">Recruiters</button></li>
-              <li><button class="dropdown-item" type="button" data-value="RH">RH</button></li>
-              <li><button class="dropdown-item" type="button" data-value="Accounting">Accounting</button></li>
-              <li><button class="dropdown-item" type="button" data-value="Workers Comp">Workers Comp</button></li>
-            </ul>
-            <input type="hidden" name="area" id="area">
-          </div>
+          <?php if ($isGeneralUser && $currentUserArea): ?>
+            <?php /* General User: área fija, no editable */ ?>
+            <div class="select-pro w-100 d-flex align-items-center justify-content-between" style="cursor:default; opacity:0.85;">
+              <span><?= htmlspecialchars($currentUserArea) ?></span>
+              <i class="fa-solid fa-lock" style="font-size:0.75rem; color:var(--slate-400);"></i>
+            </div>
+            <input type="hidden" name="area" id="area" value="<?= htmlspecialchars($currentUserArea) ?>">
+          <?php else: ?>
+            <div class="dropdown w-100">
+              <button class="select-pro dropdown-toggle w-100" type="button" id="areaBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                <span id="areaText">Area</span>
+                <span class="chev" aria-hidden="true"></span>
+              </button>
+              <ul class="dropdown-menu dropdown-pro w-100" aria-labelledby="areaBtn" data-target-text="#areaText" data-target-input="#area">
+                <li><button class="dropdown-item" type="button" data-value="Accounting">Accounting</button></li>
+                <li><button class="dropdown-item" type="button" data-value="Corporate">Corporate</button></li>
+                <li><button class="dropdown-item" type="button" data-value="HR">HR</button></li>
+                <li><button class="dropdown-item" type="button" data-value="Managers">Managers</button></li>
+                <li><button class="dropdown-item" type="button" data-value="Marketing and IT">Marketing and IT</button></li>
+                <li><button class="dropdown-item" type="button" data-value="Recruiters">Recruiters</button></li>
+                <li><button class="dropdown-item" type="button" data-value="Workers Comp">Workers Comp</button></li>
+              </ul>
+              <input type="hidden" name="area" id="area">
+            </div>
+          <?php endif; ?>
 
           <!-- URL (opcional) -->
           <div class="field">
@@ -437,7 +513,7 @@ $stmt->execute([
           <div class="field">
             <div class="field__row">
               <label class="field__label" for="attachment">Attachment/Evidence (optional)</label>
-              <span class="field__counter">Máx. 10MB</span>
+              <span class="field__counter">Max. 10MB</span>
             </div>
             <input type="file" id="attachment" name="attachment"
               accept=".png,.jpg,.jpeg,.pdf,.doc,.docx,.xlsx,.xls,.txt" hidden>
@@ -453,16 +529,16 @@ $stmt->execute([
 
             <div class="tc-fileinfo" id="fileInfo" hidden>
               <div class="tc-fileinfo__left">
-                <img id="filePreview" class="tc-fileinfo__preview" alt="Vista previa" hidden>
+                <img id="filePreview" class="tc-fileinfo__preview" alt="Preview" hidden>
                 <div id="fileIcon" class="tc-fileinfo__icon" aria-hidden="true">
                   <i class="fa-regular fa-file"></i>
                 </div>
                 <div class="tc-fileinfo__txt">
-                  <div class="tc-fileinfo__name" id="fileName">archivo</div>
+                  <div class="tc-fileinfo__name" id="fileName">file</div>
                   <div class="tc-fileinfo__size" id="fileSize">0 KB</div>
                 </div>
               </div>
-              <button type="button" class="tc-fileinfo__remove" id="fileRemove" title="Quitar archivo">
+              <button type="button" class="tc-fileinfo__remove" id="fileRemove" title="Remove file">
                 <i class="fa-solid fa-xmark"></i>
               </button>
             </div>
@@ -495,9 +571,12 @@ $stmt->execute([
         <div class="modal-header">
           <div style="display:flex;align-items:center;gap:12px;flex:1;">
             <button type="button" class="modal-back-btn" id="modalBackBtn">
-              <i class="fa-solid fa-arrow-left"></i> Volver
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+              </svg>
+              Back
             </button>
-            <h5 class="modal-title" id="modalFallasLabel">¿Qué tiene el problema?</h5>
+            <h5 class="modal-title" id="modalFallasLabel">What is the issue?</h5>
           </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
@@ -509,9 +588,9 @@ $stmt->execute([
           <div id="step1">
             <div class="cat-grid">
 
-              <button type="button" class="cat-card" data-cat="Hardware" data-cat-label="Computadora / PC" data-cat-ico="fa-solid fa-desktop">
+              <button type="button" class="cat-card" data-cat="Hardware" data-cat-label="Computer / PC" data-cat-ico="fa-solid fa-desktop">
                 <div class="cat-card__ico"><i class="fa-solid fa-desktop"></i></div>
-                <div class="cat-card__label">Computadora / PC</div>
+                <div class="cat-card__label">Computer / PC</div>
               </button>
 
               <button type="button" class="cat-card" data-cat="Hardware" data-cat-label="Monitor" data-cat-ico="fa-solid fa-tv">
@@ -519,39 +598,39 @@ $stmt->execute([
                 <div class="cat-card__label">Monitor</div>
               </button>
 
-              <button type="button" class="cat-card" data-cat="Hardware" data-cat-label="Impresora" data-cat-ico="fa-solid fa-print">
+              <button type="button" class="cat-card" data-cat="Hardware" data-cat-label="Printer" data-cat-ico="fa-solid fa-print">
                 <div class="cat-card__ico"><i class="fa-solid fa-print"></i></div>
-                <div class="cat-card__label">Impresora</div>
+                <div class="cat-card__label">Printer</div>
               </button>
 
-              <button type="button" class="cat-card" data-cat="Network" data-cat-label="Red / Internet" data-cat-ico="fa-solid fa-wifi">
+              <button type="button" class="cat-card" data-cat="Network" data-cat-label="Network / Internet" data-cat-ico="fa-solid fa-wifi">
                 <div class="cat-card__ico"><i class="fa-solid fa-wifi"></i></div>
-                <div class="cat-card__label">Red / Internet</div>
+                <div class="cat-card__label">Network / Internet</div>
               </button>
 
-              <button type="button" class="cat-card" data-cat="Software" data-cat-label="Aplicación / Software" data-cat-ico="fa-solid fa-cubes">
+              <button type="button" class="cat-card" data-cat="Software" data-cat-label="App / Software" data-cat-ico="fa-solid fa-cubes">
                 <div class="cat-card__ico"><i class="fa-solid fa-cubes"></i></div>
-                <div class="cat-card__label">Aplicación / Software</div>
+                <div class="cat-card__label">App / Software</div>
               </button>
 
-              <button type="button" class="cat-card" data-cat="Email" data-cat-label="Correo / Acceso" data-cat-ico="fa-solid fa-envelope-circle-check">
+              <button type="button" class="cat-card" data-cat="Email" data-cat-label="Email / Access" data-cat-ico="fa-solid fa-envelope-circle-check">
                 <div class="cat-card__ico"><i class="fa-solid fa-envelope-circle-check"></i></div>
-                <div class="cat-card__label">Correo / Acceso</div>
+                <div class="cat-card__label">Email / Access</div>
               </button>
 
-              <button type="button" class="cat-card" data-cat="Hardware" data-cat-label="Teclado / Mouse" data-cat-ico="fa-solid fa-keyboard">
+              <button type="button" class="cat-card" data-cat="Hardware" data-cat-label="Keyboard / Mouse" data-cat-ico="fa-solid fa-keyboard">
                 <div class="cat-card__ico"><i class="fa-solid fa-keyboard"></i></div>
-                <div class="cat-card__label">Teclado / Mouse</div>
+                <div class="cat-card__label">Keyboard / Mouse</div>
               </button>
 
-              <button type="button" class="cat-card" data-cat="Hardware" data-cat-label="Teléfono / VoIP" data-cat-ico="fa-solid fa-phone-office">
+              <button type="button" class="cat-card" data-cat="Hardware" data-cat-label="Phone / VoIP" data-cat-ico="fa-solid fa-phone-office">
                 <div class="cat-card__ico"><i class="fa-solid fa-phone"></i></div>
-                <div class="cat-card__label">Teléfono / VoIP</div>
+                <div class="cat-card__label">Phone / RingCentral</div>
               </button>
 
-              <button type="button" class="cat-card" data-cat="General" data-cat-label="Otro" data-cat-ico="fa-solid fa-circle-question">
+              <button type="button" class="cat-card" data-cat="General" data-cat-label="Other" data-cat-ico="fa-solid fa-circle-question">
                 <div class="cat-card__ico"><i class="fa-solid fa-circle-question"></i></div>
-                <div class="cat-card__label">Otro</div>
+                <div class="cat-card__label">Other</div>
               </button>
 
             </div>
@@ -561,9 +640,9 @@ $stmt->execute([
           <div id="step2" hidden>
             <div class="cat-breadcrumb" id="catBreadcrumb">
               <i class="fa-solid fa-folder-open"></i>
-              <span id="catBreadcrumbLabel">Categoría</span>
+              <span id="catBreadcrumbLabel">Category</span>
               <i class="fa-solid fa-chevron-right" style="font-size:0.6rem;opacity:0.5;"></i>
-              <span>Selecciona la falla específica</span>
+              <span>Select specific issue</span>
             </div>
             <div class="subfalla-list" id="subfallaList">
               <!-- Se genera dinámicamente -->
@@ -585,73 +664,73 @@ $stmt->execute([
      CATÁLOGO DE FALLAS (categoría → subfallas)
   ───────────────────────────────────────────────────────── */
   const FALLAS = {
-    'Computadora / PC': [
-      { ico: 'fa-solid fa-power-off',          label: 'No enciende' },
-      { ico: 'fa-solid fa-gauge',              label: 'Equipo muy lento' },
-      { ico: 'fa-solid fa-fire',               label: 'Se calienta demasiado / apagado repentino' },
-      { ico: 'fa-solid fa-volume-high',        label: 'Hace ruidos extraños' },
-      { ico: 'fa-solid fa-skull-crossbones',   label: 'Pantalla azul / crash' },
-      { ico: 'fa-solid fa-rotate-right',       label: 'Se reinicia solo' },
-      { ico: 'fa-solid fa-circle-question',    label: 'Otro problema', other: true },
+    'Computer / PC': [
+      { ico: 'fa-solid fa-power-off',          label: 'Does not turn on' },
+      { ico: 'fa-solid fa-gauge',              label: 'Very slow / freezing' },
+      { ico: 'fa-solid fa-fire',               label: 'Overheating / turns off randomly' },
+      { ico: 'fa-solid fa-volume-high',        label: 'Making strange noises' },
+      { ico: 'fa-solid fa-skull-crossbones',   label: 'Blue screen / crashing' },
+      { ico: 'fa-solid fa-rotate-right',       label: 'Keeps restarting' },
+      { ico: 'fa-solid fa-circle-question',    label: 'Other issue', other: true },
     ],
     'Monitor': [
-      { ico: 'fa-solid fa-power-off',          label: 'No enciende' },
-      { ico: 'fa-solid fa-bolt',               label: 'Parpadea / titila' },
-      { ico: 'fa-solid fa-plug',               label: 'Falla el HDMI / VGA / cable' },
-      { ico: 'fa-solid fa-expand',             label: 'Resolución incorrecta' },
-      { ico: 'fa-solid fa-eye-slash',          label: 'Sin imagen / pantalla negra' },
-      { ico: 'fa-solid fa-bars',               label: 'Líneas / manchas en pantalla' },
-      { ico: 'fa-solid fa-circle-question',    label: 'Otro problema', other: true },
+      { ico: 'fa-solid fa-power-off',          label: 'Does not turn on' },
+      { ico: 'fa-solid fa-bolt',               label: 'Flickering / flashing' },
+      { ico: 'fa-solid fa-plug',               label: 'HDMI / VGA / cable issue' },
+      { ico: 'fa-solid fa-expand',             label: 'Incorrect resolution' },
+      { ico: 'fa-solid fa-eye-slash',          label: 'No display / black screen' },
+      { ico: 'fa-solid fa-bars',               label: 'Lines / spots on screen' },
+      { ico: 'fa-solid fa-circle-question',    label: 'Other issue', other: true },
     ],
-    'Impresora': [
-      { ico: 'fa-solid fa-fill-drip',          label: 'Sin tinta / tóner' },
-      { ico: 'fa-solid fa-file-circle-xmark',  label: 'Sin hojas / papel atascado' },
-      { ico: 'fa-solid fa-link-slash',         label: 'No conecta (USB / red / WiFi)' },
-      { ico: 'fa-solid fa-ban',                label: 'No imprime / trabajo en cola' },
-      { ico: 'fa-solid fa-file-circle-exclamation', label: 'Imprime cortado o en mal formato' },
-      { ico: 'fa-solid fa-circle-question',    label: 'Otro problema', other: true },
+    'Printer': [
+      { ico: 'fa-solid fa-fill-drip',          label: 'Out of ink / toner' },
+      { ico: 'fa-solid fa-file-circle-xmark',  label: 'Out of paper / paper jam' },
+      { ico: 'fa-solid fa-link-slash',         label: 'Not connecting (USB/Network/WiFi)' },
+      { ico: 'fa-solid fa-ban',                label: 'Not printing / stuck in queue' },
+      { ico: 'fa-solid fa-file-circle-exclamation', label: 'Printing cut off / bad format' },
+      { ico: 'fa-solid fa-circle-question',    label: 'Other issue', other: true },
     ],
-    'Red / Internet': [
-      { ico: 'fa-solid fa-wifi',               label: 'Sin conexión a internet' },
-      { ico: 'fa-solid fa-gauge',              label: 'Conexión muy lenta' },
-      { ico: 'fa-solid fa-ethernet',           label: 'Cable de red desconectado / dañado' },
-      { ico: 'fa-solid fa-server',             label: 'No accede a un servidor / VPN' },
-      { ico: 'fa-solid fa-globe',              label: 'Solo algunas páginas no cargan' },
-      { ico: 'fa-solid fa-circle-question',    label: 'Otro problema', other: true },
+    'Network / Internet': [
+      { ico: 'fa-solid fa-wifi',               label: 'No internet connection' },
+      { ico: 'fa-solid fa-gauge',              label: 'Very slow connection' },
+      { ico: 'fa-solid fa-ethernet',           label: 'Network cable unplugged/damaged' },
+      { ico: 'fa-solid fa-server',             label: 'Cannot access server / VPN' },
+      { ico: 'fa-solid fa-globe',              label: 'Certain websites not loading' },
+      { ico: 'fa-solid fa-circle-question',    label: 'Other issue', other: true },
     ],
-    'Aplicación / Software': [
-      { ico: 'fa-solid fa-triangle-exclamation', label: 'Error al abrir la aplicación' },
-      { ico: 'fa-solid fa-bug',                label: 'Falla / cierre inesperado' },
-      { ico: 'fa-solid fa-lock',               label: 'No tengo acceso / permisos' },
-      { ico: 'fa-solid fa-download',           label: 'Necesito instalar un programa' },
-      { ico: 'fa-solid fa-rotate',             label: 'Actualización pendiente / forzada' },
-      { ico: 'fa-solid fa-circle-question',    label: 'Otro problema', other: true },
+    'App / Software': [
+      { ico: 'fa-solid fa-triangle-exclamation', label: 'Error opening application' },
+      { ico: 'fa-solid fa-bug',                label: 'App crashing / closing unexpectedly' },
+      { ico: 'fa-solid fa-lock',               label: 'No access / permission denied' },
+      { ico: 'fa-solid fa-download',           label: 'Need software installed' },
+      { ico: 'fa-solid fa-rotate',             label: 'Pending / forced update' },
+      { ico: 'fa-solid fa-circle-question',    label: 'Other issue', other: true },
     ],
-    'Correo / Acceso': [
-      { ico: 'fa-solid fa-key',                label: 'Olvidé mi contraseña' },
-      { ico: 'fa-solid fa-user-lock',          label: 'Cuenta bloqueada' },
-      { ico: 'fa-solid fa-paper-plane',        label: 'No recibo / no envío correos' },
-      { ico: 'fa-solid fa-id-badge',           label: 'Necesito acceso a un sistema nuevo' },
-      { ico: 'fa-solid fa-shield-halved',      label: 'Sospecha de cuenta comprometida' },
-      { ico: 'fa-solid fa-circle-question',    label: 'Otro problema', other: true },
+    'Email / Access': [
+      { ico: 'fa-solid fa-key',                label: 'Forgot password' },
+      { ico: 'fa-solid fa-user-lock',          label: 'Account locked' },
+      { ico: 'fa-solid fa-paper-plane',        label: 'Cannot send or receive emails' },
+      { ico: 'fa-solid fa-id-badge',           label: 'Need access to new system' },
+      { ico: 'fa-solid fa-shield-halved',      label: 'Suspected compromised account' },
+      { ico: 'fa-solid fa-circle-question',    label: 'Other issue', other: true },
     ],
-    'Teclado / Mouse': [
-      { ico: 'fa-solid fa-keyboard',           label: 'Teclas no responden' },
-      { ico: 'fa-solid fa-computer-mouse',     label: 'Mouse no mueve / sin respuesta' },
-      { ico: 'fa-solid fa-battery-quarter',    label: 'Batería agotada (inalámbrico)' },
-      { ico: 'fa-solid fa-circle-exclamation', label: 'No reconocido por el equipo' },
-      { ico: 'fa-solid fa-circle-question',    label: 'Otro problema', other: true },
+    'Keyboard / Mouse': [
+      { ico: 'fa-solid fa-keyboard',           label: 'Keys not responding' },
+      { ico: 'fa-solid fa-computer-mouse',     label: 'Mouse not moving / clicking' },
+      { ico: 'fa-solid fa-battery-quarter',    label: 'Battery dead (wireless)' },
+      { ico: 'fa-solid fa-circle-exclamation', label: 'Device not recognized' },
+      { ico: 'fa-solid fa-circle-question',    label: 'Other issue', other: true },
     ],
-    'Teléfono / VoIP': [
-      { ico: 'fa-solid fa-phone-slash',        label: 'Sin tono / no llama' },
-      { ico: 'fa-solid fa-microphone-slash',   label: 'Sin audio en llamadas' },
-      { ico: 'fa-solid fa-signal',             label: 'Desconectado de la red VoIP' },
-      { ico: 'fa-solid fa-power-off',          label: 'No enciende / pantalla bloqueada' },
-      { ico: 'fa-solid fa-circle-question',    label: 'Otro problema', other: true },
+    'Phone / VoIP': [
+      { ico: 'fa-solid fa-phone-slash',        label: 'No dial tone / cannot call' },
+      { ico: 'fa-solid fa-microphone-slash',   label: 'No audio during calls' },
+      { ico: 'fa-solid fa-signal',             label: 'Disconnected from VoIP network' },
+      { ico: 'fa-solid fa-power-off',          label: 'Will not turn on / frozen' },
+      { ico: 'fa-solid fa-circle-question',    label: 'Other issue', other: true },
     ],
-    'Otro': [
-      { ico: 'fa-solid fa-wrench',             label: 'Falla de hardware no listada' },
-      { ico: 'fa-solid fa-comment-dots',       label: 'Solicitud general / consulta', other: true },
+    'Other': [
+      { ico: 'fa-solid fa-wrench',             label: 'Unlisted hardware failure' },
+      { ico: 'fa-solid fa-comment-dots',       label: 'General request / inquiry', other: true },
     ],
   };
 
@@ -675,23 +754,26 @@ $stmt->execute([
 
   // Reset to step 1 whenever modal opens
   modalEl.addEventListener('show.bs.modal', () => showStep1());
+  
+  // Prevent focus issues when modal closes (fixes aria-hidden warning)
+  modalEl.addEventListener('hide.bs.modal', () => document.activeElement?.blur());
 
   function showStep1() {
     step1.hidden = false;
     step2.hidden = true;
     backBtn.classList.remove('visible');
-    modalTitle.textContent = '¿Qué tiene el problema?';
+    modalTitle.textContent = 'What is the issue?';
   }
 
   function showStep2(catLabel, catIco) {
     step1.hidden = true;
     step2.hidden = false;
     backBtn.classList.add('visible');
-    modalTitle.textContent = 'Selecciona la falla específica';
+    modalTitle.textContent = 'Select the specific issue';
     catBLabel.textContent = catLabel;
 
     // Build subfalla items
-    const fallas = FALLAS[catLabel] || [{ ico: 'fa-solid fa-circle-question', label: 'Otro', other: true }];
+    const fallas = FALLAS[catLabel] || [{ ico: 'fa-solid fa-circle-question', label: 'Other', other: true }];
     subfallaList.innerHTML = '';
     fallas.forEach(f => {
       const btn = document.createElement('button');
@@ -746,24 +828,25 @@ $stmt->execute([
      AUTO-CATEGORÍA en JS (fallback igual que en PHP)
   ───────────────────────────────────────────────────────── */
   const TYPE_TO_CATEGORY = {
-    'Computadora / PC': 'Hardware',
-    'Monitor': 'Hardware', 'Impresora': 'Hardware',
-    'Teclado / Mouse': 'Hardware', 'Teléfono / VoIP': 'Hardware',
-    'Red / Internet': 'Network', 'Aplicación / Software': 'Software',
-    'Correo / Acceso': 'Email', 'Otro': 'General',
+    'Computer / PC': 'Hardware',
+    'Monitor': 'Hardware', 'Printer': 'Hardware',
+    'Keyboard / Mouse': 'Hardware', 'Phone / VoIP': 'Hardware',
+    'Network / Internet': 'Network', 'App / Software': 'Software',
+    'Email / Access': 'Email', 'Other': 'General',
   };
 
   /* ─────────────────────────────────────────────────────────
      VALIDACIÓN antes de enviar
   ───────────────────────────────────────────────────────── */
   const form = document.getElementById('ticketForm');
+  const isGeneralUser = <?= $isGeneralUser ? 'true' : 'false' ?>;
   form?.addEventListener('submit', e => {
     const typeVal = document.getElementById('type').value.trim();
     const areaVal = document.getElementById('area').value.trim();
     const commVal = document.getElementById('comments').value.trim();
-    if (!typeVal || !areaVal || !commVal) {
+    if (!typeVal || (!isGeneralUser && !areaVal) || !commVal) {
       e.preventDefault();
-      alert('Por favor completa todos los campos: Tipo de falla, Área y Descripción.');
+      alert('Please fill out all required fields: Issue Type, Area, and Comments.');
     }
   });
 

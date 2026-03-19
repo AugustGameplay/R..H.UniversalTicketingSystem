@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>New Ticket Created – Admin Notification | RH&R Universal</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background-color: #f0f2f5;
+      font-family: 'DM Sans', sans-serif;
+      padding: 40px 16px;
+    }
+
+    .wrapper {
+      max-width: 600px;
+      margin: 0 auto;
+      box-shadow: 0 4px 40px rgba(0,0,0,0.10);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: #ffffff;
+      padding: 32px 40px 28px;
+      border-bottom: 3px solid #F26522;
+      position: relative;
+      overflow: hidden;
+    }
+    .header::after {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(242,101,34,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      position: relative; z-index: 1;
+    }
+    .logo-img {
+      height: 52px;
+      width: auto;
+      display: block;
+    }
+    .status-badge {
+      background: rgba(242,101,34,0.08);
+      border: 1.5px solid rgba(242,101,34,0.35);
+      color: #F26522;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      padding: 6px 14px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .header-content { position: relative; z-index: 1; }
+    .header-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: #1a1a1a;
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+    .header-title span { color: #F26522; }
+    .header-subtitle {
+      font-size: 14px;
+      color: #999;
+      font-weight: 300;
+    }
+
+    /* ── Body ── */
+    .body {
+      background: #ffffff;
+      padding: 36px 40px;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    .greeting {
+      font-size: 15px;
+      color: #666;
+      margin-bottom: 24px;
+      line-height: 1.7;
+    }
+    .greeting strong { color: #1a1a1a; }
+
+    /* Ticket Card */
+    .ticket-card {
+      background: #fafafa;
+      border: 1px solid #ebebeb;
+      border-left: 3px solid #F26522;
+      border-radius: 12px;
+      padding: 24px 28px;
+      margin: 24px 0;
+    }
+    .ticket-id {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: #F26522;
+      letter-spacing: 0.12em;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ticket-id::before {
+      content: '';
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #F26522;
+    }
+    .ticket-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 11px 0;
+      border-bottom: 1px solid #eeeeee;
+    }
+    .ticket-row:last-child { border-bottom: none; }
+    .ticket-label {
+      font-size: 11px;
+      color: #aaa;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      min-width: 120px;
+    }
+    .ticket-value {
+      font-size: 14px;
+      color: #333;
+      text-align: right;
+      flex: 1;
+    }
+    .priority-high   { color: #F26522; font-weight: 600; }
+    .priority-medium { color: #00AEEF; font-weight: 600; }
+    .priority-low    { color: #22c55e; font-weight: 600; }
+
+    /* Description box */
+    .description-box {
+      background: #f7fbff;
+      border: 1px solid #daeef9;
+      border-top: 2px solid #00AEEF;
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin: 24px 0;
+    }
+    .description-label {
+      font-size: 11px;
+      color: #00AEEF;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 10px;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+    .description-text {
+      font-size: 14px;
+      color: #555;
+      line-height: 1.75;
+    }
+
+    /* CTA Button */
+    .cta-area { text-align: center; margin: 32px 0 8px; }
+    .cta-btn {
+      display: inline-block;
+      background: #F26522;
+      color: #ffffff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      padding: 15px 42px;
+      border-radius: 8px;
+      letter-spacing: 0.02em;
+    }
+
+    /* Info note */
+    .info-note {
+      display: flex;
+      gap: 14px;
+      background: #f7fbff;
+      border: 1px solid #daeef9;
+      border-radius: 10px;
+      padding: 18px 22px;
+      margin-top: 28px;
+    }
+    .info-note-icon { font-size: 18px; flex-shrink: 0; margin-top: 2px; }
+    .info-note-text { font-size: 13px; color: #888; line-height: 1.65; }
+    .info-note-text strong { color: #00AEEF; }
+
+    /* ── Footer ── */
+    .footer {
+      background: #f7f7f7;
+      border-top: 1px solid #ebebeb;
+      padding: 28px 40px;
+      text-align: center;
+    }
+    .footer-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .footer-divider-line { flex: 1; height: 1px; background: #e5e5e5; }
+    .footer-divider-logo {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .fdl-orange { width: 14px; height: 3px; background: #F26522; border-radius: 999px; }
+    .fdl-cyan   { width: 8px;  height: 3px; background: #00AEEF; border-radius: 999px; }
+    .footer-text {
+      font-size: 12px;
+      color: #aaa;
+      line-height: 1.75;
+    }
+    .footer-text a { color: #00AEEF; text-decoration: none; }
+    .footer-copy {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: #ccc;
+      margin-top: 14px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      body { padding: 0; }
+      .wrapper { border-radius: 0; box-shadow: none; }
+
+      .header { padding: 22px 20px 20px; }
+      .header-top { margin-bottom: 14px; }
+      .logo-img { height: 38px; }
+      .status-badge { font-size: 10px; padding: 5px 10px; }
+      .header-title { font-size: 21px; }
+      .header-subtitle { font-size: 13px; }
+
+      .body { padding: 22px 20px; }
+      .greeting { font-size: 14px; margin-bottom: 16px; }
+
+      .ticket-card { padding: 16px 16px; margin: 16px 0; border-radius: 10px; }
+      .ticket-id { font-size: 11px; margin-bottom: 12px; }
+      .ticket-row {
+        flex-direction: column;
+        gap: 3px;
+        padding: 10px 0;
+      }
+      .ticket-label { min-width: unset; font-size: 10px; }
+      .ticket-value { text-align: left; font-size: 14px; }
+
+      .description-box { padding: 16px 16px; margin: 16px 0; border-radius: 8px; }
+      .description-label { font-size: 10px; }
+      .description-text { font-size: 13px; }
+
+      .cta-area { margin: 24px 0 8px; }
+      .cta-btn {
+        display: block;
+        text-align: center;
+        padding: 16px 20px;
+        font-size: 15px;
+        border-radius: 10px;
+      }
+
+      .info-note { padding: 14px 14px; gap: 10px; border-radius: 8px; margin-top: 20px; }
+      .info-note-icon { font-size: 16px; }
+      .info-note-text { font-size: 12px; }
+
+      .footer { padding: 22px 20px; }
+      .footer-text { font-size: 11px; }
+      .footer-copy { font-size: 9px; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-top">
+      <img
+        src="https://inboxguru.s3.amazonaws.com/001-c060925a-e121-4a50-915f-f0c8fe967eb3/Dise%C3%B1o%20sin%20t%C3%ADtulo%20%2827%29.png"
+        alt="RH&R Universal"
+        class="logo-img"
+      />
+      <div class="status-badge">ACTION REQUIRED</div>
+    </div>
+    <div class="header-content">
+      <div class="header-title">A new ticket was <span>opened</span></div>
+      <div class="header-subtitle">A user has requested support from the IT department. Review the details below.</div>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <p class="greeting">
+      Hello Admin,<br/>
+      <strong>{{nombre_usuario}}</strong> has just submitted a new ticket in the RH&amp;R Universal system.
+    </p>
+
+    <div class="ticket-card">
+      <div class="ticket-id">Ticket #{{numero_ticket}}</div>
+      <div class="ticket-row">
+        <span class="ticket-label">Created By</span>
+        <span class="ticket-value">{{nombre_usuario}}</span>
+      </div>
+      <div class="ticket-row">
+        <span class="ticket-label">Subject</span>
+        <span class="ticket-value">{{asunto_ticket}}</span>
+      </div>
+      <div class="ticket-row">
+        <span class="ticket-label">Category</span>
+        <span class="ticket-value">{{categoria}}</span>
+      </div>
+      <div class="ticket-row">
+        <span class="ticket-label">Priority</span>
+        <span class="ticket-value {{priority_class}}">{{prioridad}}</span>
+      </div>
+      <div class="ticket-row">
+        <span class="ticket-label">Open date</span>
+        <span class="ticket-value">{{fecha_apertura}}</span>
+      </div>
+    </div>
+
+    <div class="description-box">
+      <div class="description-label">// Problem description</div>
+      <div class="description-text">{{descripcion_ticket}}</div>
+    </div>
+
+    <div class="cta-area">
+      <a href="{{url_ticket}}" class="cta-btn">View Ticket in System →</a>
+    </div>
+
+    <div class="info-note">
+      <div class="info-note-icon">ℹ️</div>
+      <div class="info-note-text">
+        <strong>Please assign this ticket</strong> to an available agent as soon as possible to ensure timely resolution.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-divider">
+      <div class="footer-divider-line"></div>
+      <div class="footer-divider-logo">
+        <div class="fdl-orange"></div>
+        <div class="fdl-cyan"></div>
+      </div>
+      <div class="footer-divider-line"></div>
+    </div>
+    <div class="footer-text">
+      This email was automatically generated by the IT Support ticketing system.<br/>
+    </div>
+    <div class="footer-copy">© {{año}} RH&amp;R Universal · IT Support Department
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

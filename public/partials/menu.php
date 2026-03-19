@@ -89,7 +89,7 @@ $_menuShortName = explode(' ', trim($_menuFullName))[0];
            class="menu__item nav-link<?= (($active ?? '') === 'tickets') ? ' active' : '' ?>"
            aria-current="<?= (($active ?? '') === 'tickets') ? 'page' : 'false' ?>">
             <i class="fa-solid fa-table-list me-2" aria-hidden="true"></i>
-            Tickets
+            Manage Tickets
         </a>
         <?php endif; ?>
 

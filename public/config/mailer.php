@@ -1,9 +1,7 @@
-﻿<?php
+<?php
 /**
  * public/config/mailer.php
- * Unified mailer:
- *  - DEV: Mailpit (MAIL_DRIVER=mailpit)  -> SMTP 127.0.0.1:1025
- *  - PROD: Resend  (MAIL_DRIVER=resend)  -> SMTP smtp.resend.com
+ * PHPMailer — GoDaddy SMTP (monicam@rhr-universal.com)
  */
 
 $autoloadCandidates = [
@@ -27,15 +25,27 @@ if (!$autoloadFound) {
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-function mail_driver(): string
-{
-  $d = strtolower(trim((string)(getenv('MAIL_DRIVER') ?: 'mailpit')));
-  return $d ?: 'mailpit';
-}
+// ══════════════════════════════════════════════════════════════
+//  CONFIGURACIÓN SMTP — GoDaddy
+//  Cambiar aquí si cambian las credenciales.
+// ══════════════════════════════════════════════════════════════
+define('SMTP_CONFIG', [
+  'host'       => 'smtp.office365.com',
+  'port'       => 587,
+  'user'       => 'monicam@rhr-universal.com',
+  'pass'       => 'Universal2025$',
+  'encryption' => 'tls',           // tls (STARTTLS) para puerto 587
+  'from_email' => 'monicam@rhr-universal.com',
+  'from_name'  => 'RH&R Ticketing',
+]);
+
+// Email de Monica — recibe la notificación cuando se abre un ticket
+define('ADMIN_NOTIFY_EMAIL', 'monicam@rhr-universal.com');
+
+// ══════════════════════════════════════════════════════════════
 
 function mail_templates_dir(): string
 {
-  // public/config -> project root
   return dirname(__DIR__, 2) . '/mail_templates';
 }
 
@@ -73,8 +83,6 @@ function merida_datetime_obj(?string $dateTime = null): DateTime
     if ($raw === '') {
       return new DateTime('now', $tz);
     } else {
-      // Si viene sin zona horaria (caso comun de DATETIME en MySQL),
-      // se interpreta DIRECTO en Merida para evitar desfase.
       $hasTimezoneInfo = (bool)preg_match('/(?:Z|[+\-]\d{2}:?\d{2})$/i', $raw);
       if ($hasTimezoneInfo) {
         $dt = new DateTime($raw);
@@ -137,11 +145,6 @@ function merida_year(): string
 
 function my_tickets_url(): string
 {
-  $appUrl = trim((string)(getenv('APP_URL') ?: ''));
-  if ($appUrl !== '') {
-    return rtrim($appUrl, '/') . '/mis_tickets.php';
-  }
-
   if (!empty($_SERVER['HTTP_HOST']) && !empty($_SERVER['SCRIPT_NAME'])) {
     $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
       || ((string)($_SERVER['SERVER_PORT'] ?? '') === '443');
@@ -154,48 +157,31 @@ function my_tickets_url(): string
 }
 
 /**
- * Generic HTML send with configured driver.
+ * Enviar email HTML via GoDaddy SMTP con PHPMailer.
+ * Remitente: monicam@rhr-universal.com
  */
-function send_mail(string $toEmail, string $toName, string $subject, string $html): bool
+function send_mail(string $toEmail, string $toName, string $subject, string $html, array $bccEmails = []): bool
 {
-  $driver = mail_driver();
+  $cfg = SMTP_CONFIG;
   $mail = new PHPMailer(true);
 
   try {
-    $mail->CharSet = 'UTF-8';
+    $mail->CharSet    = 'UTF-8';
     $mail->isSMTP();
+    $mail->Host       = $cfg['host'];
+    $mail->Port       = $cfg['port'];
+    $mail->SMTPAuth   = true;
+    $mail->Username   = $cfg['user'];
+    $mail->Password   = $cfg['pass'];
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;  // STARTTLS para puerto 587 (Office 365)
 
-    if ($driver === 'resend') {
-      $apiKey = getenv('RESEND_API_KEY');
-      if (!$apiKey) {
-        throw new Exception('Falta RESEND_API_KEY.');
-      }
-
-      $mail->Host       = 'smtp.resend.com';
-      $mail->Port       = 587;
-      $mail->SMTPAuth   = true;
-      $mail->Username   = 'resend';
-      $mail->Password   = $apiKey;
-      $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-
-      $fromEmail = getenv('MAIL_FROM') ?: 'onboarding@resend.dev';
-      $fromName  = getenv('MAIL_FROM_NAME') ?: 'RH&R Ticketing';
-    } else {
-      $mailpitHost = getenv('MAILPIT_HOST') ?: '127.0.0.1';
-      $mailpitPort = (int)(getenv('MAILPIT_PORT') ?: 1025);
-
-      $mail->Host         = $mailpitHost;
-      $mail->Port         = $mailpitPort;
-      $mail->SMTPAuth     = false;
-      $mail->SMTPSecure   = false;
-      $mail->SMTPAutoTLS  = false;
-
-      $fromEmail = getenv('MAIL_FROM') ?: 'no-reply@support.local';
-      $fromName  = getenv('MAIL_FROM_NAME') ?: 'R.H. Universal Tickets (Local)';
-    }
-
-    $mail->setFrom($fromEmail, $fromName);
+    $mail->setFrom($cfg['from_email'], $cfg['from_name']);
     $mail->addAddress($toEmail, $toName);
+    foreach ($bccEmails as $bcc) {
+      if (!empty($bcc['email'])) {
+        $mail->addBCC($bcc['email'], $bcc['name'] ?? '');
+      }
+    }
 
     $mail->isHTML(true);
     $mail->Subject = $subject;
@@ -205,7 +191,7 @@ function send_mail(string $toEmail, string $toName, string $subject, string $htm
     $mail->send();
     return true;
   } catch (\Throwable $e) {
-    error_log('[MAIL] Error (' . $driver . '): ' . $mail->ErrorInfo . ' | ' . $e->getMessage());
+    error_log('[MAIL] Error: ' . $mail->ErrorInfo . ' | ' . $e->getMessage());
     return false;
   }
 }
@@ -216,13 +202,15 @@ function send_mail(string $toEmail, string $toName, string $subject, string $htm
  */
 function notify_ticket_created(array $ticket, ?string $toEmail = null, string $toName = 'Admin'): bool
 {
-  $toEmail = $toEmail ?: (getenv('TICKETS_NOTIFY_EMAIL') ?: 'test@local.test');
+  $toEmail = $toEmail ?: ADMIN_NOTIFY_EMAIL;
 
   $id       = $ticket['id'] ?? 'N/A';
   $titulo   = $ticket['titulo'] ?? 'Ticket';
   $desc     = $ticket['descripcion'] ?? '';
   $area     = $ticket['area'] ?? 'N/A';
-  $prio     = $ticket['prioridad'] ?? 'N/A';
+  $prio     = trim((string)($ticket['prioridad'] ?? 'N/A'));
+  $prioMap  = ['baja' => 'Low', 'media' => 'Medium', 'alta' => 'High'];
+  $prio     = $prioMap[strtolower($prio)] ?? ($prio === 'N/A' ? 'N/A' : ucfirst(strtolower($prio)));
   $creado   = $ticket['creado_por'] ?? 'N/A';
   $url      = $ticket['url'] ?? '';
   $status   = $ticket['status'] ?? '';
@@ -230,7 +218,7 @@ function notify_ticket_created(array $ticket, ?string $toEmail = null, string $t
   $type     = $ticket['type'] ?? '';
   $createdAt = isset($ticket['created_at']) ? (string)$ticket['created_at'] : null;
 
-  $subject = "Nuevo ticket #{$id} - {$titulo}";
+  $subject = "New ticket #{$id} - {$titulo}";
 
   $templateVars = [
     'nombre_usuario' => e_mail((string)$creado),
@@ -239,35 +227,113 @@ function notify_ticket_created(array $ticket, ?string $toEmail = null, string $t
     'categoria' => e_mail((string)($category ?: 'General')),
     'prioridad' => e_mail((string)$prio),
     'fecha_apertura' => e_mail(merida_time_12h($createdAt)),
-    'agente_asignado' => e_mail((string)(getenv('DEFAULT_ASSIGNEE_NAME') ?: 'Mesa de Ayuda IT')),
+    'agente_asignado' => e_mail('IT Service Desk'),
     'descripcion_ticket' => nl2br(e_mail((string)$desc)),
     'url_ticket' => e_mail(my_tickets_url()),
-    'email_soporte' => e_mail((string)(getenv('SUPPORT_EMAIL') ?: (getenv('MAIL_FROM') ?: 'soporte@local.test'))),
-    'telefono_soporte' => e_mail((string)(getenv('SUPPORT_PHONE') ?: 'N/A')),
+    'email_soporte' => e_mail(SMTP_CONFIG['from_email']),
+    'telefono_soporte' => e_mail('N/A'),
     'año' => merida_year(),
   ];
 
-  $templateHtml = load_mail_template('ticket-creado.html');
+  $templateHtml = load_mail_template('ticket-created.html');
 
   if ($templateHtml !== null) {
     $html = render_mail_template($templateHtml, $templateVars);
   } else {
     $html = "
-      <h2>Se abrio un nuevo ticket</h2>
+      <h2>A new ticket was opened</h2>
       <p><b>ID:</b> " . e_mail((string)$id) . "</p>
-      <p><b>Titulo:</b> " . e_mail((string)$titulo) . "</p>
-      " . ($category ? "<p><b>Categoria:</b> " . e_mail((string)$category) . "</p>" : "") . "
-      " . ($type ? "<p><b>Tipo:</b> " . e_mail((string)$type) . "</p>" : "") . "
-      <p><b>Area:</b> " . e_mail((string)$area) . "</p>
-      <p><b>Prioridad:</b> " . e_mail((string)$prio) . "</p>
-      " . ($status ? "<p><b>Estatus:</b> " . e_mail((string)$status) . "</p>" : "") . "
-      <p><b>Creado por:</b> " . e_mail((string)$creado) . "</p>
-      <p><b>Descripcion:</b><br>" . nl2br(e_mail((string)$desc)) . "</p>
+      <p><b>Title:</b> " . e_mail((string)$titulo) . "</p>
+      " . ($category ? "<p><b>Category:</b> " . e_mail((string)$category) . "</p>" : "") . "
+      " . ($type ? "<p><b>Type:</b> " . e_mail((string)$type) . "</p>" : "") . "
+      <p><b>Department/Area:</b> " . e_mail((string)$area) . "</p>
+      <p><b>Priority:</b> " . e_mail((string)$prio) . "</p>
+      " . ($status ? "<p><b>Status:</b> " . e_mail((string)$status) . "</p>" : "") . "
+      <p><b>Created by:</b> " . e_mail((string)$creado) . "</p>
+      <p><b>Description:</b><br>" . nl2br(e_mail((string)$desc)) . "</p>
       " . ($url ? "<p><b>URL:</b> <a href='" . e_mail((string)$url) . "'>" . e_mail((string)$url) . "</a></p>" : "") . "
     ";
   }
 
   return send_mail($toEmail, $toName, $subject, $html);
+}
+
+/**
+ * Ticket created notification (Admin Version).
+ */
+function notify_ticket_created_admin(array $ticket, array $adminList = []): bool
+{
+  $toEmail = ADMIN_NOTIFY_EMAIL;
+  $toName  = 'IT Support / Admins';
+
+  $bccEmails = [];
+  foreach ($adminList as $adm) {
+    if (!empty($adm['email'])) {
+      $bccEmails[] = ['email' => $adm['email'], 'name' => $adm['name'] ?? 'Admin'];
+    }
+  }
+
+  $id       = $ticket['id'] ?? 'N/A';
+  $titulo   = $ticket['titulo'] ?? 'Ticket';
+  $desc     = $ticket['descripcion'] ?? '';
+  $area     = $ticket['area'] ?? 'N/A';
+  $prio     = trim((string)($ticket['prioridad'] ?? 'N/A'));
+  $prioMap  = ['baja' => 'Low', 'media' => 'Medium', 'alta' => 'High'];
+  $prio     = $prioMap[strtolower($prio)] ?? ($prio === 'N/A' ? 'N/A' : ucfirst(strtolower($prio)));
+  // The priority_class logic helps color the priority string in the HTML
+  $prioClass = '';
+  switch(strtolower((string)$ticket['prioridad'] ?? '')) {
+    case 'alta': $prioClass = 'priority-high'; break;
+    case 'media': $prioClass = 'priority-medium'; break;
+    case 'baja': $prioClass = 'priority-low'; break;
+  }
+  
+  $creado   = $ticket['creado_por'] ?? 'N/A';
+  $url      = $ticket['url'] ?? '';
+  $status   = $ticket['status'] ?? '';
+  $category = $ticket['category'] ?? '';
+  $type     = $ticket['type'] ?? '';
+  $createdAt = isset($ticket['created_at']) ? (string)$ticket['created_at'] : null;
+
+  $subject = "New ticket (Admin) #{$id} - {$titulo}";
+
+  $templateVars = [
+    'nombre_usuario' => e_mail((string)$creado),
+    'numero_ticket' => e_mail((string)$id),
+    'asunto_ticket' => e_mail((string)$titulo),
+    'categoria' => e_mail((string)($category ?: 'General')),
+    'prioridad' => e_mail((string)$prio),
+    'priority_class' => $prioClass,
+    'fecha_apertura' => e_mail(merida_time_12h($createdAt)),
+    'agente_asignado' => e_mail('IT Service Desk'),
+    'descripcion_ticket' => nl2br(e_mail((string)$desc)),
+    'url_ticket' => e_mail(my_tickets_url() . '?id=' . $id),
+    'email_soporte' => e_mail(SMTP_CONFIG['from_email']),
+    'telefono_soporte' => e_mail('N/A'),
+    'año' => merida_year(),
+  ];
+
+  $templateHtml = load_mail_template('ticket-created-admin.html');
+
+  if ($templateHtml !== null) {
+    $html = render_mail_template($templateHtml, $templateVars);
+  } else {
+    $html = "
+      <h2>A new ticket was opened (Admin)</h2>
+      <p><b>ID:</b> " . e_mail((string)$id) . "</p>
+      <p><b>Title:</b> " . e_mail((string)$titulo) . "</p>
+      " . ($category ? "<p><b>Category:</b> " . e_mail((string)$category) . "</p>" : "") . "
+      " . ($type ? "<p><b>Type:</b> " . e_mail((string)$type) . "</p>" : "") . "
+      <p><b>Department/Area:</b> " . e_mail((string)$area) . "</p>
+      <p><b>Priority:</b> " . e_mail((string)$prio) . "</p>
+      " . ($status ? "<p><b>Status:</b> " . e_mail((string)$status) . "</p>" : "") . "
+      <p><b>Created by:</b> " . e_mail((string)$creado) . "</p>
+      <p><b>Description:</b><br>" . nl2br(e_mail((string)$desc)) . "</p>
+      " . ($url ? "<p><b>URL:</b> <a href='" . e_mail((string)$url) . "'>" . e_mail((string)$url) . "</a></p>" : "") . "
+    ";
+  }
+
+  return send_mail($toEmail, $toName, $subject, $html, $bccEmails);
 }
 
 /**
@@ -277,24 +343,26 @@ function notify_ticket_created(array $ticket, ?string $toEmail = null, string $t
  */
 function notify_ticket_closed(array $ticket, ?string $toEmail = null, string $toName = 'Usuario'): bool
 {
-  $toEmail = $toEmail ?: (getenv('TICKETS_NOTIFY_EMAIL') ?: 'test@local.test');
+  $toEmail = $toEmail ?: ADMIN_NOTIFY_EMAIL;
 
   $id = $ticket['id'] ?? 'N/A';
   $titulo = $ticket['titulo'] ?? 'Ticket';
   $category = $ticket['category'] ?? 'General';
-  $createdBy = $ticket['created_by'] ?? $ticket['creado_por'] ?? 'Usuario';
-  $resolvedBy = $ticket['resolved_by'] ?? 'Mesa de Ayuda IT';
-  $resolutionDescription = $ticket['resolution_description'] ?? 'Sin detalle de resolucion.';
+  $createdBy = $ticket['created_by'] ?? $ticket['creado_por'] ?? 'User';
+  $resolvedBy = $ticket['resolved_by'] ?? 'IT Service Desk';
+  $resolutionDescription = $ticket['resolution_description'] ?? 'No resolution details.';
   $createdAt = isset($ticket['created_at']) ? (string)$ticket['created_at'] : null;
   $closedAt = isset($ticket['closed_at']) ? (string)$ticket['closed_at'] : null;
   $resolutionTime = $ticket['resolution_time'] ?? 'N/A';
   $interactions = $ticket['interactions_count'] ?? '1';
-  $priority = $ticket['prioridad'] ?? 'Media';
+  $priority = trim((string)($ticket['prioridad'] ?? 'Media'));
+  $prioMap  = ['baja' => 'Low', 'media' => 'Medium', 'alta' => 'High'];
+  $priority = $prioMap[strtolower($priority)] ?? ucfirst(strtolower($priority));
   $surveyUrl = $ticket['survey_url'] ?? '#';
   $reopenUrl = $ticket['reopen_url'] ?? my_tickets_url();
   $reopenDays = $ticket['reopen_days'] ?? '7';
 
-  $subject = "Ticket resuelto #{$id} - {$titulo}";
+  $subject = "Ticket resolved #{$id} - {$titulo}";
 
   $templateVars = [
     'nombre_usuario' => e_mail((string)$createdBy),
@@ -311,23 +379,23 @@ function notify_ticket_closed(array $ticket, ?string $toEmail = null, string $to
     'url_encuesta' => e_mail((string)$surveyUrl),
     'url_reabrir_ticket' => e_mail((string)$reopenUrl),
     'dias_reabrir' => e_mail((string)$reopenDays),
-    'email_soporte' => e_mail((string)(getenv('SUPPORT_EMAIL') ?: (getenv('MAIL_FROM') ?: 'soporte@local.test'))),
-    'telefono_soporte' => e_mail((string)(getenv('SUPPORT_PHONE') ?: 'N/A')),
+    'email_soporte' => e_mail(SMTP_CONFIG['from_email']),
+    'telefono_soporte' => e_mail('N/A'),
     'año' => merida_year(),
   ];
 
-  $templateHtml = load_mail_template('ticket-cerrado.html');
+  $templateHtml = load_mail_template('ticket-closed.html');
 
   if ($templateHtml !== null) {
     $html = render_mail_template($templateHtml, $templateVars);
   } else {
     $html = "
-      <h2>Tu ticket fue resuelto</h2>
+      <h2>Your ticket was resolved</h2>
       <p><b>ID:</b> " . e_mail((string)$id) . "</p>
-      <p><b>Asunto:</b> " . e_mail((string)$titulo) . "</p>
-      <p><b>Hora apertura (Merida):</b> " . e_mail(merida_time_12h($createdAt)) . "</p>
-      <p><b>Hora cierre (Merida):</b> " . e_mail(merida_time_12h($closedAt)) . "</p>
-      <p><b>Resolucion:</b><br>" . nl2br(e_mail((string)$resolutionDescription)) . "</p>
+      <p><b>Subject:</b> " . e_mail((string)$titulo) . "</p>
+      <p><b>Opening time (Merida):</b> " . e_mail(merida_time_12h($createdAt)) . "</p>
+      <p><b>Closing time (Merida):</b> " . e_mail(merida_time_12h($closedAt)) . "</p>
+      <p><b>Resolution:</b><br>" . nl2br(e_mail((string)$resolutionDescription)) . "</p>
     ";
   }
 
@@ -341,7 +409,7 @@ function notify_ticket_closed(array $ticket, ?string $toEmail = null, string $to
  */
 function notify_ticket_assigned(array $ticket, ?string $toEmail = null, string $toName = 'Usuario'): bool
 {
-  $toEmail = $toEmail ?: (getenv('TICKETS_NOTIFY_EMAIL') ?: 'test@local.test');
+  $toEmail = $toEmail ?: ADMIN_NOTIFY_EMAIL;
 
   $id = $ticket['id'] ?? 'N/A';
   $type = (string)($ticket['type'] ?? $ticket['tipo_ticket'] ?? 'Ticket');
@@ -350,13 +418,13 @@ function notify_ticket_assigned(array $ticket, ?string $toEmail = null, string $
   $title = (string)($ticket['asunto_ticket'] ?? trim($type . ' | ' . $area));
   $createdAt = isset($ticket['created_at']) ? (string)$ticket['created_at'] : null;
   $assignedAt = isset($ticket['assigned_at']) ? (string)$ticket['assigned_at'] : null;
-  $createdBy = (string)($ticket['created_by'] ?? $ticket['creado_por'] ?? 'Usuario');
-  $assignedTo = (string)($ticket['assigned_to'] ?? 'Agente IT');
+  $createdBy = (string)($ticket['created_by'] ?? $ticket['creado_por'] ?? 'User');
+  $assignedTo = (string)($ticket['assigned_to'] ?? 'IT Agent');
   $assignedRole = (string)($ticket['assigned_role'] ?? 'IT Support');
-  $assignedPhone = (string)($ticket['assigned_phone'] ?? (getenv('SUPPORT_PHONE') ?: 'N/A'));
+  $assignedPhone = (string)($ticket['assigned_phone'] ?? 'N/A');
   $ticketUrl = (string)($ticket['url_ticket'] ?? $ticket['url'] ?? my_tickets_url());
 
-  $subject = "Ticket asignado #{$id} - {$title}";
+  $subject = "Ticket assigned #{$id} - {$title}";
 
   $templateVars = [
     'nombre_usuario' => e_mail($createdBy),
@@ -377,21 +445,18 @@ function notify_ticket_assigned(array $ticket, ?string $toEmail = null, string $
     'aÃ±o' => merida_year(),
   ];
 
-  $templateHtml = load_mail_template('ticket_asignado.html');
-  if ($templateHtml === null) {
-    $templateHtml = load_mail_template('ticket-asignado.html');
-  }
+  $templateHtml = load_mail_template('ticket-assigned.html');
 
   if ($templateHtml !== null) {
     $html = render_mail_template($templateHtml, $templateVars);
   } else {
     $html = "
-      <h2>Tu ticket fue asignado</h2>
+      <h2>Your ticket was assigned</h2>
       <p><b>Ticket:</b> #" . e_mail((string)$id) . "</p>
-      <p><b>Asunto:</b> " . e_mail($type) . " - " . e_mail($area) . "</p>
-      <p><b>Asignado a:</b> " . e_mail($assignedTo) . " (" . e_mail($assignedRole) . ")</p>
-      <p><b>Fecha de asignacion:</b> " . e_mail(merida_datetime_12h($assignedAt)) . "</p>
-      <p><b>Telefono:</b> " . e_mail($assignedPhone) . "</p>
+      <p><b>Subject:</b> " . e_mail($type) . " - " . e_mail($area) . "</p>
+      <p><b>Assigned to:</b> " . e_mail($assignedTo) . " (" . e_mail($assignedRole) . ")</p>
+      <p><b>Assignment date:</b> " . e_mail(merida_datetime_12h($assignedAt)) . "</p>
+      <p><b>Phone:</b> " . e_mail($assignedPhone) . "</p>
     ";
   }
 

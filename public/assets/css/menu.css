@@ -5,21 +5,24 @@
    ========================================= */
 
 /* En desktop, el scroll sucede en el MAIN (no en el body) */
-html, body{
+html,
+body {
   height: 100%;
 }
 
-@media (min-width: 768px){
-  body{
-    overflow: hidden; /* evita doble scroll */
+@media (min-width: 768px) {
+  body {
+    overflow: hidden;
+    /* evita doble scroll */
   }
 
-  .layout{
+  .layout {
     min-height: 100vh;
-    padding-left: 280px; /* deja espacio para la sidebar fija */
+    padding-left: 280px;
+    /* deja espacio para la sidebar fija */
   }
 
-  .main{
+  .main {
     height: 100vh;
     overflow-y: auto;
     overflow-x: hidden;
@@ -27,14 +30,16 @@ html, body{
 }
 
 /* En móvil, se comporta normal (sidebar tipo overlay) */
-@media (max-width: 767.98px){
-  body{
+@media (max-width: 767.98px) {
+  body {
     overflow-x: hidden;
   }
-  .layout{
+
+  .layout {
     padding-left: 0;
   }
-  .main{
+
+  .main {
     height: auto;
     overflow: visible;
   }
@@ -44,7 +49,7 @@ html, body{
 /* =========================================
    SIDEBAR
    ========================================= */
-.sidebar{
+.sidebar {
   width: 280px;
   background: var(--sidebar);
   color: #fff;
@@ -61,63 +66,71 @@ html, body{
 }
 
 /* Logo */
-.sidebar__logo{
+.sidebar__logo {
   width: 165px;
   margin: 0 auto 10px;
 }
-.sidebar__logo img{
+
+.sidebar__logo img {
   width: 100%;
-  height:auto;
-  display:block;
+  height: auto;
+  display: block;
 }
 
 /* Welcome */
-.welcome{
+.welcome {
   margin-top: 10px;
-  text-align:center;
+  text-align: center;
   font-size: 22px;
   font-weight: 800;
   line-height: 1.1;
 }
-.welcome__label{ color: var(--rhr-orange); }
-.welcome__name{ color: var(--rhr-cyan); margin-left: 6px; }
+
+.welcome__label {
+  color: var(--rhr-orange);
+}
+
+.welcome__name {
+  color: var(--rhr-cyan);
+  margin-left: 6px;
+}
 
 /* Badge usuario */
-.user-badge{
+.user-badge {
   margin: 16px auto 6px;
   width: 66px;
   height: 66px;
   border-radius: 50%;
-  background: rgba(255,255,255,.92);
-  display:grid;
-  place-items:center;
-  box-shadow: 0 10px 18px rgba(0,0,0,.20);
+  background: rgba(255, 255, 255, .92);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 10px 18px rgba(0, 0, 0, .20);
 }
 
 /* Menú */
-.menu{
+.menu {
   margin-top: 14px;
-  display:flex;
-  flex-direction:column;
+  display: flex;
+  flex-direction: column;
   gap: 14px;
 }
 
 /* Controlar estilos Bootstrap de .nav-link */
-.menu__item.nav-link{
-  display:block;
-  text-align:center;
+.menu__item.nav-link {
+  display: block;
+  text-align: center;
   padding: 14px 16px;
   border-radius: 16px;
 
-  color: rgba(255,255,255,.92) !important;
-  background: rgba(0,0,0,.10);
+  color: rgba(255, 255, 255, .92) !important;
+  background: rgba(0, 0, 0, .10);
 
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.08),
-    0 8px 18px rgba(0,0,0,.20);
+    inset 0 1px 0 rgba(255, 255, 255, .08),
+    0 8px 18px rgba(0, 0, 0, .20);
 
-  text-decoration:none;
-  user-select:none;
+  text-decoration: none;
+  user-select: none;
 
   transition:
     background-color .18s ease,
@@ -126,48 +139,50 @@ html, body{
     color .18s ease;
 }
 
-.menu__item.nav-link:hover{
+.menu__item.nav-link:hover {
   background: var(--rhr-orange-dark);
   color: #fff !important;
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.10),
-    0 10px 22px rgba(0,0,0,.24);
+    inset 0 1px 0 rgba(255, 255, 255, .10),
+    0 10px 22px rgba(0, 0, 0, .24);
 }
 
-.menu__item.nav-link.active{
+.menu__item.nav-link.active {
   background: var(--rhr-orange-dark);
   color: #fff !important;
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.10),
-    0 12px 24px rgba(0,0,0,.26);
+    inset 0 1px 0 rgba(255, 255, 255, .10),
+    0 12px 24px rgba(0, 0, 0, .26);
 }
 
-.menu__item.nav-link:active{
+.menu__item.nav-link:active {
   transform: translateY(2px);
 }
 
 /* Logout */
-.logout{
+.logout {
   width: 48px;
   height: 48px;
   border: 0;
   border-radius: 14px;
-  background: rgba(0,0,0,.12);
+  background: rgba(0, 0, 0, .12);
   color: #fff;
-  cursor:pointer;
+  cursor: pointer;
   opacity: .95;
   font-size: 22px;
   transition: background-color .18s ease, transform .08s ease, opacity .18s ease;
 }
-.logout:hover{
+
+.logout:hover {
   opacity: 1;
   background: var(--rhr-orange-dark);
 }
-.logout:active{
+
+.logout:active {
   transform: translateY(1px);
 }
 
-.user-badge__img{
+.user-badge__img {
   width: 100%;
   height: 100%;
   border-radius: 50%;

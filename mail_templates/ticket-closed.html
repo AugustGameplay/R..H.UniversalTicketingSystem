@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ticket Resolved – IT Support | RH&R Universal</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background-color: #f0f2f5;
+      font-family: 'DM Sans', sans-serif;
+      padding: 40px 16px;
+    }
+
+    .wrapper {
+      max-width: 600px;
+      margin: 0 auto;
+      box-shadow: 0 4px 40px rgba(0,0,0,0.10);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: #ffffff;
+      padding: 32px 40px 28px;
+      border-bottom: 3px solid #00AEEF;
+      position: relative;
+      overflow: hidden;
+    }
+    .header::after {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,174,239,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      position: relative; z-index: 1;
+    }
+    .logo-img {
+      height: 52px;
+      width: auto;
+      display: block;
+    }
+    .status-badge {
+      background: rgba(0,174,239,0.08);
+      border: 1.5px solid rgba(0,174,239,0.35);
+      color: #00AEEF;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      padding: 6px 14px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .check-wrap {
+      position: relative; z-index: 1;
+      margin-bottom: 16px;
+    }
+    .check-circle {
+      display: inline-flex;
+      align-items: center; justify-content: center;
+      width: 54px; height: 54px;
+      border-radius: 50%;
+      border: 2px solid rgba(0,174,239,0.3);
+      background: rgba(0,174,239,0.06);
+      font-size: 24px;
+      color: #00AEEF;
+    }
+
+    .header-content { position: relative; z-index: 1; }
+    .header-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: #1a1a1a;
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+    .header-title span { color: #00AEEF; }
+    .header-subtitle {
+      font-size: 14px;
+      color: #999;
+      font-weight: 300;
+    }
+
+    /* ── Body ── */
+    .body {
+      background: #ffffff;
+      padding: 36px 40px;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    .greeting {
+      font-size: 15px;
+      color: #666;
+      margin-bottom: 24px;
+      line-height: 1.7;
+    }
+    .greeting strong { color: #1a1a1a; }
+
+    /* Ticket Card */
+    .ticket-card {
+      background: #fafafa;
+      border: 1px solid #ebebeb;
+      border-left: 3px solid #00AEEF;
+      border-radius: 12px;
+      padding: 24px 28px;
+      margin: 24px 0;
+    }
+    .ticket-id {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: #00AEEF;
+      letter-spacing: 0.12em;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ticket-id::before {
+      content: '';
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #00AEEF;
+    }
+    .ticket-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 11px 0;
+      border-bottom: 1px solid #eeeeee;
+    }
+    .ticket-row:last-child { border-bottom: none; }
+    .ticket-label {
+      font-size: 11px;
+      color: #aaa;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      min-width: 120px;
+    }
+    .ticket-value {
+      font-size: 14px;
+      color: #333;
+      text-align: right;
+      flex: 1;
+    }
+    .ticket-value.resolved {
+      color: #00AEEF;
+      font-weight: 600;
+    }
+
+    /* Resolution box */
+    .resolution-box {
+      background: #f7fbff;
+      border: 1px solid #daeef9;
+      border-top: 2px solid #00AEEF;
+      border-radius: 10px;
+      padding: 22px 26px;
+      margin: 24px 0;
+    }
+    .resolution-label {
+      font-size: 11px;
+      color: #00AEEF;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 10px;
+      font-family: 'IBM Plex Mono', monospace;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .resolution-label::before {
+      content: '✓';
+      display: inline-flex;
+      align-items: center; justify-content: center;
+      width: 16px; height: 16px;
+      background: rgba(0,174,239,0.12);
+      border-radius: 50%;
+      font-size: 10px;
+      color: #00AEEF;
+    }
+    .resolution-text {
+      font-size: 14px;
+      color: #555;
+      line-height: 1.75;
+    }
+
+    /* Stats strip */
+    .stats-strip {
+      display: flex;
+      gap: 1px;
+      background: #ebebeb;
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 28px 0;
+    }
+    .stat-block {
+      flex: 1;
+      background: #fafafa;
+      padding: 20px 16px;
+      text-align: center;
+    }
+    .stat-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 20px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 5px;
+    }
+    .stat-value.orange { color: #F26522; }
+    .stat-value.cyan   { color: #00AEEF; }
+    .stat-label {
+      font-size: 11px;
+      color: #bbb;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* Survey */
+    .survey-section {
+      text-align: center;
+      padding: 28px;
+      background: #fafafa;
+      border: 1px solid #ebebeb;
+      border-radius: 12px;
+      margin-top: 28px;
+    }
+    .survey-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 6px;
+    }
+    .survey-subtitle {
+      font-size: 13px;
+      color: #bbb;
+      margin-bottom: 22px;
+    }
+    .stars {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+    .star-btn {
+      display: inline-block;
+      width: 50px; height: 50px;
+      background: #ffffff;
+      border: 1px solid #e5e5e5;
+      border-radius: 10px;
+      text-decoration: none;
+      font-size: 22px;
+      line-height: 50px;
+      text-align: center;
+    }
+
+    /* Reopen note */
+    .reopen-note {
+      display: flex;
+      gap: 14px;
+      background: #fff8f5;
+      border: 1px solid rgba(242,101,34,0.2);
+      border-radius: 10px;
+      padding: 18px 22px;
+      margin-top: 24px;
+    }
+    .reopen-note-icon { font-size: 18px; flex-shrink: 0; margin-top: 2px; }
+    .reopen-note-text { font-size: 13px; color: #888; line-height: 1.65; }
+    .reopen-note-text strong { color: #F26522; }
+    .reopen-note-text a { color: #F26522; text-decoration: none; }
+
+    /* ── Footer ── */
+    .footer {
+      background: #f7f7f7;
+      border-top: 1px solid #ebebeb;
+      padding: 28px 40px;
+      text-align: center;
+    }
+    .footer-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .footer-divider-line { flex: 1; height: 1px; background: #e5e5e5; }
+    .footer-divider-logo {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .fdl-orange { width: 14px; height: 3px; background: #F26522; border-radius: 999px; }
+    .fdl-cyan   { width: 8px;  height: 3px; background: #00AEEF; border-radius: 999px; }
+    .footer-text {
+      font-size: 12px;
+      color: #aaa;
+      line-height: 1.75;
+    }
+    .footer-text a { color: #00AEEF; text-decoration: none; }
+    .footer-copy {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: #ccc;
+      margin-top: 14px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      body { padding: 0; }
+      .wrapper { border-radius: 0; box-shadow: none; }
+
+      .header { padding: 22px 20px 20px; }
+      .header-top { margin-bottom: 14px; }
+      .logo-img { height: 38px; }
+      .status-badge { font-size: 10px; padding: 5px 10px; }
+      .check-circle { width: 44px; height: 44px; font-size: 20px; }
+      .header-title { font-size: 21px; }
+      .header-subtitle { font-size: 13px; }
+
+      .body { padding: 22px 20px; }
+      .greeting { font-size: 14px; margin-bottom: 16px; }
+
+      .ticket-card { padding: 16px 16px; margin: 16px 0; border-radius: 10px; }
+      .ticket-id { font-size: 11px; margin-bottom: 12px; }
+      .ticket-row {
+        flex-direction: column;
+        gap: 3px;
+        padding: 10px 0;
+      }
+      .ticket-label { min-width: unset; font-size: 10px; }
+      .ticket-value { text-align: left; font-size: 14px; }
+
+      .resolution-box { padding: 16px 16px; margin: 16px 0; border-radius: 8px; }
+      .resolution-label { font-size: 10px; }
+      .resolution-text { font-size: 13px; }
+
+      .stats-strip {
+        flex-direction: column;
+        gap: 0;
+        margin: 20px 0;
+        border-radius: 10px;
+      }
+      .stat-block {
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #ebebeb;
+        text-align: left;
+      }
+      .stat-block:last-child { border-bottom: none; }
+      .stat-value { font-size: 18px; margin-bottom: 0; }
+      .stat-label { font-size: 11px; }
+
+      .survey-section { padding: 20px 16px; border-radius: 10px; }
+      .survey-title { font-size: 14px; }
+      .survey-subtitle { font-size: 12px; margin-bottom: 16px; }
+      .star-btn { width: 44px; height: 44px; font-size: 20px; line-height: 44px; border-radius: 8px; }
+      .stars { gap: 8px; }
+
+      .reopen-note { padding: 14px 14px; gap: 10px; border-radius: 8px; margin-top: 20px; }
+      .reopen-note-icon { font-size: 16px; }
+      .reopen-note-text { font-size: 12px; }
+
+      .footer { padding: 22px 20px; }
+      .footer-text { font-size: 11px; }
+      .footer-copy { font-size: 9px; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-top">
+      <img
+        src="https://inboxguru.s3.amazonaws.com/001-c060925a-e121-4a50-915f-f0c8fe967eb3/Dise%C3%B1o%20sin%20t%C3%ADtulo%20%2827%29.png"
+        alt="RH&R Universal"
+        class="logo-img"
+      />
+      <div class="status-badge">✓ RESOLVED</div>
+    </div>
+    <div class="check-wrap">
+      <div class="check-circle">✓</div>
+    </div>
+    <div class="header-content">
+      <div class="header-title">Your ticket has been <span>resolved</span></div>
+      <div class="header-subtitle">The IT Support team has successfully closed your request.</div>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <p class="greeting">
+      Hello, <strong>{{nombre_usuario}}</strong>.<br/>
+      We are pleased to inform you that your ticket has been attended to and marked as resolved. Here is the case summary:
+    </p>
+
+    <div class="ticket-card">
+      <div class="ticket-id">Ticket #{{numero_ticket}}</div>
+      <div class="ticket-row">
+        <span class="ticket-label">Subject</span>
+        <span class="ticket-value">{{asunto_ticket}}</span>
+      </div>
+      <div class="ticket-row">
+        <span class="ticket-label">Category</span>
+        <span class="ticket-value">{{categoria}}</span>
+      </div>
+      <div class="ticket-row">
+        <span class="ticket-label">Open date</span>
+        <span class="ticket-value">{{fecha_apertura}}</span>
+      </div>
+      <div class="ticket-row">
+        <span class="ticket-label">Close date</span>
+        <span class="ticket-value">{{fecha_cierre}}</span>
+      </div>
+      <div class="ticket-row">
+        <span class="ticket-label">Handled by</span>
+        <span class="ticket-value">{{agente_asignado}}</span>
+      </div>
+      <div class="ticket-row">
+        <span class="ticket-label">Status</span>
+        <span class="ticket-value resolved">✓ Resolved</span>
+      </div>
+    </div>
+
+    <div class="resolution-box">
+      <div class="resolution-label">Applied resolution</div>
+      <div class="resolution-text">{{descripcion_resolucion}}</div>
+    </div>
+
+    <div class="stats-strip">
+      <div class="stat-block">
+        <div class="stat-value cyan">{{tiempo_resolucion}}</div>
+        <div class="stat-label">Response time</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-value">{{numero_interacciones}}</div>
+        <div class="stat-label">Interactions</div>
+      </div>
+      <div class="stat-block">
+        <div class="stat-value orange">{{prioridad}}</div>
+        <div class="stat-label">Priority</div>
+      </div>
+    </div>
+
+    <div class="reopen-note">
+      <div class="reopen-note-icon">⚠️</div>
+      <div class="reopen-note-text">
+        <strong>Is the issue still occurring?</strong> If the problem was not fully resolved, you can <a href="{{url_reabrir_ticket}}">reopen this ticket</a> within the next <strong>{{dias_reabrir}} days</strong> or create a new one if the problem is different.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-divider">
+      <div class="footer-divider-line"></div>
+      <div class="footer-divider-logo">
+        <div class="fdl-orange"></div>
+        <div class="fdl-cyan"></div>
+      </div>
+      <div class="footer-divider-line"></div>
+    </div>
+    <div class="footer-text">
+      This email was automatically generated by the IT Support ticketing system.<br/>
+    </div>
+    <div class="footer-copy">© {{año}} RH&amp;R Universal · IT Support Department
