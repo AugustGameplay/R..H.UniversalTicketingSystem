@@ -487,6 +487,7 @@ $orderBySql = $sortExpr . ' ' . strtoupper($CURRENT_DIRIN);
 function sort_url(string $col): string {
   global $CURRENT_SORT, $CURRENT_DIRIN;
   $params = $_GET;
+  unset($params['created'], $params['updated'], $params['deleted'], $params['pass_updated']);
 
   $currentSort = $CURRENT_SORT ?? ($params['sort'] ?? '');
   $currentDir  = strtolower($CURRENT_DIRIN ?? ($params['dir'] ?? 'desc'));
@@ -515,9 +516,9 @@ function sort_icon(string $col): string {
 }
 
 // ============================
-// PAGINACIÓN (5 por página)
+// PAGINACIÓN (adaptativa por pantalla)
 // ============================
-$limit = 5;
+$limit = max(5, min(25, (int)($_GET['per_page'] ?? 5)));
 
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) $page = 1;
@@ -577,6 +578,7 @@ $users = $stmt->fetchAll();
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Users | RH&R Ticketing</title>
+  <link rel="icon" type="image/png" href="./assets/img/isotopo.png" />
 
   <!-- Bootstrap + FontAwesome -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -590,6 +592,25 @@ $users = $stmt->fetchAll();
 
   <!-- Users -->
   <link rel="stylesheet" href="./assets/css/users.css?v=2">
+
+  <!-- Adaptive rows per page (runs before render to avoid flash) -->
+  <script>
+    (function () {
+      var PANEL_CHROME = 300;
+      var ROW_H        = 54;
+      var panelH = Math.min(900, Math.max(640, window.innerHeight * 0.86));
+      var ideal  = Math.max(5, Math.min(25, Math.floor((panelH - PANEL_CHROME) / ROW_H)));
+
+      var params  = new URLSearchParams(window.location.search);
+      var current = parseInt(params.get('per_page') || '0', 10);
+
+      if (current !== ideal) {
+        params.set('per_page', String(ideal));
+        params.set('page', '1');
+        window.location.replace(window.location.pathname + '?' + params.toString());
+      }
+    })();
+  </script>
 
   <style>
     /* Force English text on file inputs regardless of browser language */
@@ -625,6 +646,9 @@ $users = $stmt->fetchAll();
       pointer-events: none;
     }
   </style>
+
+  <link rel="stylesheet" href="./assets/css/rhr-toast.css">
+  <script defer src="./assets/js/rhr-toast.js"></script>
 </head>
 
 <body>
@@ -640,24 +664,24 @@ $users = $stmt->fetchAll();
 
         <!-- Alerts -->
         <?php if ($flashCreated): ?>
-          <div class="alert alert-success mb-3">User created successfully.</div>
+          <div data-rhr-toast="User created successfully." data-rhr-toast-type="success"></div>
         <?php endif; ?>
 
         <?php if ($flashPassUp): ?>
-          <div class="alert alert-success mb-3">Password updated successfully.</div>
+          <div data-rhr-toast="Password updated successfully." data-rhr-toast-type="success"></div>
         <?php endif; ?>
 
         <?php if ($flashDeleted): ?>
-          <div class="alert alert-success mb-3">User deleted successfully.</div>
+          <div data-rhr-toast="User deleted successfully." data-rhr-toast-type="error"></div>
         <?php endif; ?>
 
         <?php if ($flashUpdated): ?>
-          <div class="alert alert-success mb-3">User updated successfully.</div>
+          <div data-rhr-toast="User updated successfully." data-rhr-toast-type="success"></div>
         <?php endif; ?>
 
         <?php if (!empty($passErrors)): ?>
-          <div class="alert alert-danger mb-3">
-            <ul class="mb-0">
+          <div data-rhr-toast data-rhr-toast-type="error">
+            <ul>
               <?php foreach ($passErrors as $err): ?>
                 <li><?= e($err) ?></li>
               <?php endforeach; ?>
@@ -666,8 +690,8 @@ $users = $stmt->fetchAll();
         <?php endif; ?>
 
         <?php if (!empty($deleteErrors)): ?>
-          <div class="alert alert-danger mb-3">
-            <ul class="mb-0">
+          <div data-rhr-toast data-rhr-toast-type="error">
+            <ul>
               <?php foreach ($deleteErrors as $err): ?>
                 <li><?= e($err) ?></li>
               <?php endforeach; ?>
@@ -676,8 +700,8 @@ $users = $stmt->fetchAll();
         <?php endif; ?>
 
         <?php if (!empty($editErrors)): ?>
-          <div class="alert alert-danger mb-3">
-            <ul class="mb-0">
+          <div data-rhr-toast data-rhr-toast-type="error">
+            <ul>
               <?php foreach ($editErrors as $err): ?>
                 <li><?= e($err) ?></li>
               <?php endforeach; ?>
@@ -826,21 +850,24 @@ $users = $stmt->fetchAll();
             Showing <?= e($from) ?>–<?= e($to) ?> of <?= e($totalUsers) ?> users
           </span>
 
-          <?php if ($totalPages > 1): ?>
+          <?php if ($totalPages > 1):
+            // Helper para construir URLs de paginación conservando per_page y búsqueda
+            $pgBase = '?per_page=' . $limit . ($hasQ ? '&q=' . urlencode($q) : '');
+          ?>
             <nav aria-label="Paginación">
               <ul class="pagination pagination-sm mb-0">
                 <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
-                  <a class="page-link" href="?page=<?= $page - 1 ?><?= $hasQ ? '&q=' . urlencode($q) : '' ?>">Back</a>
+                  <a class="page-link" href="<?= $pgBase ?>&page=<?= $page - 1 ?>">Back</a>
                 </li>
 
                 <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                   <li class="page-item <?= ($i === $page) ? 'active' : '' ?>">
-                    <a class="page-link" href="?page=<?= $i ?><?= $hasQ ? '&q=' . urlencode($q) : '' ?>"><?= $i ?></a>
+                    <a class="page-link" href="<?= $pgBase ?>&page=<?= $i ?>"><?= $i ?></a>
                   </li>
                 <?php endfor; ?>
 
                 <li class="page-item <?= ($page >= $totalPages) ? 'disabled' : '' ?>">
-                  <a class="page-link" href="?page=<?= $page + 1 ?><?= $hasQ ? '&q=' . urlencode($q) : '' ?>">Next</a>
+                  <a class="page-link" href="<?= $pgBase ?>&page=<?= $page + 1 ?>">Next</a>
                 </li>
               </ul>
             </nav>
@@ -868,8 +895,8 @@ $users = $stmt->fetchAll();
           <div class="modal-body">
 
             <?php if (!empty($createErrors)): ?>
-              <div class="alert alert-danger">
-                <ul class="mb-0">
+              <div data-rhr-toast data-rhr-toast-type="error">
+                <ul>
                   <?php foreach ($createErrors as $err): ?>
                     <li><?= e($err) ?></li>
                   <?php endforeach; ?>

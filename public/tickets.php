@@ -56,9 +56,9 @@ if ($priority === 'Priority') { $priority = ''; }
 $assignedTo = trim($_GET['assigned'] ?? '');
 if ($assignedTo === 'Assigned To') { $assignedTo = ''; }
 
-$page = max(1, (int)($_GET['page'] ?? 1));
-$perPage = 5;
-$offset = ($page - 1) * $perPage;
+$page    = max(1, (int)($_GET['page'] ?? 1));
+$perPage = max(5, min(25, (int)($_GET['per_page'] ?? 5)));
+$offset  = ($page - 1) * $perPage;
 
 // ===============================
 // Mapeo UI -> BD (status)
@@ -78,6 +78,7 @@ function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 // Construir URL manteniendo querys
 function build_url($overrides = []) {
   $base = $_GET;
+  unset($base['created'], $base['updated'], $base['deleted']);
   foreach ($overrides as $k => $v) {
     $base[$k] = $v;
   }
@@ -127,80 +128,14 @@ function ui_prio_class($prio){
 }
 
 // ===============================
-// FROM base (lo reutilizamos para que el filtro por nombre funcione en TOTAL y DATA)
+// FROM base — Creator = t.id_user (known schema, no runtime introspection)
 // ===============================
-// Detectar cómo se guarda el creador del ticket (ID o texto)
-// - Si existe un campo ID (INT) se hace JOIN a users para mostrar el nombre real.
-// - Si existe un campo texto (VARCHAR/TEXT) se usa directo.
-// - Si existen ambos, se prioriza el JOIN y se hace fallback al texto con COALESCE.
-$creatorIdCol = null;
-$creatorNameCol = null;
-
-try {
-  $colsInfo = $pdo->query("SHOW COLUMNS FROM tickets")->fetchAll(PDO::FETCH_ASSOC);
-  $typeByField = [];
-  foreach ($colsInfo as $c) {
-    $typeByField[$c['Field']] = strtolower((string)$c['Type']);
-  }
-
-  $idCandidates = [
-    'created_by_user_id',
-    'created_user_id',
-    'creator_user_id',
-    'created_by_id',
-    'created_by_id_user',
-    'id_user_creator',
-    'user_creator_id',
-    'user_id_creator',
-    'created_by',  // a veces lo guardan como INT
-    'id_user',     // creator id (tu esquema actual)
-    'user_id'      // fallback común
-  ];
-
-  $nameCandidates = [
-    'created_by_name',
-    'created_by_full_name',
-    'creator_name',
-    'created_by_user',
-    'created_by_email',
-    'created_by',       // a veces lo guardan como texto
-    'created_user',
-    'creator',
-    'created_by_text'
-  ];
-
-  foreach ($idCandidates as $c) {
-    if (isset($typeByField[$c]) && preg_match('/\b(int|bigint|smallint|mediumint|tinyint)\b/', $typeByField[$c])) {
-      $creatorIdCol = $c;
-      break;
-    }
-  }
-
-  foreach ($nameCandidates as $c) {
-    if (isset($typeByField[$c]) && !preg_match('/\b(int|bigint|smallint|mediumint|tinyint)\b/', $typeByField[$c])) {
-      $creatorNameCol = $c;
-      break;
-    }
-  }
-} catch (Throwable $e) {
-  $creatorIdCol = null;
-  $creatorNameCol = null;
-}
+$creatorIdCol = 'id_user';
 
 $fromSql = "FROM tickets t LEFT JOIN users u ON u.id_user = t.assigned_user_id";
-if ($creatorIdCol) {
-  $fromSql .= " LEFT JOIN users uc ON uc.id_user = t.$creatorIdCol";
-}
+$fromSql .= " LEFT JOIN users uc ON uc.id_user = t.id_user";
 
-if ($creatorIdCol && $creatorNameCol) {
-  $selectCreator = ", COALESCE(NULLIF(uc.full_name,''), NULLIF(t.$creatorNameCol,'')) AS created_by_name";
-} elseif ($creatorIdCol) {
-  $selectCreator = ", NULLIF(uc.full_name,'') AS created_by_name";
-} elseif ($creatorNameCol) {
-  $selectCreator = ", NULLIF(t.$creatorNameCol,'') AS created_by_name";
-} else {
-  $selectCreator = ", NULL AS created_by_name";
-}
+$selectCreator = ", NULLIF(uc.full_name,'') AS created_by_name";
 
 
 
@@ -212,24 +147,14 @@ $params = [];
 
 // Search
 if ($q !== '') {
-  // Buscar por: ID (id_ticket), Área (area) y Nombre del asignado (users.full_name)
-  // Nota: CAST para poder usar LIKE sobre un entero.
-    // Buscar por: ID (id_ticket), Área (area), Nombre del asignado y Nombre del creador (si existe)
-  // Nota: CAST para poder usar LIKE sobre un entero.
-    $searchParts = [
+  $searchParts = [
     "CAST(t.id_ticket AS CHAR) LIKE :q",
     "t.area LIKE :q",
     "u.full_name LIKE :q",
+    "uc.full_name LIKE :q",
   ];
-  if ($creatorIdCol) {
-    $searchParts[] = "uc.full_name LIKE :q";
-  }
-  if ($creatorNameCol) {
-    $searchParts[] = "t.$creatorNameCol LIKE :q";
-  }
   $where[] = "(" . implode(" OR ", $searchParts) . ")";
   $params[':q'] = "%{$q}%";
-
 }
 
 // State (UI)
@@ -332,7 +257,7 @@ function sort_url(string $col): string {
   $params = $_GET;
 
   // Al ordenar por encabezado, quitamos el dropdown "order" para que sí cambie el ORDER BY
-  unset($params['order']);
+  unset($params['order'], $params['created'], $params['updated'], $params['deleted']);
 
   $currentSort = $CURRENT_SORT ?? ($params['sort'] ?? '');
   $currentDir  = strtolower($CURRENT_DIRIN ?? ($params['dir'] ?? 'desc'));
@@ -392,6 +317,7 @@ $itUsers = $itStmt->fetchAll(PDO::FETCH_ASSOC);
 // Alert de actualización
 $updated = isset($_GET['updated']) ? (int)$_GET['updated'] : 0;
 $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
+$deleted = isset($_GET['deleted']) ? (int)$_GET['deleted'] : 0;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -399,6 +325,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tickets | RH&R Ticketing</title>
+  <link rel="icon" type="image/png" href="./assets/img/isotopo.png" />
 
   <!-- Bootstrap + FontAwesome -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -416,6 +343,27 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
 
   <!-- NUEVO: estilo moderno (scopeado) -->
 
+  <!-- Adaptive rows per page (runs before render to avoid flash) -->
+  <script>
+    (function () {
+      // Altura del "chrome" del panel (header + filtros + thead + paginación + paddings)
+      var PANEL_CHROME = 320;
+      var ROW_H        = 54;
+      // El panel tiene min/max definido en CSS: clamp(640px, 86vh, 900px)
+      var panelH = Math.min(900, Math.max(640, window.innerHeight * 0.86));
+      var ideal  = Math.max(5, Math.min(25, Math.floor((panelH - PANEL_CHROME) / ROW_H)));
+
+      var params  = new URLSearchParams(window.location.search);
+      var current = parseInt(params.get('per_page') || '0', 10);
+
+      if (current !== ideal) {
+        params.set('per_page', String(ideal));
+        params.set('page', '1');
+        window.location.replace(window.location.pathname + '?' + params.toString());
+      }
+    })();
+  </script>
+
   <style>
     .th-sort{color:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:6px;font-weight:800;}
     .th-sort:hover{text-decoration:underline;}
@@ -423,6 +371,8 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
     .th-sort i{font-size:12px;opacity:.85;}
   </style>
 
+  <link rel="stylesheet" href="./assets/css/rhr-toast.css">
+  <script defer src="./assets/js/rhr-toast.js"></script>
 </head>
 
 <body class="tickets-page">
@@ -461,15 +411,15 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
 
           <!-- Alerts -->
           <?php if ($updated === 1): ?>
-            <div class="alert alert-success mt-3 mb-0">
-              ✅ Ticket updated successfully.
-            </div>
+            <div data-rhr-toast="Ticket updated successfully." data-rhr-toast-type="success"></div>
           <?php endif; ?>
 
           <?php if ($created === 1): ?>
-            <div class="alert alert-success mt-3 mb-0">
-              ✅ Ticket created successfully.
-            </div>
+            <div data-rhr-toast="Ticket created successfully." data-rhr-toast-type="success"></div>
+          <?php endif; ?>
+
+          <?php if ($deleted === 1): ?>
+            <div data-rhr-toast="Ticket deleted successfully." data-rhr-toast-type="error"></div>
           <?php endif; ?>
 
           <?php
@@ -914,6 +864,11 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
     })();
   </script>
 
+<?php if ($updated || $created || $deleted): ?>
+<script>
+fetch('api/process_queue.php', {headers:{'X-Requested-With':'XMLHttpRequest'}}).catch(()=>{});
+</script>
+<?php endif; ?>
 
 </body>
 </html>

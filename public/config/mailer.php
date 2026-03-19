@@ -157,10 +157,10 @@ function my_tickets_url(): string
 }
 
 /**
- * Enviar email HTML via GoDaddy SMTP con PHPMailer.
- * Remitente: monicam@rhr-universal.com
+ * Enviar email HTML via SMTP de forma DIRECTA (síncrona).
+ * Usado por el cron processor. NO llamar desde código web (bloquea la respuesta).
  */
-function send_mail(string $toEmail, string $toName, string $subject, string $html, array $bccEmails = []): bool
+function send_mail_now(string $toEmail, string $toName, string $subject, string $html, array $bccEmails = []): bool
 {
   $cfg = SMTP_CONFIG;
   $mail = new PHPMailer(true);
@@ -173,7 +173,8 @@ function send_mail(string $toEmail, string $toName, string $subject, string $htm
     $mail->SMTPAuth   = true;
     $mail->Username   = $cfg['user'];
     $mail->Password   = $cfg['pass'];
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;  // STARTTLS para puerto 587 (Office 365)
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+    $mail->Timeout    = 15; // seconds — fail fast
 
     $mail->setFrom($cfg['from_email'], $cfg['from_name']);
     $mail->addAddress($toEmail, $toName);
@@ -194,6 +195,49 @@ function send_mail(string $toEmail, string $toName, string $subject, string $htm
     error_log('[MAIL] Error: ' . $mail->ErrorInfo . ' | ' . $e->getMessage());
     return false;
   }
+}
+
+/**
+ * Encolar email para envío asíncrono (no bloquea la respuesta HTTP).
+ * Requiere que la tabla email_queue exista (ver migrate.php).
+ */
+function queue_mail(string $toEmail, string $toName, string $subject, string $html, array $bccEmails = []): bool
+{
+  try {
+    // Reutilizar la conexión PDO global
+    global $pdo;
+    if (!$pdo) {
+      require_once __DIR__ . '/db.php';
+    }
+
+    $bccJson = !empty($bccEmails) ? json_encode($bccEmails, JSON_UNESCAPED_UNICODE) : null;
+
+    $stmt = $pdo->prepare("
+      INSERT INTO email_queue (to_email, to_name, subject, body, bcc_json, status, created_at)
+      VALUES (:to_email, :to_name, :subject, :body, :bcc_json, 'pending', NOW())
+    ");
+    $stmt->execute([
+      ':to_email' => $toEmail,
+      ':to_name'  => $toName,
+      ':subject'  => $subject,
+      ':body'     => $html,
+      ':bcc_json' => $bccJson,
+    ]);
+    return true;
+  } catch (\Throwable $e) {
+    error_log('[MAIL-QUEUE] Could not queue email: ' . $e->getMessage());
+    // Fallback: try to send directly so email is not lost
+    return send_mail_now($toEmail, $toName, $subject, $html, $bccEmails);
+  }
+}
+
+/**
+ * send_mail() — queues email for async sending via AJAX trigger.
+ * The page renders instantly; JS calls api/process_queue.php to actually send.
+ */
+function send_mail(string $toEmail, string $toName, string $subject, string $html, array $bccEmails = []): bool
+{
+  return queue_mail($toEmail, $toName, $subject, $html, $bccEmails);
 }
 
 /**

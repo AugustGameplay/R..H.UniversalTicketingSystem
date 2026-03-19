@@ -13,7 +13,7 @@ if (!empty($_SESSION['user_id']) || !empty($_SESSION['id_user'])) {
 }
 
 $msg = "";
-$msg_type = "danger"; // errores: danger (rojo)
+$msg_type = "warning"; // errores ahora en amarillo (warning)
 
 // Ajusta esta ruta según tu proyecto:
 require_once __DIR__ . '/config/db.php';
@@ -27,9 +27,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $password = (string)($_POST['password'] ?? '');
 
   if ($email === '' || $password === '') {
-    $msg = "Completa email y password.";
+    $msg = "Please fill out email and password.";
   } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    $msg = "Email no válido.";
+    $msg = "Invalid email format.";
   } else {
     try {
       // ✅ Ajustado a tu estructura: id_user
@@ -43,12 +43,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
       if (!$user) {
-        $msg = "Credenciales incorrectas.";
+        $msg = "Incorrect credentials.";
       } else {
         $hash = $user['password_hash'] ?? '';
 
         if ($hash === '' || !password_verify($password, $hash)) {
-          $msg = "Credenciales incorrectas.";
+          $msg = "Incorrect credentials.";
         } else {
           // ✅ Login OK — sesión robusta (compatible con módulos antiguos/nuevos)
           session_regenerate_id(true);
@@ -83,6 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           ];
 
           // ✅ SOLUCIÓN: TODOS los roles autenticados van a generarTickets.php
+          $_SESSION['flash_login'] = "You have successfully logged in.";
           header("Location: generarTickets.php");
           exit;
         }
@@ -90,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Throwable $e) {
       // Si quieres depurar en local, descomenta la siguiente línea:
       // error_log('Login error: ' . $e->getMessage());
-      $msg = "Ocurrió un error al iniciar sesión.";
+      $msg = "An error occurred during login.";
     }
   }
 }
@@ -101,6 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Login | RH&R Ticketing</title>
+  <link rel="icon" type="image/png" href="./assets/img/isotopo.png" />
 
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -111,6 +113,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   <link rel="stylesheet" href="./assets/css/brand.css">
   <link rel="stylesheet" href="./assets/css/login.css">
+  <link rel="stylesheet" href="./assets/css/rhr-toast.css">
+  <script defer src="./assets/js/rhr-toast.js"></script>
 </head>
 <body>
 
@@ -130,9 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       <!-- Alerta bootstrap (errores login) -->
       <?php if (!empty($msg)): ?>
-        <div class="alert alert-<?php echo htmlspecialchars($msg_type, ENT_QUOTES, 'UTF-8'); ?> mt-3" role="alert" aria-live="polite">
-          <?php echo htmlspecialchars($msg, ENT_QUOTES, 'UTF-8'); ?>
-        </div>
+        <div data-rhr-toast="<?php echo htmlspecialchars($msg, ENT_QUOTES, 'UTF-8'); ?>" data-rhr-toast-type="<?php echo htmlspecialchars($msg_type, ENT_QUOTES, 'UTF-8'); ?>"></div>
       <?php endif; ?>
 
       <form class="form" id="loginForm" method="POST" action="login.php" novalidate>
@@ -174,33 +176,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   <!-- ✅ Toast logout éxito (arriba derecha) -->
   <?php if (!empty($flash_success)): ?>
-    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 2000;">
-      <div id="logoutToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="d-flex">
-          <div class="toast-body">
-            <i class="fa-solid fa-circle-check me-2"></i>
-            <?php echo htmlspecialchars($flash_success, ENT_QUOTES, 'UTF-8'); ?>
-          </div>
-          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
-        </div>
-      </div>
-    </div>
+    <div data-rhr-toast="<?php echo htmlspecialchars($flash_success, ENT_QUOTES, 'UTF-8'); ?>" data-rhr-toast-type="success"></div>
   <?php endif; ?>
 
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
           integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
-
-  <?php if (!empty($flash_success)): ?>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const el = document.getElementById('logoutToast');
-      if (!el) return;
-      const t = new bootstrap.Toast(el, { delay: 2600 });
-      t.show();
-    });
-  </script>
-  <?php endif; ?>
 
 </body>
 </html>

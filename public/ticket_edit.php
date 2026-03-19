@@ -52,9 +52,9 @@ $ticketOriginal = [
 
 
 
-// Asegurar tablas auxiliares (auditoría + comentarios internos)
-$modsOkInit = ensureTicketModsTable($pdo);
-$commentsOk = ensureTicketCommentsTable($pdo);
+// Tables are created by migrate.php (no runtime DDL needed)
+$modsOkInit = true;
+$commentsOk = true;
 
 // AJAX: comentarios internos en "tiempo real" (sin refresh)
 if (isset($_GET['ajax']) && $_GET['ajax'] === 'comments') {
@@ -355,11 +355,9 @@ $ticket['priority'] = $ticket['priority'] ?? 'Media';
 // 3) Guardar cambios
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   // Agregar comentario interno (historial). No afecta el comentario original del ticket.
-  if (isset($_POST['add_comment'])) {
-    $newComment = trim((string)($_POST['new_comment'] ?? ''));
-    if ($newComment === '') {
-      $errors[] = 'Write a comment before adding.';
-    } elseif (mb_strlen($newComment) > 2000) {
+  $newComment = trim((string)($_POST['new_comment'] ?? ''));
+  if ($newComment !== '') {
+    if (mb_strlen($newComment) > 2000) {
       $errors[] = 'The comment is too long (max 2000 characters).';
     } elseif (empty($commentsOk)) {
       $errors[] = 'Could not enable comment history in DB.';
@@ -376,8 +374,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           ':uid' => $authorId,
           ':uname' => $authorName,
         ]);
-        header('Location: ticket_edit.php?id=' . $ticketId . '#comments');
-        exit;
       } catch (Throwable $e) {
         $errors[] = 'Could not save the comment: ' . $e->getMessage();
       }
@@ -480,8 +476,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
 
-    $closedAtOk = ensureClosedAtColumn($pdo);
-    $modsOk     = ensureTicketModsTable($pdo);
+    $closedAtOk = true; // Column created by migrate.php
+    $modsOk     = true; // Table created by migrate.php
 
     $wasClosed  = in_array($oldStatus, $closeStatuses, true);
     $willClosed = in_array($status, $closeStatuses, true);
@@ -580,23 +576,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Traer rol + telefono del agente (si existe alguna columna de telefono).
             try {
-              $phoneField = null;
-              $phoneCandidates = ['phone','telefono','phone_number','mobile','cellphone','tel','telephone'];
-              $colRows = $pdo->query("SHOW COLUMNS FROM users")->fetchAll(PDO::FETCH_ASSOC) ?: [];
-              foreach ($colRows as $c) {
-                $field = strtolower((string)($c['Field'] ?? ''));
-                if (in_array($field, $phoneCandidates, true)) {
-                  $phoneField = $field;
-                  break;
-                }
-              }
-
-              $phoneSelect = $phoneField ? ", u.`{$phoneField}` AS phone_value" : "";
               $stAgent = $pdo->prepare("
                 SELECT
                   u.full_name,
                   COALESCE(u.AREA, 'IT Support') AS role_name
-                  {$phoneSelect}
                 FROM users u
                 WHERE u.id_user = :id
                 LIMIT 1
@@ -607,10 +590,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               $assignedName = (string)($agentRow['full_name'] ?? $assignedName);
               $assignedRole = (string)($agentRow['role_name'] ?? $assignedRole);
 
-              if ($phoneField) {
-                $dbPhone = trim((string)($agentRow['phone_value'] ?? ''));
-                if ($dbPhone !== '') $assignedPhone = $dbPhone;
-              }
             } catch (Throwable $agentDataErr) {
               // Si no se puede consultar extra data, seguimos con defaults.
             }
@@ -743,7 +722,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
       }
 
-      header("Location: tickets.php?updated=1");
+      if (!empty($_POST['post_note_btn'])) {
+        header('Location: ticket_edit.php?id=' . $ticketId . '#comments');
+      } else {
+        header("Location: tickets.php?updated=1");
+      }
       exit;
 
     } catch (Throwable $e) {
@@ -824,6 +807,7 @@ $creatorName = userNameById($pdo, (int)($ticket['id_user'] ?? 0));
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Assign Ticket | RH&amp;R Ticketing</title>
+  <link rel="icon" type="image/png" href="./assets/img/isotopo.png" />
 
   <!-- Bootstrap + FontAwesome -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -1150,22 +1134,19 @@ $creatorName = userNameById($pdo, (int)($ticket['id_user'] ?? 0));
 
               <!-- Add Comment Form -->
               <div class="hq-comment-box">
-                <form method="POST" action="ticket_edit.php?id=<?= (int)$ticketId ?>#comments">
-                  <input type="hidden" name="add_comment" value="1">
                   <div class="d-flex gap-3">
                     <div class="hq-avatar text-white border-0 shadow-sm mt-1" style="background: var(--slate-800);">
                       <?= esc(strtoupper(substr($_SESSION['user_name'] ?? 'U', 0, 1))) ?>
                     </div>
                     <div class="flex-grow-1">
-                      <textarea name="new_comment" class="hq-textarea w-100" rows="2" placeholder="Set case updates or internal notes..." required style="resize:none;"></textarea>
+                      <textarea name="new_comment" form="ticketForm" class="hq-textarea w-100" rows="2" placeholder="Set case updates or internal notes..." style="resize:none;"></textarea>
                       <div class="d-flex justify-content-end mt-2">
-                        <button type="submit" class="hq-btn hq-btn-primary hq-btn-sm px-4">
+                        <button type="submit" form="ticketForm" name="post_note_btn" value="1" class="hq-btn hq-btn-primary hq-btn-sm px-4">
                           <i class="fa-solid fa-paper-plane me-2"></i> Post note
                         </button>
                       </div>
                     </div>
                   </div>
-                </form>
               </div>
             </div>
 
