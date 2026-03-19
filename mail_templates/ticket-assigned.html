@@ -416,6 +416,60 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      body { padding: 0; }
+      .wrapper { border-radius: 0; box-shadow: none; }
+
+      .header { padding: 22px 20px 20px; }
+      .header-top { margin-bottom: 14px; }
+      .logo-img { height: 38px; }
+      .status-badge { font-size: 10px; padding: 5px 10px; }
+      .gear-circle { width: 44px; height: 44px; font-size: 20px; }
+      .header-title { font-size: 21px; }
+      .header-subtitle { font-size: 13px; }
+
+      .body { padding: 22px 20px; }
+      .greeting { font-size: 14px; margin-bottom: 16px; }
+
+      .ticket-card { padding: 16px 16px; margin: 16px 0; border-radius: 10px; }
+      .ticket-id { font-size: 11px; margin-bottom: 12px; }
+      .ticket-row {
+        flex-direction: column;
+        gap: 3px;
+        padding: 10px 0;
+      }
+      .ticket-label { min-width: unset; font-size: 10px; }
+      .ticket-value { text-align: left; font-size: 14px; }
+
+      .agente-box { padding: 16px 16px; margin: 16px 0; border-radius: 8px; }
+      .agente-label { font-size: 10px; margin-bottom: 12px; }
+      .agente-info { gap: 12px; margin-bottom: 14px; }
+      .agente-avatar { width: 42px; height: 42px; font-size: 17px; }
+      .agente-datos-nombre { font-size: 14px; }
+      .agente-datos-puesto { font-size: 12px; }
+
+      .telefono-row { padding: 12px 14px; gap: 10px; border-radius: 8px; }
+      .telefono-number { font-size: 15px; }
+      .telefono-nota { font-size: 11px; }
+
+      .cta-area { margin: 24px 0 8px; }
+      .cta-btn {
+        display: block;
+        text-align: center;
+        padding: 16px 20px;
+        font-size: 15px;
+        border-radius: 10px;
+      }
+
+      .info-note { padding: 14px 14px; gap: 10px; border-radius: 8px; margin-top: 20px; }
+      .info-note-icon { font-size: 16px; }
+      .info-note-text { font-size: 12px; }
+
+      .footer { padding: 22px 20px; }
+      .footer-text { font-size: 11px; }
+      .footer-copy { font-size: 9px; }
+    }
   </style>
 </head>
 

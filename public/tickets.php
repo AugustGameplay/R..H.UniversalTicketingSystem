@@ -50,9 +50,12 @@ if ($stateUI === 'Filter by status') { $stateUI = ''; }
 // lo que selecciona el usuario en el UI
 $priority = trim($_GET['priority'] ?? '');
 
-
 // Ignorar placeholder
 if ($priority === 'Priority') { $priority = ''; }
+
+$assignedTo = trim($_GET['assigned'] ?? '');
+if ($assignedTo === 'Assigned To') { $assignedTo = ''; }
+
 $page = max(1, (int)($_GET['page'] ?? 1));
 $perPage = 5;
 $offset = ($page - 1) * $perPage;
@@ -242,6 +245,12 @@ if ($priority !== '' && $priority !== 'Priority') {
   $params[':priority'] = $priority;
 }
 
+// Assigned To
+if ($assignedTo !== '') {
+  $where[] = "t.assigned_user_id = :assigned";
+  $params[':assigned'] = $assignedTo;
+}
+
 $whereSql = $where ? ("WHERE " . implode(" AND ", $where)) : "";
 
 // ===============================
@@ -371,6 +380,15 @@ $stmt = $pdo->prepare("
 $stmt->execute($params);
 $tickets = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Traer usuarios asignables para el filtro (solo IT/Managers activos)
+$itStmt = $pdo->query("
+  SELECT id_user, full_name 
+  FROM users 
+  WHERE (AREA = 'IT Support' OR AREA = 'Managers') AND is_active = 1 
+  ORDER BY full_name ASC
+");
+$itUsers = $itStmt->fetchAll(PDO::FETCH_ASSOC);
+
 // Alert de actualización
 $updated = isset($_GET['updated']) ? (int)$_GET['updated'] : 0;
 $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
@@ -432,6 +450,7 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
                 <?php if($stateUI!==''): ?><input type="hidden" name="state" value="<?= esc($stateUI) ?>"><?php endif; ?>
                 <?php if($priority!==''): ?><input type="hidden" name="priority" value="<?= esc($priority) ?>"><?php endif; ?>
               <?php if($order!==''): ?><input type="hidden" name="order" value="<?= esc($order) ?>"><?php endif; ?>
+              <?php if($assignedTo!==''): ?><input type="hidden" name="assigned" value="<?= esc($assignedTo) ?>"><?php endif; ?>
 </form>
 
               <button class="avatar-btn" type="button" title="Profile">
@@ -453,11 +472,17 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
             </div>
           <?php endif; ?>
 
+          <?php
+            // ¿Hay algún filtro activo? (excluye "order" porque es orden, no filtro)
+            $hasActiveFilters = ($q !== '' || $stateUI !== '' || $priority !== '' || $assignedTo !== '');
+          ?>
+
           <!-- Filters -->
           <form class="filters row g-2 mt-3" method="GET" action="tickets.php">
             <input type="hidden" name="q" value="<?= esc($q) ?>">
 
-            <div class="col-12 col-md-3">
+            <!-- Status -->
+            <div class="col-12 col-md">
               <select class="form-select filter-select" name="state" onchange="this.form.submit()">
                 <option value="" <?= $stateUI==='' ? 'selected':''; ?> disabled hidden>Filter by status</option>
                 <?php foreach (['Open','In progress','Resolved','Closed'] as $opt): ?>
@@ -466,7 +491,8 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
               </select>
             </div>
 
-            <div class="col-12 col-md-3">
+            <!-- Priority -->
+            <div class="col-12 col-md">
               <select class="form-select filter-select" name="priority" onchange="this.form.submit()">
                 <option value="" <?= $priority==='' ? 'selected':''; ?> disabled hidden>Priority</option>
                 <?php foreach (['Baja','Media','Alta','Urgente'] as $opt): ?>
@@ -475,20 +501,42 @@ $created = isset($_GET['created']) ? (int)$_GET['created'] : 0;
               </select>
             </div>
 
-            <div class="col-12 col-md-3">
+            <!-- Assigned To — solo admin (rol 1) y super admin (rol 2) -->
+            <?php if (in_array($_AUTH_ROLE_ID, [1, 2])): ?>
+            <div class="col-12 col-md">
+              <select class="form-select filter-select" name="assigned" onchange="this.form.submit()">
+                <option value="" <?= $assignedTo==='' ? 'selected':'' ?> disabled hidden>Assigned To</option>
+                <?php foreach ($itUsers as $usr): ?>
+                  <option value="<?= esc($usr['id_user']) ?>"
+                    <?= ((string)$assignedTo === (string)$usr['id_user']) ? 'selected' : '' ?>>
+                    <?= esc($usr['full_name']) ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+            <?php endif; ?>
+
+            <!-- Sort order -->
+            <div class="col-12 col-md">
               <select class="form-select filter-select" name="order" onchange="this.form.submit()">
-                <option value="id_desc" <?= $order==='id_desc' ? 'selected':''; ?>>ID: highest to lowest</option>
-                <option value="id_asc" <?= $order==='id_asc' ? 'selected':''; ?>>ID: lowest to highest</option>
-                <option value="date_desc" <?= $order==='date_desc' ? 'selected':''; ?>>Date: newest first</option>
-                <option value="date_asc" <?= $order==='date_asc' ? 'selected':''; ?>>Date: oldest first</option>
-                <option value="area_asc" <?= $order==='area_asc' ? 'selected':''; ?>>Alphabetical (Area): A–Z</option>
-                <option value="area_desc" <?= $order==='area_desc' ? 'selected':''; ?>>Alphabetical (Area): Z–A</option>
+                <option value="id_desc"     <?= $order==='id_desc'     ? 'selected':''; ?>>ID: highest to lowest</option>
+                <option value="id_asc"      <?= $order==='id_asc'      ? 'selected':''; ?>>ID: lowest to highest</option>
+                <option value="date_desc"   <?= $order==='date_desc'   ? 'selected':''; ?>>Date: newest first</option>
+                <option value="date_asc"    <?= $order==='date_asc'    ? 'selected':''; ?>>Date: oldest first</option>
+                <option value="area_asc"    <?= $order==='area_asc'    ? 'selected':''; ?>>Alphabetical (Area): A–Z</option>
+                <option value="area_desc"   <?= $order==='area_desc'   ? 'selected':''; ?>>Alphabetical (Area): Z–A</option>
                 <option value="creator_asc" <?= $order==='creator_asc' ? 'selected':''; ?>>Alphabetical (Creator): A–Z</option>
-                <option value="creator_desc" <?= $order==='creator_desc' ? 'selected':''; ?>>Alphabetical (Creator): Z–A</option>
+                <option value="creator_desc"<?= $order==='creator_desc'? 'selected':''; ?>>Alphabetical (Creator): Z–A</option>
               </select>
             </div>
 
-            <div class="col-12 col-md-3 d-flex justify-content-md-end">
+            <!-- Acciones: Clear (condicional) + New Ticket -->
+            <div class="col-12 col-md-auto d-flex justify-content-md-end align-items-center gap-2">
+              <?php if ($hasActiveFilters): ?>
+                <a class="btn-clear" href="tickets.php" title="Clear all filters">
+                  <i class="fa-solid fa-xmark"></i>Clear filters
+                </a>
+              <?php endif; ?>
               <a class="btn-pro d-inline-flex align-items-center justify-content-center text-decoration-none"
                  href="generarTickets.php">
                 <i class="fa-solid fa-plus me-2"></i>New Ticket

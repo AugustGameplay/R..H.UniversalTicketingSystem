@@ -317,6 +317,68 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      body { padding: 0; }
+      .wrapper { border-radius: 0; box-shadow: none; }
+
+      .header { padding: 22px 20px 20px; }
+      .header-top { margin-bottom: 14px; }
+      .logo-img { height: 38px; }
+      .status-badge { font-size: 10px; padding: 5px 10px; }
+      .check-circle { width: 44px; height: 44px; font-size: 20px; }
+      .header-title { font-size: 21px; }
+      .header-subtitle { font-size: 13px; }
+
+      .body { padding: 22px 20px; }
+      .greeting { font-size: 14px; margin-bottom: 16px; }
+
+      .ticket-card { padding: 16px 16px; margin: 16px 0; border-radius: 10px; }
+      .ticket-id { font-size: 11px; margin-bottom: 12px; }
+      .ticket-row {
+        flex-direction: column;
+        gap: 3px;
+        padding: 10px 0;
+      }
+      .ticket-label { min-width: unset; font-size: 10px; }
+      .ticket-value { text-align: left; font-size: 14px; }
+
+      .resolution-box { padding: 16px 16px; margin: 16px 0; border-radius: 8px; }
+      .resolution-label { font-size: 10px; }
+      .resolution-text { font-size: 13px; }
+
+      .stats-strip {
+        flex-direction: column;
+        gap: 0;
+        margin: 20px 0;
+        border-radius: 10px;
+      }
+      .stat-block {
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #ebebeb;
+        text-align: left;
+      }
+      .stat-block:last-child { border-bottom: none; }
+      .stat-value { font-size: 18px; margin-bottom: 0; }
+      .stat-label { font-size: 11px; }
+
+      .survey-section { padding: 20px 16px; border-radius: 10px; }
+      .survey-title { font-size: 14px; }
+      .survey-subtitle { font-size: 12px; margin-bottom: 16px; }
+      .star-btn { width: 44px; height: 44px; font-size: 20px; line-height: 44px; border-radius: 8px; }
+      .stars { gap: 8px; }
+
+      .reopen-note { padding: 14px 14px; gap: 10px; border-radius: 8px; margin-top: 20px; }
+      .reopen-note-icon { font-size: 16px; }
+      .reopen-note-text { font-size: 12px; }
+
+      .footer { padding: 22px 20px; }
+      .footer-text { font-size: 11px; }
+      .footer-copy { font-size: 9px; }
+    }
   </style>
 </head>
 <body>

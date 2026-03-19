@@ -281,6 +281,12 @@ $stmt->execute([
 </head>
 
 <style>
+:root {
+  --brand: #083B5C;
+  --brand-hover: #D14B16;
+  --brand-rgb: 8, 59, 92;
+}
+
 /* ── Tipo Picker Trigger ──────────────────────────────── */
 .tipo-trigger {
   width: 100%;
