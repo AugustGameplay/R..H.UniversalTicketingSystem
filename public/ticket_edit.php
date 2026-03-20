@@ -824,7 +824,22 @@ $creatorName = userNameById($pdo, (int)($ticket['id_user'] ?? 0));
   <script defer src="./assets/js/sidebar.js"></script>
 
 <style>
-/* ── Moda Fallas Styles (Del generarTickets.php) ─────────────────────── */
+:root {
+  --brand: #083B5C;
+  --brand-hover: #D14B16;
+  --brand-rgb: 8, 59, 92;
+  --slate-50:  #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+}
+
+/* ── Modal Fallas Styles (from generarTickets.php) ─────────────────────── */
 #modalFallas .modal-content {
   border-radius: 20px;
   border: 1px solid var(--slate-200);

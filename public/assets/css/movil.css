@@ -1,7 +1,7 @@
 /* movil.css (MÓVIL) */
 
 /* ===== TOPBAR ===== */
-.mobile-topbar{
+.mobile-topbar {
   position: fixed;
   top: 0;
   left: 0;
@@ -14,15 +14,25 @@
   justify-content: space-between;
   padding: 0 12px;
   background: var(--sidebar);
-  box-shadow: 0 10px 18px rgba(0,0,0,.18);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, .18);
 }
 
-.mobile-topbar__logo{
+.mobile-topbar__logo {
   width: 90px;
 }
 
+/* ===== FIX MODAL OVERLAP ===== */
+/* Make sure modals appear above the mobile topbar (z-index 1310) */
+.modal-backdrop {
+  z-index: 1350 !important;
+}
+
+.modal {
+  z-index: 1360 !important;
+}
+
 /* Botón sandwich */
-.hamburger{
+.hamburger {
   border: 1px var(--rhr-orange) solid;
   background: transparent;
   color: #fff;
@@ -33,10 +43,10 @@
 }
 
 /* ===== OVERLAY ===== */
-.sidebar-overlay{
+.sidebar-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.45);
+  background: rgba(0, 0, 0, .45);
   opacity: 0;
   pointer-events: none;
   transition: opacity .2s ease;
@@ -44,27 +54,28 @@
 }
 
 /* Bloqueo de scroll solo cuando abierto */
-body.sidebar-open{
+body.sidebar-open {
   overflow: hidden;
 }
 
 /* ===== RESPONSIVE (Bootstrap md=768) ===== */
-@media (max-width: 767.98px){
+@media (max-width: 767.98px) {
 
   /* ✅ Evita que el layout siga como flex en móvil (esto causaba la “barra flaca”) */
-  .layout{
+  .layout {
     display: block !important;
   }
 
   /* Empuja el contenido por la topbar fija */
-  .main{
+  .main {
     padding-top: 56px;
   }
 
   /* Sidebar tipo drawer (fuera del flujo) */
-  .sidebar{
+  .sidebar {
     position: fixed !important;
-    top: 56px; /* deja visible la topbar */
+    top: 56px;
+    /* deja visible la topbar */
     left: 0;
     width: 280px;
     height: calc(100dvh - 56px);
@@ -73,24 +84,25 @@ body.sidebar-open{
     transition: transform .25s ease;
   }
 
-  body.sidebar-open .sidebar{
+  body.sidebar-open .sidebar {
     transform: translateX(0);
   }
 
-  body.sidebar-open .sidebar-overlay{
+  body.sidebar-open .sidebar-overlay {
     opacity: 1;
     pointer-events: auto;
   }
 }
 
 /* Desktop: ocultar topbar/overlay por si acaso */
-@media (min-width: 768px){
+@media (min-width: 768px) {
+
   .mobile-topbar,
-  .sidebar-overlay{
+  .sidebar-overlay {
     display: none !important;
   }
 
-  body.sidebar-open{
+  body.sidebar-open {
     overflow: hidden;
   }
 }
@@ -99,123 +111,236 @@ body.sidebar-open{
    MOBILE: tabla -> tarjetas
    (sin scroll horizontal)
    ============================ */
-@media (max-width: 576px){
+@media (max-width: 576px) {
 
   /* Que el panel use todo el ancho */
-  .users-panel{ width: 100%; }
+  .users-panel {
+    width: 100%;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  }
 
-  /* Botón principal a ancho completo */
-  .users-actions{ width: 100%; }
-  .users-actions .btn-pro{ width: 100%; }
+  .users-actions {
+    width: 100%;
+  }
 
-  /* Tabla en modo "cards" */
-  .users-table{ padding: 10px; }
+  .users-actions .btn-pro {
+    width: 100%;
+    border-radius: 14px;
+    height: 48px;
+  }
+
+  /* Tabla en modo "cards" premium */
+  .users-table {
+    padding: 0;
+  }
+
   .users-table table,
   .users-table thead,
   .users-table tbody,
   .users-table th,
   .users-table td,
-  .users-table tr{
+  .users-table tr {
     display: block;
     width: 100%;
   }
 
-  /* Ocultar encabezado */
-  .users-table thead{
+  .users-table thead {
     display: none;
   }
 
-  /* Cada fila como tarjeta */
-  .users-table tbody tr{
-    background: rgba(255,255,255,.45);
-    border: 1px solid rgba(0,0,0,.08);
-    border-radius: 16px;
-    padding: 12px;
-    margin-bottom: 12px;
-    box-shadow: 0 10px 18px rgba(0,0,0,.10);
+  /* Card Premium */
+  .users-table tbody tr {
+    background: #ffffff;
+    border: 1px solid var(--slate-200);
+    border-radius: 18px;
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .03);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
-  /* Caso "No hay usuarios" (colspan) no debe verse como card rara */
-  .users-table tbody tr td[colspan]{
-    padding: 18px 10px !important;
+  /* Caso empty */
+  .users-table tbody tr td[colspan] {
+    padding: 24px 10px !important;
     text-align: center;
+    color: var(--slate-400);
   }
-  .users-table tbody tr:has(td[colspan]){
+
+  .users-table tbody tr:has(td[colspan]) {
     background: transparent;
     border: 0;
     box-shadow: none;
     padding: 0;
   }
 
-  /* Celdas con etiqueta a la izquierda */
-  .users-table tbody td{
-    border: 0;
-    padding: 10px 0;
+  /* Reset de celdas */
+  .users-table tbody td {
+    border: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: auto !important;
   }
 
-  /* Primera celda (Usuario) ocupa todo */
-  .users-table tbody td:first-child{
-    padding-top: 0;
-    padding-bottom: 12px;
-    border-bottom: 1px solid rgba(0,0,0,.08);
-    margin-bottom: 10px;
+  /* 1) Celda Usuario (Header de la card) */
+  .users-table tbody td:nth-child(1) {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2px !important;
   }
 
-  .user-cell{ gap: 10px; }
-  .user-avatar{ width: 44px; height: 44px; flex: 0 0 44px; }
-  .user-meta .name{ font-size: 14px; }
-
-  /* Etiquetas automáticas por columna (sin tocar PHP) */
-  .users-table tbody td:nth-child(2),
-  .users-table tbody td:nth-child(3),
-  .users-table tbody td:nth-child(4){
-    position: relative;
-    padding-left: 86px; /* espacio para la etiqueta */
+  .user-cell {
+    gap: 12px;
+    align-items: center;
+    width: 100%;
   }
 
-  .users-table tbody td:nth-child(2)::before,
-  .users-table tbody td:nth-child(3)::before,
-  .users-table tbody td:nth-child(4)::before{
-    position: absolute;
-    left: 0;
-    top: 10px;
-    width: 78px;
-    font-size: 11px;
-    font-weight: 900;
-    color: rgba(0,0,0,.55);
-    text-transform: uppercase;
-    letter-spacing: .2px;
-  }
-
-  .users-table tbody td:nth-child(2)::before{ content: "Área"; }
-  .users-table tbody td:nth-child(3)::before{ content: "Email"; }
-  .users-table tbody td:nth-child(4)::before{ content: "Rol"; }
-
-  /* Acciones: full ancho y alineadas bonito */
-  .users-table tbody td:nth-child(5){
-    padding-top: 12px;
-    border-top: 1px solid rgba(0,0,0,.08);
-  }
-
-  .actions-cell{
-    justify-content: flex-end;
-    gap: 10px;
-  }
-
-  .icon-action{
-    width: 42px;
-    height: 42px;
+  .user-avatar {
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
     border-radius: 14px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .05);
+  }
+
+  .user-meta .name {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--slate-900);
+    display: block;
+  }
+
+  /* Rol badge movido debajo del nombre en movil */
+  .users-table tbody td:nth-child(5) {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+  }
+
+  .role-badge {
+    font-size: 10px !important;
+    padding: 4px 8px !important;
+    border-radius: 8px !important;
+    letter-spacing: 0.05em;
+  }
+
+  /* 2) Área */
+  .users-table tbody td:nth-child(2) {
+    font-size: 13px;
+    color: var(--slate-500);
+    font-weight: 500;
+    padding-left: 60px !important;
+    /* Alineado con el texto (48px avatar + 12px gap) */
+    margin-top: -12px !important;
+  }
+
+  /* 3) Email */
+  .users-table tbody td:nth-child(3) {
+    font-size: 13px;
+    color: var(--slate-600);
+    font-weight: 600;
+    padding-left: 60px !important;
+    margin-top: 4px !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .users-table tbody td:nth-child(3)::before {
+    content: "\f0e0";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    color: var(--brand);
+    opacity: 0.8;
+    font-size: 14px;
+  }
+
+  /* 4) Phone */
+  .users-table tbody td:nth-child(4) {
+    font-size: 13px;
+    color: var(--slate-600);
+    font-weight: 600;
+    padding-left: 60px !important;
+    margin-top: 2px !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .users-table tbody td:nth-child(4)::before {
+    content: "\f095";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    color: var(--brand);
+    opacity: 0.8;
+    font-size: 14px;
+  }
+
+  .users-table tbody td:nth-child(4):empty {
+    display: none !important;
+  }
+
+  /* 6) Acciones */
+  .users-table tbody td:nth-child(6) {
+    margin-top: 12px !important;
+    padding-top: 14px !important;
+    border-top: 1px dashed var(--slate-200) !important;
+  }
+
+  .actions-cell {
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  .icon-action {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: var(--slate-50);
+    border: 1px solid var(--slate-200);
+    color: var(--slate-600);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  }
+
+  .icon-action:hover {
+    background: #fff;
+    border-color: var(--slate-300);
+    transform: translateY(-1px);
+  }
+
+  .icon-action.icon-action--danger {
+    background: #fef2f2;
+    color: #dc2626;
+    border-color: #fca5a5;
+  }
+
+  .icon-action.icon-action--danger:hover {
+    background: #fee2e2;
+    border-color: #f87171;
+  }
+
+  .icon-action.icon-action--pass {
+    background: #fffbeb;
+    color: #d97706;
+    border-color: #fcd34d;
+  }
+
+  .icon-action.icon-action--pass:hover {
+    background: #fef3c7;
+    border-color: #fbbf24;
   }
 }
 
 /* =========================
    MOVIL - SOLO TICKETS
    ========================= */
-@media (max-width: 768px){
+@media (max-width: 768px) {
 
   /* Panel ocupa casi toda la pantalla (evita panel mini) */
-  .panel.card.tickets-panel{
+  .panel.card.tickets-panel {
     width: calc(100% - 18px) !important;
     max-width: 520px !important;
     margin: 0 auto !important;
@@ -223,18 +348,18 @@ body.sidebar-open{
   }
 
   /* Header apilado: search y botón full width */
-  .tickets-head{
+  .tickets-head {
     flex-direction: column !important;
     align-items: stretch !important;
     gap: 10px !important;
   }
 
-  .search-wrap{
+  .search-wrap {
     width: 100% !important;
     height: 44px !important;
   }
 
-  .btn-pro{
+  .btn-pro {
     width: 100% !important;
     height: 44px !important;
     justify-content: center !important;
@@ -242,54 +367,55 @@ body.sidebar-open{
   }
 
   /* Filtros en columna y full width */
-  .filters{
+  .filters {
     margin-top: 10px !important;
   }
 
-  .filter-select{
+  .filter-select {
     width: 100% !important;
     height: 44px !important;
     border-radius: 16px !important;
   }
 
   /* Tabla scrollable y legible */
-  .tickets-table{
+  .tickets-table {
     padding: 8px !important;
     border-radius: 18px !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
   }
 
-  .tickets-table table{
-    min-width: 860px; /* +1 columna (Creado) para que no se aplasten */
+  .tickets-table table {
+    min-width: 860px;
+    /* +1 columna (Creado) para que no se aplasten */
   }
 
   .tickets-table thead th,
-  .tickets-table tbody td{
+  .tickets-table tbody td {
     padding: 12px 10px !important;
     font-size: 13px !important;
     white-space: nowrap !important;
   }
 
-  .badge{
+  .badge {
     padding: 6px 10px !important;
     font-size: 11px !important;
   }
 
-  .icon-action{
+  .icon-action {
     width: 40px !important;
     height: 40px !important;
     border-radius: 14px !important;
   }
 
   /* Footer y paginación centrada */
-  .table-foot{
+  .table-foot {
     flex-direction: column !important;
     align-items: stretch !important;
     gap: 10px !important;
   }
 
-  .pagination{
+  .pagination {
     justify-content: center !important;
   }
 }
@@ -299,15 +425,15 @@ body.sidebar-open{
    - Mantiene tu HTML (solo CSS)
    - Evita scroll horizontal
    ============================ */
-@media (max-width: 576px){
+@media (max-width: 576px) {
 
   /* En móviles chicos, quitamos el "min-width" y el overflow de tabla */
-  .tickets-table{
+  .tickets-table {
     overflow: visible !important;
     padding: 10px !important;
   }
 
-  .tickets-table table{
+  .tickets-table table {
     min-width: 0 !important;
   }
 
@@ -316,31 +442,34 @@ body.sidebar-open{
   .tickets-table tbody,
   .tickets-table th,
   .tickets-table td,
-  .tickets-table tr{
+  .tickets-table tr {
     display: block;
     width: 100%;
   }
 
   /* Oculta encabezado */
-  .tickets-table thead{ display: none; }
+  .tickets-table thead {
+    display: none;
+  }
 
   /* Cada fila como tarjeta */
-  .tickets-table tbody tr{
-    background: rgba(255,255,255,.45);
-    border: 1px solid rgba(0,0,0,.08);
+  .tickets-table tbody tr {
+    background: rgba(255, 255, 255, .45);
+    border: 1px solid rgba(0, 0, 0, .08);
     border-radius: 16px;
     padding: 12px;
     margin-bottom: 12px;
-    box-shadow: 0 10px 18px rgba(0,0,0,.10);
+    box-shadow: 0 10px 18px rgba(0, 0, 0, .10);
   }
 
   /* Caso "No hay tickets" (colspan) no debe verse como card rara */
-  .tickets-table tbody tr td[colspan]{
+  .tickets-table tbody tr td[colspan] {
     padding: 18px 10px !important;
     text-align: center;
     white-space: normal !important;
   }
-  .tickets-table tbody tr:has(td[colspan]){
+
+  .tickets-table tbody tr:has(td[colspan]) {
     background: transparent;
     border: 0;
     box-shadow: none;
@@ -348,28 +477,29 @@ body.sidebar-open{
   }
 
   /* Celdas */
-  .tickets-table tbody td{
+  .tickets-table tbody td {
     border: 0 !important;
     padding: 10px 0 !important;
     white-space: normal !important;
   }
 
   /* Primera celda (ID) como header de la tarjeta */
-  .tickets-table tbody td:first-child{
+  .tickets-table tbody td:first-child {
     padding-top: 0 !important;
     padding-bottom: 12px !important;
-    border-bottom: 1px solid rgba(0,0,0,.08) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, .08) !important;
     margin-bottom: 10px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
   }
-  .tickets-table tbody td:first-child::before{
+
+  .tickets-table tbody td:first-child::before {
     content: "Ticket";
     font-size: 11px;
     font-weight: 900;
-    color: rgba(0,0,0,.55);
+    color: rgba(0, 0, 0, .55);
     text-transform: uppercase;
     letter-spacing: .2px;
   }
@@ -382,43 +512,58 @@ body.sidebar-open{
   .tickets-table tbody td:nth-child(3),
   .tickets-table tbody td:nth-child(4),
   .tickets-table tbody td:nth-child(5),
-  .tickets-table tbody td:nth-child(6){
+  .tickets-table tbody td:nth-child(6) {
     position: relative;
-    padding-left: 96px !important; /* espacio para la etiqueta */
+    padding-left: 96px !important;
+    /* espacio para la etiqueta */
   }
 
   .tickets-table tbody td:nth-child(2)::before,
   .tickets-table tbody td:nth-child(3)::before,
   .tickets-table tbody td:nth-child(4)::before,
   .tickets-table tbody td:nth-child(5)::before,
-  .tickets-table tbody td:nth-child(6)::before{
+  .tickets-table tbody td:nth-child(6)::before {
     position: absolute;
     left: 0;
     top: 10px;
     width: 88px;
     font-size: 11px;
     font-weight: 900;
-    color: rgba(0,0,0,.55);
+    color: rgba(0, 0, 0, .55);
     text-transform: uppercase;
     letter-spacing: .2px;
   }
 
-  .tickets-table tbody td:nth-child(2)::before{ content: "Creado"; }
-  .tickets-table tbody td:nth-child(3)::before{ content: "Área"; }
-  .tickets-table tbody td:nth-child(4)::before{ content: "Prioridad"; }
-  .tickets-table tbody td:nth-child(5)::before{ content: "Estado"; }
-  .tickets-table tbody td:nth-child(6)::before{ content: "Asignado"; }
+  .tickets-table tbody td:nth-child(2)::before {
+    content: "Creado";
+  }
+
+  .tickets-table tbody td:nth-child(3)::before {
+    content: "Área";
+  }
+
+  .tickets-table tbody td:nth-child(4)::before {
+    content: "Prioridad";
+  }
+
+  .tickets-table tbody td:nth-child(5)::before {
+    content: "Estado";
+  }
+
+  .tickets-table tbody td:nth-child(6)::before {
+    content: "Asignado";
+  }
 
   /* Acción: separado y alineado a la derecha */
-  .tickets-table tbody td:nth-child(7){
+  .tickets-table tbody td:nth-child(7) {
     padding-top: 12px !important;
-    border-top: 1px solid rgba(0,0,0,.08) !important;
+    border-top: 1px solid rgba(0, 0, 0, .08) !important;
     display: flex;
     justify-content: flex-end;
     gap: 10px;
   }
 
-  .tickets-table tbody td:nth-child(7) .icon-action{
+  .tickets-table tbody td:nth-child(7) .icon-action {
     width: 42px !important;
     height: 42px !important;
     border-radius: 14px !important;
@@ -426,54 +571,89 @@ body.sidebar-open{
 }
 
 /* ===== BAJAR UN POCO EL PANEL EN MÓVIL (solo tickets) ===== */
-@media (max-width: 768px){
-  .tickets-page{
-    padding-top: 40px !important; /* empuja hacia abajo */
-  }
-
-  /* Si aún lo quieres un poquito más abajo, sube a 18-22px */
-  /* .tickets-page{ padding-top: 20px !important; } */
-}
+/* Removido el padding excesivo para evitar huecos en blanco */
 
 /* =========================================
    RESPONSIVE
    ========================================= */
-@media (max-width: 575.98px){
-  .main{ padding: 16px; }
-  .panel{ padding: 18px 16px; border-radius: 18px; }
-  .panel__headline{ align-items:flex-start; }
-  .panel__badge{ width: 44px; height: 44px; border-radius: 14px; }
-  .panel__title{ font-size: 30px; }
-  .panel__subtitle{ font-size: 13px; }
-  .panel__steps{ gap: 8px; }
-  .panel__steps .step{ font-size: 11px; padding: 7px 10px; }
-  .ticket-form{ gap: 14px; }
-  .select-pro{ height: 52px; font-size: 18px; }
-  .dropdown-pro .dropdown-item{ font-size: 16px; }
-  .btn-send{ width: 100%; height: 50px; }
+@media (max-width: 575.98px) {
+  .main {
+    padding: 16px;
+  }
+
+  .panel {
+    padding: 18px 16px;
+    border-radius: 18px;
+  }
+
+  .panel__headline {
+    align-items: flex-start;
+  }
+
+  .panel__badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+  }
+
+  .panel__title {
+    font-size: 30px;
+  }
+
+  .panel__subtitle {
+    font-size: 13px;
+  }
+
+  .panel__steps {
+    gap: 8px;
+  }
+
+  .panel__steps .step {
+    font-size: 11px;
+    padding: 7px 10px;
+  }
+
+  .ticket-form {
+    gap: 14px;
+  }
+
+  .select-pro {
+    height: 52px;
+    font-size: 18px;
+  }
+
+  .dropdown-pro .dropdown-item {
+    font-size: 16px;
+  }
+
+  .btn-send {
+    width: 100%;
+    height: 50px;
+  }
 }
+
 /* ==========================================================
    1080p GLOBAL (DESKTOP/TABLET) – “full width” en TODAS vistas
    - Mantiene tu móvil (drawer + topbar) tal cual
    - En >=768px hace que los paneles aprovechen el ancho/alto
    - Misma vibra que Tickets (clamp + max 1500/1600)
    ========================================================== */
-@media (min-width: 768px){
+@media (min-width: 768px) {
 
   /* Espaciado general del contenido */
-  .main{
+  .main {
     padding: 26px 26px 40px !important;
     min-height: 100vh;
   }
 
   /* Wrappers típicos (si existen) */
-  .main > .tickets-page,
-  .main > .users-page,
-  .main > .history-page,
-  .main > .generate-page,
-  .main > .ticket-edit-page,
-  .main > .page,
-  .main > .page-wrap{
+  .main>.tickets-page,
+  .main>.users-page,
+  .main>.history-page,
+  .main>.generate-page,
+  .main>.ticket-edit-page,
+  .main>.page,
+  .main>.page-wrap {
     width: 100% !important;
     max-width: 1500px !important;
     margin: 0 auto !important;
@@ -481,7 +661,7 @@ body.sidebar-open{
 
   /* Paneles (global): ocupan el ancho como tu vista de Tickets */
   .main .panel.card,
-  .main .panel{
+  .main .panel {
     width: 100% !important;
     max-width: clamp(980px, 78vw, 1500px) !important;
     margin: 0 auto !important;
@@ -489,26 +669,27 @@ body.sidebar-open{
 }
 
 /* Pantallas grandes */
-@media (min-width: 1600px){
-  .main > .tickets-page,
-  .main > .users-page,
-  .main > .history-page,
-  .main > .generate-page,
-  .main > .ticket-edit-page,
-  .main > .page,
-  .main > .page-wrap{
+@media (min-width: 1600px) {
+
+  .main>.tickets-page,
+  .main>.users-page,
+  .main>.history-page,
+  .main>.generate-page,
+  .main>.ticket-edit-page,
+  .main>.page,
+  .main>.page-wrap {
     max-width: 1600px !important;
   }
 
   .main .panel.card,
-  .main .panel{
+  .main .panel {
     max-width: 1600px !important;
   }
 }
 
 /* Tablet: un poco menos padding */
-@media (min-width: 768px) and (max-width: 991.98px){
-  .main{
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .main {
     padding: 18px 16px 26px !important;
   }
 }
@@ -516,40 +697,46 @@ body.sidebar-open{
 /* =========================================
    FIXS MÓVIL - Generar Tickets + Sidebar
    ========================================= */
-@media (max-width: 767.98px){
+@media (max-width: 767.98px) {
 
-  /* 1) Que el contenido no quede tapado por la topbar fija */
-  .main{
-    padding-top: 72px !important; /* antes 56px, damos aire extra */
+  /* 1) Que el contenido no quede tapado por la topbar fija + un poco de respiro */
+  .main {
+    padding-top: 76px !important;
   }
 
   /* Si quieres que SOLO afecte a generarTickets, usa esta opción adicional */
-  .panel.card{
+  .panel.card {
     margin-top: 8px !important;
   }
 
+  /* Igualar el espaciado en "mis_tickets" para que quede idéntico al resto (28px de gap) */
+  .tickets-hq-wrapper {
+    padding-top: 8px !important;
+  }
+
   /* 2) Ocultar logo dentro del sidebar en móvil (el de la topbar se queda) */
-  .sidebar .sidebar__logo{
+  .sidebar .sidebar__logo {
     display: none !important;
   }
 
   /* 3) Ocultar logout del sidebar en móvil (se queda el del topbar) */
-  .sidebar .logout{
+  .sidebar .logout {
     display: none !important;
   }
 
   /* Opcional: quitar espacio vacío inferior del contenedor del logout */
-  .sidebar .mt-auto.pt-3{
+  .sidebar .mt-auto.pt-3 {
     display: none !important;
   }
 
   /* Opcional: que el sidebar aproveche mejor altura al quitar logo */
-  .sidebar{
+  .sidebar {
     padding-top: 10px;
   }
 }
 
 @media (max-width: 767.98px) {
+
   .form-actions,
   .ticket-actions {
     position: sticky;
