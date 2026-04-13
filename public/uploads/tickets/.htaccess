@@ -1,0 +1,3 @@
+# Bloquea el acceso directo a cualquier archivo subido (evidencias).
+# Todas las descargas deben pasar por api/download.php para verificar sesión y roles.
+Require all denied
