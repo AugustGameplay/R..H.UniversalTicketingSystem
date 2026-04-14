@@ -162,6 +162,7 @@ function build_url(array $overrides = []): string {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Tickets | RH&amp;R Ticketing</title>
+    <link rel="icon" type="image/png" href="./assets/img/isotopo.png" />
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
@@ -220,57 +221,101 @@ function build_url(array $overrides = []): string {
           font-size: 0.9rem;
         }
 
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         /* ── Summary cards ─────────────────────────────── */
         .mis-summary {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
             gap: 16px;
             margin-bottom: 32px;
+            animation: fadeUp 0.5s ease-out;
         }
 
         .mis-stat {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 6px;
-            padding: 20px 16px;
+            gap: 8px;
+            padding: 24px 16px;
             border-radius: var(--radius-lg);
             border: 1px solid var(--slate-200);
             background: #fff;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
             cursor: pointer;
             text-decoration: none;
-            transition: all 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+        .mis-stat::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: transparent;
+            transition: background 0.3s ease;
         }
         .mis-stat:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 24px -8px rgba(0,0,0,0.12);
             border-color: var(--slate-300);
         }
         .mis-stat.is-active {
-            border-color: var(--brand);
-            box-shadow: 0 0 0 3px rgba(15, 90, 138, 0.1), 0 4px 6px -1px rgba(0,0,0,0.05);
+            box-shadow: 0 8px 16px -4px rgba(0,0,0,0.1);
         }
+        
+        /* Active states con sus colores correspondientes */
+        .mis-stat--total.is-active { border-color: var(--slate-800); background: #f8fafc; }
+        .mis-stat--total.is-active::before { background: var(--slate-800); }
+        .mis-stat--total:hover::before { background: var(--slate-700); }
+
+        .mis-stat--pendiente.is-active { border-color: #f97316; background: #fffcf9; }
+        .mis-stat--pendiente.is-active::before { background: #f97316; }
+        .mis-stat--pendiente:hover::before { background: #fb923c; }
+
+        .mis-stat--proceso.is-active { border-color: #3b82f6; background: #f4f8ff; }
+        .mis-stat--proceso.is-active::before { background: #3b82f6; }
+        .mis-stat--proceso:hover::before { background: #60a5fa; }
+
+        .mis-stat--resuelto.is-active { border-color: #10b981; background: #f2fdf9; }
+        .mis-stat--resuelto.is-active::before { background: #10b981; }
+        .mis-stat--resuelto:hover::before { background: #34d399; }
+
+        .mis-stat--cerrado.is-active { border-color: #64748b; background: #f8fafc; }
+        .mis-stat--cerrado.is-active::before { background: #64748b; }
+        .mis-stat--cerrado:hover::before { background: #94a3b8; }
 
         .mis-stat__num {
-            font-size: 2rem;
-            font-weight: 800;
+            font-size: 2.2rem;
+            font-weight: 900;
             line-height: 1;
             color: var(--slate-900);
+            transition: color 0.3s ease;
         }
         .mis-stat__label {
             font-size: 0.75rem;
-            font-weight: 700;
+            font-weight: 800;
             letter-spacing: 0.05em;
             text-transform: uppercase;
             color: var(--slate-500);
         }
 
-        /* Accentos de color */
-        .mis-stat--pendiente .mis-stat__num { color: #b45309; }
-        .mis-stat--proceso   .mis-stat__num { color: #1d4ed8; }
-        .mis-stat--resuelto  .mis-stat__num { color: #047857; }
-        .mis-stat--cerrado   .mis-stat__num { color: var(--slate-400); }
+        /* Accentos de color más vivos */
+        .mis-stat--pendiente .mis-stat__num { color: #f97316; }
+        .mis-stat--pendiente .mis-stat__label { color: #ea580c; } 
+
+        .mis-stat--proceso   .mis-stat__num { color: #3b82f6; }
+        .mis-stat--proceso   .mis-stat__label { color: #2563eb; }
+
+        .mis-stat--resuelto  .mis-stat__num { color: #10b981; }
+        .mis-stat--resuelto  .mis-stat__label { color: #059669; }
+
+        .mis-stat--cerrado   .mis-stat__num { color: #64748b; }
+        .mis-stat--cerrado   .mis-stat__label { color: #475569; }
 
         /* ── Filtros y search ───────────────────────────── */
         .mis-filters {
@@ -343,18 +388,37 @@ function build_url(array $overrides = []): string {
             background: #fff;
             border: 1px solid var(--slate-200);
             border-radius: var(--radius-lg);
-            padding: 20px 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-            transition: all 0.2s ease;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.02);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             position: relative;
             display: block;
             text-decoration: none;
             color: inherit;
+            animation: fadeUp 0.5s ease-out backwards;
+            overflow: hidden;
         }
         .mis-card:hover {
-            box-shadow: 0 6px 16px rgba(0,0,0,0.06);
-            border-color: var(--slate-300);
-            transform: translateY(-1px);
+            box-shadow: 0 12px 24px -6px rgba(15, 90, 138, 0.12), 0 4px 8px -2px rgba(15, 90, 138, 0.08);
+            border-color: rgba(15, 90, 138, 0.3);
+            transform: translateY(-4px) scale(1.005);
+            z-index: 2;
+        }
+        .mis-card::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--brand);
+            opacity: 0;
+            transform: scaleY(0.5);
+            transition: all 0.3s ease;
+        }
+        .mis-card:hover::after {
+            opacity: 1;
+            transform: scaleY(1);
         }
 
         .mis-card__top {
@@ -363,18 +427,26 @@ function build_url(array $overrides = []): string {
             justify-content: space-between;
             gap: 12px;
             margin-bottom: 12px;
+            position: relative;
         }
 
         .mis-card__id {
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             font-weight: 800;
             text-transform: uppercase;
-            color: var(--slate-500);
-            background: var(--slate-50);
-            padding: 4px 10px;
-            border-radius: 6px;
-            border: 1px solid var(--slate-200);
+            color: var(--slate-600);
+            background: var(--slate-100);
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px dashed var(--slate-300);
             letter-spacing: 0.05em;
+            transition: all 0.3s ease;
+        }
+        .mis-card:hover .mis-card__id {
+            background: var(--brand);
+            color: #fff;
+            border-color: var(--brand);
+            box-shadow: 0 2px 6px rgba(15, 90, 138, 0.2);
         }
 
         .mis-card__badges {
@@ -387,62 +459,73 @@ function build_url(array $overrides = []): string {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 4px 12px;
+            padding: 6px 14px;
             border-radius: 99px;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.05em;
             border: 1px solid transparent;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
-        .hq-badge-status-pending { background: #fffbeb; color: #b45309; border-color: #fce7f3; }
-        .hq-badge-status-process { background: #eff6ff; color: #1d4ed8; border-color: #dbeafe; }
-        .hq-badge-status-resolved { background: #ecfdf5; color: #047857; border-color: #d1fae5; }
-        .hq-badge-status-closed { background: var(--slate-100); color: var(--slate-600); border-color: var(--slate-200); }
+        .hq-badge-status-pending { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+        .hq-badge-status-process { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+        .hq-badge-status-resolved { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+        .hq-badge-status-closed { background: #f8fafc; color: #475569; border-color: #e2e8f0; }
+        
         .hq-badge-prio-low { background: #f8fafc; color: #64748b; border-color: #e2e8f0; }
-        .hq-badge-prio-medium { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
-        .hq-badge-prio-high { background: #fff7ed; color: #c2410c; border-color: #ffedd5; }
-        .hq-badge-prio-urgent { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+        .hq-badge-prio-medium { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+        .hq-badge-prio-high { background: #fff1f2; color: #e11d48; border-color: #fecdd3; }
+        .hq-badge-prio-urgent { background: #dc2626; color: #ffffff; border-color: #b91c1c; box-shadow: 0 4px 10px rgba(220, 38, 38, 0.3); }
 
         .mis-card__title {
-            font-size: 1.15rem;
-            font-weight: 700;
+            font-size: 1.25rem;
+            font-weight: 800;
             color: var(--slate-900);
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+            letter-spacing: -0.01em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .mis-card__title i {
+            color: var(--slate-400);
+            font-size: 1rem;
         }
 
         .mis-card__comments {
-            font-size: 0.9rem;
-            color: var(--slate-500);
-            line-height: 1.5;
+            font-size: 0.95rem;
+            color: var(--slate-600);
+            line-height: 1.6;
             display: -webkit-box;
             -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
             overflow: hidden;
-            margin-bottom: 16px;
+            margin-bottom: 20px;
         }
 
         .mis-card__meta {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 24px;
             flex-wrap: wrap;
-            border-top: 1px dashed var(--slate-200);
+            border-top: 1px solid var(--slate-200);
             padding-top: 16px;
         }
 
         .mis-card__meta-item {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             font-size: 0.85rem;
             font-weight: 600;
             color: var(--slate-500);
         }
-        .mis-card__meta-item i { font-size: 0.85rem; opacity: 0.7; }
+        .mis-card__meta-item i { font-size: 0.9rem; color: var(--slate-400); }
 
-        .mis-card__meta-item.text-brand { color: var(--brand); }
+        .mis-card__meta-item.text-brand { color: var(--brand); padding: 4px 10px; background: rgba(15, 90, 138, 0.05); border-radius: 6px; }
         .mis-card__meta-item.text-brand i { color: var(--brand); opacity: 1; }
-        .mis-card__meta-item.text-brand:hover { text-decoration: underline; }
+        .mis-card__meta-item.text-brand:hover { background: rgba(15, 90, 138, 0.1); }
 
         /* ── New ticket CTA ─────────────────────────────── */
         .mis-cta {
@@ -591,7 +674,9 @@ function build_url(array $overrides = []): string {
                 </div>
             <?php else: ?>
                 <div class="mis-list">
-                    <?php foreach ($tickets as $t):
+                    <?php 
+                    $loopIndex = 0;
+                    foreach ($tickets as $t):
                         $idTxt    = '#' . str_pad((string)$t['id_ticket'], 3, '0', STR_PAD_LEFT);
                         $prio     = $t['priority'] ?: 'Media';
                         $status   = $t['status']   ?: 'Pendiente';
@@ -611,11 +696,16 @@ function build_url(array $overrides = []): string {
                         if($prio==='Baja') $pClass='hq-badge-prio-low';
                         if($prio==='Alta') $pClass='hq-badge-prio-high';
                         if($prio==='Urgente') $pClass='hq-badge-prio-urgent';
+                        
+                        $animDelay = $loopIndex * 0.08;
+                        $loopIndex++;
                     ?>
-                        <a href="ticket_edit.php?id=<?= $t['id_ticket'] ?>" class="mis-card">
+                        <a href="ticket_edit.php?id=<?= $t['id_ticket'] ?>" class="mis-card" style="animation-delay: <?= $animDelay ?>s;">
 
                             <div class="mis-card__top">
-                                <span class="mis-card__id"><?= esc($idTxt) ?></span>
+                                <span class="mis-card__id">
+                                    <i class="fa-solid fa-ticket"></i> <?= esc($idTxt) ?>
+                                </span>
                                 <div class="mis-card__badges">
                                     <span class="hq-badge <?= $pClass ?>"><i class="fa-solid fa-bolt"></i> <?= esc(ui_prio_label($prio)) ?></span>
                                     <span class="hq-badge <?= $sClass ?>"><?= esc(ui_status_label($status)) ?></span>
@@ -626,8 +716,8 @@ function build_url(array $overrides = []): string {
                             <div class="mis-card__title">
                                 <?= esc($shortType) ?>
                                 <?php if (!empty($t['area'])): ?>
-                                    <span class="fw-normal" style="color:var(--slate-400)">
-                                        — <?= esc($t['area']) ?>
+                                    <span class="fw-normal" style="color:var(--slate-400); font-size: 0.9em; display: inline-flex; align-items: center; gap: 4px;">
+                                        <i class="fa-solid fa-angle-right" style="font-size: 0.8em;"></i> <?= esc($t['area']) ?>
                                     </span>
                                 <?php endif; ?>
                             </div>

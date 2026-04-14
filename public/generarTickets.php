@@ -129,47 +129,22 @@ if (!$errors) {
       // Ejemplo recomendado de columnas:
       // tickets(id, user_id, category, type, area, comments, status, created_at)
 
-      // ====== Usuario creador (robusto) ======
-$user_id = null;
-$creator_name = null;
-$creator_email = null;
+      // ====== Usuario creador (from auth.php session) ======
+$user_id = $_AUTH_USER_ID ?? null;
+$creator_name = $_AUTH_FULL_NAME ?? null;
+$creator_email = $_SESSION['email'] ?? null;
 
-if (is_array($sessionUser)) {
-  $user_id = $sessionUser['id_user'] ?? $sessionUser['user_id'] ?? $sessionUser['id'] ?? $sessionUser['uid'] ?? null;
-  $creator_name = $sessionUser['full_name'] ?? $sessionUser['name'] ?? $sessionUser['username'] ?? null;
-  $creator_email = $sessionUser['email'] ?? null;
-}
-
-$user_id = $user_id ?? ($_SESSION['id_user'] ?? $_SESSION['user_id'] ?? $_SESSION['id'] ?? $_SESSION['uid'] ?? null);
-$creator_name = $creator_name ?? ($_SESSION['full_name'] ?? $_SESSION['name'] ?? null);
-$creator_email = $creator_email ?? ($_SESSION['email'] ?? null);
-
-// Normaliza id
-if ($user_id !== null && $user_id !== '' && is_numeric($user_id)) {
-  $user_id = (int)$user_id;
-} else {
-  $user_id = null;
-}
-
-// Fallback: si hay email en sesión, buscar el id en BD
-if (!$user_id && $creator_email) {
-  $stmtU = $pdo->prepare("SELECT id_user, full_name FROM users WHERE email = :email LIMIT 1");
-  $stmtU->execute([':email' => $creator_email]);
+// Fallback: if auth gave us an ID but no email, fetch it
+if ($user_id && !$creator_email) {
+  $stmtU = $pdo->prepare("SELECT full_name, email FROM users WHERE id_user = :id LIMIT 1");
+  $stmtU->execute([':id' => $user_id]);
   $urow = $stmtU->fetch(PDO::FETCH_ASSOC);
   if ($urow) {
-    $user_id = (int)$urow['id_user'];
     if (!$creator_name) $creator_name = $urow['full_name'] ?? null;
+    $creator_email = $urow['email'] ?? null;
   }
 }
 
-// Fallback: si hay id pero no nombre, trae full_name
-if ($user_id && !$creator_name) {
-  $stmtU2 = $pdo->prepare("SELECT full_name FROM users WHERE id_user = :id LIMIT 1");
-  $stmtU2->execute([':id' => $user_id]);
-  $creator_name = (string)($stmtU2->fetchColumn() ?: '');
-}
-
-// Si todavía no hay usuario, mejor fallar con mensaje claro (evita tickets sin creador)
 if (!$user_id) {
   throw new Exception("Could not identify the user creating the ticket. Please log out and log in again.");
 }
@@ -265,6 +240,7 @@ $stmt->execute([
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard | RH&R Ticketing</title>
+  <link rel="icon" type="image/png" href="./assets/img/isotopo.png" />
 
   <!-- Bootstrap + FontAwesome -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -273,6 +249,8 @@ $stmt->execute([
   <!-- Tu CSS (NO TOCADO) -->
   <link rel="stylesheet" href="./assets/css/generarTickets.css?v=<?= filemtime(__DIR__ . '/assets/css/generarTickets.css') ?>">
   <link rel="stylesheet" href="./assets/css/menu.css">
+  <link rel="stylesheet" href="./assets/css/rhr-toast.css">
+  <script defer src="./assets/js/rhr-toast.js"></script>
   <link rel="stylesheet" href="./assets/css/movil.css">
 
   <!-- Si ya tienes selects.js y lo usas en otras vistas, lo dejamos.
@@ -285,6 +263,15 @@ $stmt->execute([
   --brand: #083B5C;
   --brand-hover: #D14B16;
   --brand-rgb: 8, 59, 92;
+  --slate-50:  #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
 }
 
 /* ── Tipo Picker Trigger ──────────────────────────────── */
@@ -435,13 +422,18 @@ $stmt->execute([
 
         <!-- Mensajes -->
         <div class="mx-auto" style="width:min(520px, 100%);">
+          <?php if (!empty($_SESSION['flash_login'])): ?>
+            <div data-rhr-toast="<?= htmlspecialchars($_SESSION['flash_login'], ENT_QUOTES, 'UTF-8') ?>" data-rhr-toast-type="success"></div>
+            <?php unset($_SESSION['flash_login']); ?>
+          <?php endif; ?>
+
           <?php if ($success): ?>
-            <div class="alert alert-success py-2"><?= htmlspecialchars($success) ?></div>
+            <div data-rhr-toast="<?= htmlspecialchars($success) ?>" data-rhr-toast-type="success"></div>
           <?php endif; ?>
 
           <?php if ($errors): ?>
-            <div class="alert alert-danger py-2 mb-3">
-              <ul class="mb-0">
+            <div data-rhr-toast data-rhr-toast-type="error">
+              <ul>
                 <?php foreach ($errors as $err): ?>
                   <li><?= htmlspecialchars($err) ?></li>
                 <?php endforeach; ?>
@@ -846,7 +838,7 @@ $stmt->execute([
     const commVal = document.getElementById('comments').value.trim();
     if (!typeVal || (!isGeneralUser && !areaVal) || !commVal) {
       e.preventDefault();
-      alert('Please fill out all required fields: Issue Type, Area, and Comments.');
+      rhrToast('Please fill out all required fields: Issue Type, Area, and Comments.', 'error');
     }
   });
 
@@ -940,6 +932,13 @@ $stmt->execute([
   });
 
   </script>
+
+  <?php if ($success): ?>
+  <script>
+  // Process queued emails in background (non-blocking)
+  fetch('api/process_queue.php', {headers:{'X-Requested-With':'XMLHttpRequest'}}).catch(()=>{});
+  </script>
+  <?php endif; ?>
 
 </body>
 </html>

@@ -3,7 +3,7 @@
 session_start();
 
 // ✅ Mensaje flash para mostrar en login
-$_SESSION['flash_success'] = "Has cerrado sesión correctamente.";
+$_SESSION['flash_success'] = "You have successfully logged out.";
 
 // ✅ Eliminar SOLO variables de autenticación (y aliases)
 unset(
