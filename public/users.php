@@ -2,6 +2,7 @@
 // users.php
 require __DIR__ . '/config/db.php';
 require __DIR__ . '/partials/auth.php';
+require __DIR__ . '/config/mailer.php';
 $active = 'users';
 
 // Flash en sesión (para mostrar contraseñas generadas sin exponerlas en URL)
@@ -278,6 +279,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
           'email' => $email,
           'password' => $plain_pass,
         ];
+      }
+
+      // Enviar email de bienvenida con credenciales
+      $roleName = 'General User';
+      foreach ($roles as $r) {
+        if ((int)$r['id_role'] === $id_role) {
+          $roleName = getRoleNameEn($r['name']);
+          break;
+        }
+      }
+      try {
+        notify_user_created([
+          'full_name' => $full_name,
+          'email'     => $email,
+          'password'  => $plain_pass,
+          'area'      => getAreaNameEn($area),
+          'role_name' => $roleName,
+        ]);
+      } catch (Throwable $mailErr) {
+        error_log('[USERS] Could not send welcome email: ' . $mailErr->getMessage());
       }
 
       header("Location: users.php?created=1");

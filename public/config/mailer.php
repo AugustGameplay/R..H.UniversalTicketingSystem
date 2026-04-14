@@ -506,3 +506,65 @@ function notify_ticket_assigned(array $ticket, ?string $toEmail = null, string $
 
   return send_mail($toEmail, $toName, $subject, $html);
 }
+
+/**
+ * User created notification — sends welcome email with login credentials.
+ * Expected keys: full_name, email, password, area, role_name.
+ */
+function notify_user_created(array $userData): bool
+{
+  $fullName = $userData['full_name'] ?? 'User';
+  $email    = $userData['email'] ?? '';
+  $password = $userData['password'] ?? '';
+  $area     = $userData['area'] ?? 'N/A';
+  $roleName = $userData['role_name'] ?? 'General User';
+
+  if ($email === '') return false;
+
+  $subject = "Welcome to RH&R Universal Ticketing – Your Account";
+
+  // Build login URL dynamically
+  $loginUrl = '';
+  if (!empty($_SERVER['HTTP_HOST']) && !empty($_SERVER['SCRIPT_NAME'])) {
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+      || ((string)($_SERVER['SERVER_PORT'] ?? '') === '443');
+    $scheme = $isHttps ? 'https' : 'http';
+    $basePath = rtrim(str_replace('\\', '/', dirname((string)$_SERVER['SCRIPT_NAME'])), '/');
+    $loginUrl = $scheme . '://' . $_SERVER['HTTP_HOST'] . $basePath . '/login.php';
+  }
+  if ($loginUrl === '') {
+    $loginUrl = 'http://localhost/ticketsystem/R..H.UniversalTicketingSystem/public/login.php';
+  }
+
+  $templateVars = [
+    'nombre_usuario'   => e_mail($fullName),
+    'email_usuario'    => e_mail($email),
+    'password_usuario' => e_mail($password),
+    'area_usuario'     => e_mail($area),
+    'rol_usuario'      => e_mail($roleName),
+    'url_login'        => e_mail($loginUrl),
+    'email_soporte'    => e_mail(SMTP_CONFIG['from_email']),
+    'año'              => merida_year(),
+  ];
+
+  $templateHtml = load_mail_template('welcome-user.html');
+
+  if ($templateHtml !== null) {
+    $html = render_mail_template($templateHtml, $templateVars);
+  } else {
+    // Fallback inline HTML
+    $html = "
+      <h2>Welcome to RH&R Universal Ticketing</h2>
+      <p>Hello, <b>" . e_mail($fullName) . "</b>.</p>
+      <p>Your account has been created. Below are your login credentials:</p>
+      <p><b>Email:</b> " . e_mail($email) . "</p>
+      <p><b>Password:</b> " . e_mail($password) . "</p>
+      <p><b>Department:</b> " . e_mail($area) . "</p>
+      <p><b>Role:</b> " . e_mail($roleName) . "</p>
+      <p><a href='" . e_mail($loginUrl) . "'>Click here to log in</a></p>
+      <p><small>For security, please change your password after your first login.</small></p>
+    ";
+  }
+
+  return send_mail($email, $fullName, $subject, $html);
+}
