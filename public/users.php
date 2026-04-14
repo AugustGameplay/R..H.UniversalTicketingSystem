@@ -1514,5 +1514,12 @@ $users = $stmt->fetchAll();
     });
   </script>
 
+  <?php if ($flashCreated): ?>
+  <script>
+  // Process queued emails in background (non-blocking) — sends welcome email
+  fetch('api/process_queue.php', {headers:{'X-Requested-With':'XMLHttpRequest'}}).catch(()=>{});
+  </script>
+  <?php endif; ?>
+
 </body>
 </html>
