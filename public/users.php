@@ -210,6 +210,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
 
   // Password opcional: si viene vacío, generamos una
   $plain_pass = trim($_POST['password_plain'] ?? '');
+  $passwordWasGenerated = false;
 
   // Validaciones
   if ($full_name === '') $createErrors[] = "Name is required.";
@@ -220,6 +221,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
 
   if ($plain_pass === '') {
     $plain_pass = 'RHR-' . generateStrongPassword(10);
+    $passwordWasGenerated = true;
   }
 
   // Guardar foto si viene
@@ -268,13 +270,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
 
       $newId = (int)$pdo->lastInsertId();
 
-      // Flash para mostrar la contraseña generada/ingresada una sola vez
-      $_SESSION['flash_generated_pass'] = [
-        'id_user' => $newId,
-        'full_name' => $full_name,
-        'email' => $email,
-        'password' => $plain_pass,
-      ];
+      // Flash para mostrar la contraseña generada una sola vez (solo si fue auto-generada)
+      if ($passwordWasGenerated) {
+        $_SESSION['flash_generated_pass'] = [
+          'id_user' => $newId,
+          'full_name' => $full_name,
+          'email' => $email,
+          'password' => $plain_pass,
+        ];
+      }
 
       header("Location: users.php?created=1");
       exit;
@@ -889,7 +893,7 @@ $users = $stmt->fetchAll();
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
 
-        <form method="POST" action="users.php" enctype="multipart/form-data">
+        <form id="createUserForm" method="POST" action="users.php" enctype="multipart/form-data">
           <input type="hidden" name="action" value="create_user">
 
           <div class="modal-body">
@@ -971,7 +975,7 @@ $users = $stmt->fetchAll();
 
               <div class="col-12">
                 <label class="form-label">Password (optional)</label>
-                <input class="form-control pro-input" name="password_plain" type="text" placeholder="Leave empty to generate">
+                <input class="form-control pro-input" id="createPassInput" name="password_plain" type="text" placeholder="Leave empty to generate">
               </div>
 
               <!-- (quitamos el bloque viejo de foto porque ya está arriba) -->
@@ -1132,6 +1136,50 @@ $users = $stmt->fetchAll();
   </div>
 </div>
 
+  <!-- MODAL: Generate Password for Create User -->
+  <div class="modal fade" id="createPassModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content modal-pro">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">
+            Generate Password
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <label class="form-label">New password</label>
+
+          <div class="input-group">
+            <input
+              class="form-control pro-input"
+              id="createNewPassInput"
+              type="text"
+              placeholder="Generate or type a password"
+              autocomplete="off"
+            >
+            <button class="btn-pro btn-pro--sm" type="button" id="btnCreateGenPass" title="Generate password">
+              <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Generate
+            </button>
+          </div>
+
+          <small class="text-muted d-block mt-1">Minimum 8 characters, including an uppercase letter, a number, and a symbol.</small>
+
+          <div class="d-flex justify-content-end mt-3">
+            <button class="btn-secondary btn-secondary--sm" type="button" id="btnCreateCopyPass" title="Copy password">
+              <i class="fa-regular fa-copy me-1"></i>Copy to clipboard
+            </button>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+          <button class="btn-pro" type="button" id="btnCreatePassConfirm">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: Delete User -->
   <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -1271,18 +1319,82 @@ $users = $stmt->fetchAll();
         });
       }
 
-      // Si venimos de crear usuario (o de algún flujo que setee flash), abre el modal con la contraseña lista
-      const flashGen = <?php echo json_encode($flashGeneratedPass, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES); ?>;
-      if (flashGen && modPassModal) {
-        if (userIdToUpdate) userIdToUpdate.value = flashGen.id_user || '';
-        if (modPassUserName) {
-          const name = flashGen.full_name || '';
-          modPassUserName.textContent = name ? `(${name})` : '';
-        }
-        if (newPassInput) newPassInput.value = flashGen.password || '';
+      // ===== Create User: interceptar si contraseña vacía =====
+      const createUserForm = document.getElementById('createUserForm');
+      const createPassInput = document.getElementById('createPassInput');
+      const createPassModalEl = document.getElementById('createPassModal');
+      const createNewPassInput = document.getElementById('createNewPassInput');
+      const btnCreateGenPass = document.getElementById('btnCreateGenPass');
+      const btnCreateCopyPass = document.getElementById('btnCreateCopyPass');
+      const btnCreatePassConfirm = document.getElementById('btnCreatePassConfirm');
+      const createUserModalEl = document.getElementById('createUserModal');
 
-        const modal = bootstrap.Modal.getOrCreateInstance(modPassModal);
-        modal.show();
+      if (createUserForm && createPassInput && createPassModalEl) {
+        createUserForm.addEventListener('submit', function (e) {
+          // Si la contraseña no está vacía, dejar que se envíe normalmente
+          if (createPassInput.value.trim() !== '') return;
+
+          // Contraseña vacía → detener envío, abrir modal de generar contraseña
+          e.preventDefault();
+
+          // Cerrar el modal de crear usuario
+          const createModal = bootstrap.Modal.getInstance(createUserModalEl);
+          if (createModal) createModal.hide();
+
+          // Esperar a que se cierre y abrir el de contraseña
+          setTimeout(() => {
+            if (createNewPassInput) createNewPassInput.value = '';
+            const passModal = bootstrap.Modal.getOrCreateInstance(createPassModalEl);
+            passModal.show();
+          }, 300);
+        });
+      }
+
+      // Botón Generate del modal de crear contraseña
+      if (btnCreateGenPass && createNewPassInput) {
+        btnCreateGenPass.addEventListener('click', () => {
+          createNewPassInput.value = genStrongPassword(10);
+          createNewPassInput.focus();
+        });
+      }
+
+      // Botón Copy del modal de crear contraseña
+      if (btnCreateCopyPass && createNewPassInput) {
+        btnCreateCopyPass.addEventListener('click', async () => {
+          const val = createNewPassInput.value || '';
+          if (!val) return;
+          try {
+            await navigator.clipboard.writeText(val);
+          } catch(e) {
+            createNewPassInput.select();
+            document.execCommand('copy');
+          }
+          const old = btnCreateCopyPass.innerHTML;
+          btnCreateCopyPass.innerHTML = '<i class="fa-solid fa-check"></i> Copied';
+          setTimeout(() => btnCreateCopyPass.innerHTML = old, 1200);
+        });
+      }
+
+      // Botón Save/Confirm: llena la contraseña en el form de crear y envía
+      if (btnCreatePassConfirm && createNewPassInput && createPassInput && createUserForm) {
+        btnCreatePassConfirm.addEventListener('click', () => {
+          const pass = createNewPassInput.value.trim();
+          if (!pass) {
+            createNewPassInput.focus();
+            return;
+          }
+          // Llenar la contraseña en el formulario de crear usuario
+          createPassInput.value = pass;
+
+          // Cerrar el modal de contraseña
+          const passModal = bootstrap.Modal.getInstance(createPassModalEl);
+          if (passModal) passModal.hide();
+
+          // Enviar el formulario de crear usuario
+          setTimeout(() => {
+            createUserForm.submit();
+          }, 300);
+        });
       }
 
       if (editUserModal) {
@@ -1344,12 +1456,15 @@ $users = $stmt->fetchAll();
       if (modPassModal) {
         modPassModal.addEventListener('show.bs.modal', function (event) {
           const btn = event.relatedTarget;
-          const id = btn?.getAttribute('data-user-id') || '';
-          const name = btn?.getAttribute('data-user-name') || '';
+          // Si no hay botón (apertura programática por flash), no sobrescribir los valores ya seteados
+          if (!btn) return;
+
+          const id = btn.getAttribute('data-user-id') || '';
+          const name = btn.getAttribute('data-user-name') || '';
 
           userIdToUpdate.value = id;
           modPassUserName.textContent = name ? `(${name})` : '';
-          if (newPassInput && !newPassInput.value) newPassInput.value = '';
+          if (newPassInput) newPassInput.value = '';
         });
       }
 
