@@ -1073,10 +1073,10 @@ $creatorName = userNameById($pdo, (int)($ticket['id_user'] ?? 0));
                     <div class="hq-evidence-box">
                       <?php if (!empty($ticketEvidence)): ?>
                         <?php
-                          $evHref = localHref($ticketEvidence, $basePath);
+                          $evName = basename($ticketEvidence);
+                          $evHref = $basePath . '/api/download.php?file=' . rawurlencode($evName);
                           $ext = strtolower(pathinfo($ticketEvidence, PATHINFO_EXTENSION));
                           $evType = ($ext === 'pdf') ? 'pdf' : 'img';
-                          $evName = basename($ticketEvidence);
                         ?>
                         <div class="d-flex align-items-center gap-3">
                           <div class="hq-evidence-icon">
