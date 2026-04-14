@@ -823,6 +823,17 @@ $users = $stmt->fetchAll();
                           <i class="fa-solid fa-key"></i>
                         </button>
 
+                        <?php if ((int)$u['id_user'] === $_AUTH_USER_ID): ?>
+                        <button
+                          class="icon-action icon-action--danger"
+                          type="button"
+                          title="You cannot delete yourself"
+                          disabled
+                          style="opacity: 0.3; cursor: not-allowed;"
+                        >
+                          <i class="fa-solid fa-trash"></i>
+                        </button>
+                        <?php else: ?>
                         <button
                           class="icon-action icon-action--danger"
                           type="button"
@@ -834,6 +845,7 @@ $users = $stmt->fetchAll();
                         >
                           <i class="fa-solid fa-trash"></i>
                         </button>
+                        <?php endif; ?>
                       </div>
                     </td>
                   </tr>
