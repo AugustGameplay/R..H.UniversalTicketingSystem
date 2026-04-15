@@ -746,13 +746,21 @@ $deleted = isset($_GET['deleted']) ? (int)$_GET['deleted'] : 0;
         if(!p) return '';
         if(p.includes('..')) return '';
         p = p.replaceAll('\\\\','/');
-        p = p.replace(/^\/+/, '');          // quita "/" inicial para evitar /uploads (root)
+        p = p.replace(/^\/+/, '');
         if(p.startsWith('public/')) p = p.slice(7);
-        return p;
+        // Extract just the basename for the download API
+        const basename = p.split('/').pop() || '';
+        return basename;
       }
 
       function filenameFrom(url){
-        try { return decodeURIComponent(url.split('/').pop() || url); }
+        try {
+          // Handle both direct filenames and URLs with query params
+          const u = new URL(url, window.location.href);
+          const fileParam = u.searchParams.get('file');
+          if (fileParam) return decodeURIComponent(fileParam);
+          return decodeURIComponent(url.split('/').pop() || url);
+        }
         catch(e){ return (url.split('/').pop() || url); }
       }
 
@@ -804,8 +812,8 @@ $deleted = isset($_GET['deleted']) ? (int)$_GET['deleted'] : 0;
           return;
         }
 
-        const url = file;
-        evFilename.textContent = filenameFrom(url);
+        const url = 'api/download.php?file=' + encodeURIComponent(file);
+        evFilename.textContent = file;
         evOpenNew.href = url;
         evDownload.href = url;
 
