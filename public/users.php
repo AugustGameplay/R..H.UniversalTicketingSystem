@@ -804,7 +804,17 @@ $users = $stmt->fetchAll();
                     </td>
                     <td><?= e(getAreaNameEn($u['area'])) ?></td>
                     <td class="col-email"><?= e($u['email']) ?></td>
-                    <td class="col-phone"><?= e($u['phone'] ?? '—') ?></td>
+                    <td class="col-phone">
+                      <?php 
+                        $ph = trim($u['phone'] ?? '');
+                        $ex = trim($u['extension'] ?? '');
+                        if ($ph === '') {
+                          echo '—';
+                        } else {
+                          echo ($ex !== '') ? e('(' . $ex . ') ' . $ph) : e($ph);
+                        }
+                      ?>
+                    </td>
 
                     <td>
                       <span class="badge role-badge <?= e(roleClass($u['rol'])) ?>">
