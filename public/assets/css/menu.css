@@ -190,3 +190,69 @@ body {
   object-fit: cover;
   display: block;
 }
+
+/* =========================================
+   NOTIF BELL BUTTON (sidebar)
+   ========================================= */
+.notif-bell-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 16px;
+}
+
+.notif-bell-label {
+  font-size: 11px;
+  color: rgba(255,255,255,.55);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.notif-bell-btn {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background .18s ease, transform .08s ease, box-shadow .18s ease;
+  box-shadow: 0 4px 14px rgba(0,0,0,.25);
+}
+
+.notif-bell-btn:active {
+  transform: scale(.93);
+}
+
+/* Estado: permiso no solicitado aún */
+.notif-bell-btn.notif-default {
+  background: rgba(255,255,255,.15);
+  color: #fff;
+  animation: bellPulse 2.5s ease-in-out infinite;
+}
+
+/* Estado: permiso concedido ✔ */
+.notif-bell-btn.notif-granted {
+  background: #22c55e;
+  color: #fff;
+}
+
+/* Estado: permiso denegado ✘ */
+.notif-bell-btn.notif-denied {
+  background: rgba(239,68,68,.75);
+  color: #fff;
+}
+
+/* Estado: sin HTTPS */
+.notif-bell-btn.notif-insecure {
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.35);
+  cursor: not-allowed;
+}
+
+@keyframes bellPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,.30); }
+  50%       { box-shadow: 0 0 0 8px rgba(255,255,255,.00); }
+}
