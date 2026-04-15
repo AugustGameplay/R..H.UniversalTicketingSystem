@@ -113,12 +113,21 @@ $_menuShortName = explode(' ', trim($_menuFullName))[0];
 
     </nav>
 
+    <?php if (in_array($_menuRoleId, [1, 2])): ?>
     <!-- Spacer + logout -->
     <div class="mt-auto pt-3 d-flex justify-content-center">
         <a href="logout.php" class="logout d-flex align-items-center justify-content-center" title="Cerrar sesión">
             <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
         </a>
     </div>
+    <?php else: ?>
+    <!-- Spacer + logout -->
+    <div class="mt-auto pt-3 d-flex justify-content-center">
+        <a href="logout.php" class="logout d-flex align-items-center justify-content-center" title="Cerrar sesión">
+            <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+        </a>
+    </div>
+    <?php endif; ?>
 
 </aside>
 
@@ -127,3 +136,10 @@ $_menuShortName = explode(' ', trim($_menuFullName))[0];
 
 <!-- JS del sidebar (móvil) -->
 <script src="./assets/js/sidebar.js" defer></script>
+
+<?php if (in_array($_menuRoleId, [1, 2])): ?>
+<!-- Real-time notifications for Admin/Superadmin -->
+<link rel="stylesheet" href="./assets/css/rhr-toast.css">
+<script defer src="./assets/js/rhr-toast.js"></script>
+<script defer src="./assets/js/realtime-notifications.js?v=<?= time() ?>"></script>
+<?php endif; ?>
