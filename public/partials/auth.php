@@ -44,7 +44,7 @@ $_PAGE_PERMISSIONS = [
 
     // Vistas avanzadas (solo 1 y 2)
     'tickets'        => [1, 2],
-    'history'        => [1, 2],
+    'history'        => [1],
     'users'          => [1, 2],
     'ticket_edit'    => [1, 2],
 ];

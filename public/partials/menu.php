@@ -113,24 +113,21 @@ $_menuShortName = explode(' ', trim($_menuFullName))[0];
 
     </nav>
 
-    <?php if (in_array($_menuRoleId, [1, 2], true)): ?>
-    <!-- Botón de notificaciones — el click es el gesto de usuario requerido por el navegador -->
-    <div class="notif-bell-wrap">
-        <button type="button" id="btnNotifPermission" class="notif-bell-btn notif-default"
-                title="Clic para activar notificaciones de escritorio"
-                aria-label="Activar notificaciones de escritorio">
-            <i class="fa-regular fa-bell" aria-hidden="true"></i>
-        </button>
-        <span class="notif-bell-label">Desktop alerts</span>
-    </div>
-    <?php endif; ?>
-
+    <?php if (in_array($_menuRoleId, [1, 2])): ?>
     <!-- Spacer + logout -->
     <div class="mt-auto pt-3 d-flex justify-content-center">
         <a href="logout.php" class="logout d-flex align-items-center justify-content-center" title="Cerrar sesión">
             <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
         </a>
     </div>
+    <?php else: ?>
+    <!-- Spacer + logout -->
+    <div class="mt-auto pt-3 d-flex justify-content-center">
+        <a href="logout.php" class="logout d-flex align-items-center justify-content-center" title="Cerrar sesión">
+            <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+        </a>
+    </div>
+    <?php endif; ?>
 
 </aside>
 
@@ -140,25 +137,9 @@ $_menuShortName = explode(' ', trim($_menuFullName))[0];
 <!-- JS del sidebar (móvil) -->
 <script src="./assets/js/sidebar.js" defer></script>
 
-<?php if (in_array($_menuRoleId, [1, 2], true)): ?>
-<!-- Notificaciones en tiempo real para IT Support y Managers -->
-<script src="./assets/js/realtime-notifications.js?v=<?= time() ?>" defer></script>
-<script>
-/* Wire del botón campana — necesita gesto del usuario para pedir permiso */
-document.addEventListener('DOMContentLoaded', function () {
-    var btn = document.getElementById('btnNotifPermission');
-    if (!btn) return;
-    btn.addEventListener('click', function () {
-        if (typeof window.requestNotifPermission === 'function') {
-            window.requestNotifPermission().then(function (result) {
-                if (result === 'denied') {
-                    alert('Las notificaciones están bloqueadas. Ve a la configuración del navegador (ícono de candado en la barra de dirección) y permite las notificaciones para este sitio.');
-                } else if (result === 'insecure') {
-                    alert('Las notificaciones de escritorio requieren que el sitio use HTTPS. Contacta al administrador del servidor.');
-                }
-            });
-        }
-    });
-});
-</script>
+<?php if (in_array($_menuRoleId, [1, 2])): ?>
+<!-- Real-time notifications for Admin/Superadmin -->
+<link rel="stylesheet" href="./assets/css/rhr-toast.css">
+<script defer src="./assets/js/rhr-toast.js"></script>
+<script defer src="./assets/js/realtime-notifications.js?v=<?= time() ?>"></script>
 <?php endif; ?>
