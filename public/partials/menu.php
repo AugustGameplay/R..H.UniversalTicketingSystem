@@ -127,3 +127,8 @@ $_menuShortName = explode(' ', trim($_menuFullName))[0];
 
 <!-- JS del sidebar (móvil) -->
 <script src="./assets/js/sidebar.js" defer></script>
+
+<?php if (in_array($_menuRoleId, [1, 2], true)): ?>
+<!-- Notificaciones en tiempo real para IT Support y Managers -->
+<script src="./assets/js/realtime-notifications.js" defer></script>
+<?php endif; ?>
