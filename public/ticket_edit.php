@@ -1,6 +1,8 @@
 <?php
 require __DIR__ . '/partials/auth.php';
 require __DIR__ . '/config/db.php';
+require_once __DIR__ . '/partials/helpers.php';
+require_once __DIR__ . '/config/csrf.php';
 
 $active = 'tickets';
 
@@ -235,13 +237,6 @@ if ($currentType !== '' && !in_array($currentType, $typeOptions, true)) {
 }
 
 
-// Helper: escapar HTML
-function esc($s) {
-  return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
-}
-
-
-
 function fmtDT(?string $dt): string {
   if (!$dt) return '—';
   $ts = strtotime($dt);
@@ -271,64 +266,6 @@ function getLoggedUserId(): ?int {
   return null;
 }
 
-function ensureClosedAtColumn(PDO $pdo): bool {
-  try {
-    $st = $pdo->prepare("SHOW COLUMNS FROM tickets LIKE 'closed_at'");
-    $st->execute();
-    if ($st->fetch(PDO::FETCH_ASSOC)) return true;
-    $pdo->exec("ALTER TABLE tickets ADD COLUMN closed_at DATETIME NULL");
-    return true;
-  } catch (Throwable $e) {
-    return false;
-  }
-}
-
-function ensureTicketModsTable(PDO $pdo): bool {
-  try {
-    $pdo->exec("
-      CREATE TABLE IF NOT EXISTS ticket_modifications (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        ticket_id INT NOT NULL,
-        modified_by INT NULL,
-        modified_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        field_name VARCHAR(64) NOT NULL,
-        old_value TEXT NULL,
-        new_value TEXT NULL,
-        action VARCHAR(32) NOT NULL DEFAULT 'update',
-        notes TEXT NULL,
-        INDEX idx_ticket_id (ticket_id),
-        INDEX idx_modified_at (modified_at),
-        INDEX idx_modified_by (modified_by)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ");
-    return true;
-  } catch (Throwable $e) {
-    return false;
-  }
-}
-
-
-function ensureTicketCommentsTable(PDO $pdo): bool {
-  try {
-    $pdo->exec("
-      CREATE TABLE IF NOT EXISTS ticket_comments (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        ticket_id INT NOT NULL,
-        comment TEXT NOT NULL,
-        created_by_user_id INT NULL,
-        created_by_name VARCHAR(255) NULL,
-        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_ticket (ticket_id),
-        INDEX idx_created_at (created_at),
-        INDEX idx_created_by (created_by_user_id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ");
-    return true;
-  } catch (Throwable $e) {
-    return false;
-  }
-}
-
 function userNameById(PDO $pdo, ?int $id): string {
   if (!$id) return 'Unassigned';
   static $cache = [];
@@ -354,6 +291,10 @@ $ticket['priority'] = $ticket['priority'] ?? 'Media';
 
 // 3) Guardar cambios
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  if (!csrf_validate()) {
+    die("CSRF validation failed");
+  }
+
   // Agregar comentario interno (historial). No afecta el comentario original del ticket.
   $newComment = trim((string)($_POST['new_comment'] ?? ''));
   if ($newComment !== '') {
@@ -1170,6 +1111,7 @@ $creatorName = userNameById($pdo, (int)($ticket['id_user'] ?? 0));
           <!-- RIGHT COL: Actions -->
           <div class="col-lg-4">
             <form id="ticketForm" method="POST" class="hq-card p-4 hq-sticky-sidebar">
+              <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
               <h3 class="hq-section-head mb-4"><i class="fa-solid fa-sliders me-2 text-muted"></i> Operational Management</h3>
               
               <div class="hq-field mb-4">
@@ -1281,94 +1223,9 @@ $creatorName = userNameById($pdo, (int)($ticket['id_user'] ?? 0));
   </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  <script>
-    (function(){
-      const modalEl = document.getElementById('evidenceModal');
-      if(!modalEl) return;
-
-      const titleEl = document.getElementById('evidenceTitle');
-      const imgEl   = document.getElementById('evImg');
-      const pdfEl   = document.getElementById('evPdf');
-      const openEl  = document.getElementById('evOpenNewTab');
-
-      const zoomInBtn    = document.getElementById('evZoomIn');
-      const zoomOutBtn   = document.getElementById('evZoomOut');
-      const zoomResetBtn = document.getElementById('evZoomReset');
-
-      let scale = 1;
-
-      function applyScale(){
-        imgEl.style.transform = 'scale(' + scale.toFixed(2) + ')';
-      }
-
-      function reset(){
-        scale = 1;
-        applyScale();
-      }
-
-      modalEl.addEventListener('show.bs.modal', function (event) {
-        const trigger = event.relatedTarget;
-        if(!trigger) return;
-
-        const src  = trigger.getAttribute('data-ev-src') || '';
-        const type = trigger.getAttribute('data-ev-type') || 'img';
-        const name = trigger.getAttribute('data-ev-name') || 'Evidence';
-
-        titleEl.textContent = 'Evidence: ' + name;
-        openEl.href = src;
-
-        // reset zoom
-        reset();
-
-        if(type === 'pdf'){
-          imgEl.style.display = 'none';
-          pdfEl.style.display = 'block';
-          pdfEl.src = src;
-          // deshabilitar zoom botones (no aplica al iframe)
-          zoomInBtn.disabled = true;
-          zoomOutBtn.disabled = true;
-          zoomResetBtn.disabled = true;
-        } else {
-          pdfEl.style.display = 'none';
-          pdfEl.src = '';
-          imgEl.style.display = 'block';
-          imgEl.src = src;
-          zoomInBtn.disabled = false;
-          zoomOutBtn.disabled = false;
-          zoomResetBtn.disabled = false;
-        }
-      });
-
-      modalEl.addEventListener('hidden.bs.modal', function(){
-        // limpiar fuentes
-        imgEl.src = '';
-        pdfEl.src = '';
-        reset();
-      });
-
-      zoomInBtn.addEventListener('click', function(){
-        scale = Math.min(4, scale + 0.15);
-        applyScale();
-      });
-
-      zoomOutBtn.addEventListener('click', function(){
-        scale = Math.max(0.4, scale - 0.15);
-        applyScale();
-      });
-
-      zoomResetBtn.addEventListener('click', reset);
-
-      // zoom con rueda (solo imagen)
-      const canvas = document.getElementById('evCanvas');
-      canvas.addEventListener('wheel', function(e){
-        if(imgEl.style.display === 'none') return;
-        e.preventDefault();
-        const delta = Math.sign(e.deltaY);
-        scale = delta > 0 ? Math.max(0.4, scale - 0.10) : Math.min(4, scale + 0.10);
-        applyScale();
-      }, { passive:false });
     })();
   </script>
+  <script defer src="./assets/js/tickets-actions.js"></script>
 
 
 <script>

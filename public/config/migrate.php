@@ -100,6 +100,35 @@ foreach ($indexDefs as $idxName => $idxDef) {
   ];
 }
 
+// 6) Trigger closed_at
+$migrations[] = [
+  'name' => 'tickets_set_closed_at trigger',
+  'sql' => null,
+  'callback' => function (PDO $pdo) {
+    $trgName = 'tickets_set_closed_at';
+    $exists = $pdo->prepare("SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = DATABASE() AND TRIGGER_NAME = :t");
+    $exists->execute([':t'=>$trgName]);
+    if ((int)$exists->fetchColumn() === 0) {
+      $pdo->exec("
+        CREATE TRIGGER $trgName
+        BEFORE UPDATE ON tickets
+        FOR EACH ROW
+        BEGIN
+          IF (NEW.status = 'Cerrado' OR NEW.status = 'Closed') AND (OLD.status <> 'Cerrado' AND OLD.status <> 'Closed') THEN
+            SET NEW.closed_at = IFNULL(NEW.closed_at, NOW());
+          END IF;
+          IF (NEW.status <> 'Cerrado' AND NEW.status <> 'Closed') AND (OLD.status = 'Cerrado' OR OLD.status = 'Closed') THEN
+            SET NEW.closed_at = NULL;
+          END IF;
+        END
+      ");
+      echo "  -> Created trigger\n";
+    } else {
+      echo "  -> Already exists\n";
+    }
+  }
+];
+
 // Execute all migrations
 echo "=== Running Migrations ===\n\n";
 

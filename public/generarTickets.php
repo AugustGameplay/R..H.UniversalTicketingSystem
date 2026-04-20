@@ -4,6 +4,7 @@ $active = 'generarTickets';
 
 // ✅ 1) Conexión BD (ajusta la ruta si tu db.php está en otro lado)
 require __DIR__ . '/config/db.php'; // <-- AJUSTA si no existe aquí
+require_once __DIR__ . '/config/csrf.php';
 
 $errors = [];
 $success = null;
@@ -42,6 +43,9 @@ $isGeneralUser = ((int)($currentUserIdRole ?? 0) === 3);
 
 // ✅ 2) Procesar POST (guardar ticket)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  if (!csrf_validate()) {
+    die("CSRF validation failed");
+  }
 
   // Campos del form
   $category = trim($_POST['category'] ?? '');
@@ -446,6 +450,7 @@ $stmt->execute([
         <form class="ticket-form mx-auto" id="ticketForm" method="POST" action="" novalidate enctype="multipart/form-data">
 
           <!-- Hidden inputs -->
+          <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
           <input type="hidden" name="category" id="category">
           <input type="hidden" name="type"     id="type">
 

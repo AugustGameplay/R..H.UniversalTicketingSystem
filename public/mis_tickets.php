@@ -8,147 +8,40 @@ $active = 'mis_tickets';
 require __DIR__ . '/partials/auth.php';
 
 require __DIR__ . '/config/db.php';
-
-function esc($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
+require_once __DIR__ . '/partials/helpers.php';
 
 // ── ID del usuario en sesión ─────────────────────────────────
 $userId = $_AUTH_USER_ID; // viene de auth.php
+
+require_once __DIR__ . '/config/TicketRepository.php';
+$repo = new TicketRepository($pdo);
 
 // ── Filtros GET ──────────────────────────────────────────────
 $filterStatus = trim($_GET['status'] ?? '');
 $q            = trim($_GET['q'] ?? '');
 $page         = max(1, (int)($_GET['page'] ?? 1));
 $perPage      = 8;
+$offset       = ($page - 1) * $perPage;
 
-// Ignorar placeholder
-if ($filterStatus === 'Todos') $filterStatus = '';
-
-// ── WHERE ────────────────────────────────────────────────────
-$where  = ['t.id_user = :uid'];
-$params = [':uid' => $userId];
-
-if ($filterStatus !== '') {
-    $where[]          = 't.status = :status';
-    $params[':status'] = $filterStatus;
-}
-
-if ($q !== '') {
-    $where[]    = '(CAST(t.id_ticket AS CHAR) LIKE :q OR t.area LIKE :q OR t.type LIKE :q OR t.comments LIKE :q)';
-    $params[':q'] = '%' . $q . '%';
-}
-
-$whereSql = 'WHERE ' . implode(' AND ', $where);
+$filters = [
+    'owner_id' => $userId,
+    'status'   => $filterStatus,
+    'q'        => $q
+];
 
 // ── TOTAL ────────────────────────────────────────────────────
-$stmtTotal = $pdo->prepare("SELECT COUNT(*) FROM tickets t $whereSql");
-$stmtTotal->execute($params);
-$total      = (int)$stmtTotal->fetchColumn();
+$total      = $repo->countTickets($filters);
 $totalPages = max(1, (int)ceil($total / $perPage));
-$offset     = ($page - 1) * $perPage;
 
 // ── Resumen de estados (para las tarjetas superiores) ────────
-$summaryBase = ['t.id_user = :suid'];
-$summaryParams = [':suid' => $userId];
-
-try {
-    $stmtSummary = $pdo->prepare("
-        SELECT status, COUNT(*) AS total
-        FROM tickets t
-        WHERE t.id_user = :suid
-        GROUP BY status
-        ORDER BY FIELD(status, 'Pendiente', 'En Proceso', 'Resuelto', 'Cerrado')
-    ");
-    $stmtSummary->execute([':suid' => $userId]);
-    $summaryRaw = $stmtSummary->fetchAll(PDO::FETCH_ASSOC);
-} catch (Throwable $e) {
-    $summaryRaw = [];
-}
-
-// Construir mapa estado → count
-$statusCounts = [
-    'Pendiente'  => 0,
-    'En Proceso' => 0,
-    'Resuelto'   => 0,
-    'Cerrado'    => 0,
-];
-$totalAll = 0;
-foreach ($summaryRaw as $row) {
-    $s = (string)($row['status'] ?? '');
-    $n = (int)($row['total'] ?? 0);
-    if (isset($statusCounts[$s])) $statusCounts[$s] += $n;
-    $totalAll += $n;
-}
+$statusCounts = $repo->getStatusSummary($userId);
+$totalAll = array_sum($statusCounts);
 
 // ── DATA ─────────────────────────────────────────────────────
-$tickets = [];
-try {
-    $stmt = $pdo->prepare("
-        SELECT
-            t.id_ticket,
-            t.category,
-            t.type,
-            t.area,
-            t.comments,
-            t.status,
-            t.priority,
-            t.created_at,
-            t.ticket_url,
-            t.attachment_path,
-            COALESCE(u.full_name, '—') AS assigned_name
-        FROM tickets t
-        LEFT JOIN users u ON u.id_user = t.assigned_user_id
-        $whereSql
-        ORDER BY
-            FIELD(t.status, 'Pendiente', 'En Proceso', 'Resuelto', 'Cerrado'),
-            t.id_ticket DESC
-        LIMIT $perPage OFFSET $offset
-    ");
-    $stmt->execute($params);
-    $tickets = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (Throwable $e) {
-    $tickets = [];
-}
+$orderBySql = "FIELD(t.status, 'Pendiente', 'En Proceso', 'Resuelto', 'Cerrado'), t.id_ticket DESC";
+$tickets = $repo->getTickets($filters, $perPage, $offset, $orderBySql);
 
 // ── Helpers UI ───────────────────────────────────────────────
-function ui_status_label(string $db): string {
-    return match ($db) {
-        'Pendiente'  => 'Pending',
-        'En Proceso' => 'In Progress',
-        'Resuelto'   => 'Resolved',
-        'Cerrado'    => 'Closed',
-        default      => $db,
-    };
-}
-
-function ui_status_class(string $db): string {
-    return match ($db) {
-        'Pendiente'  => 'st-open',
-        'En Proceso' => 'st-progress',
-        'Resuelto'   => 'st-done',
-        'Cerrado'    => 'st-cancel',
-        default      => 'st-open',
-    };
-}
-
-function ui_prio_label(string $prio): string {
-    return match ($prio) {
-        'Baja'    => 'Low',
-        'Media'   => 'Medium',
-        'Alta'    => 'High',
-        'Urgente' => 'Urgent',
-        default   => $prio,
-    };
-}
-
-function ui_prio_class(string $prio): string {
-    return match ($prio) {
-        'Baja'    => 'prio-low',
-        'Media'   => 'prio-medium',
-        'Alta'    => 'prio-high',
-        'Urgente' => 'prio-urgent',
-        default   => 'prio-medium',
-    };
-}
 
 function build_url(array $overrides = []): string {
     $base = $_GET;
