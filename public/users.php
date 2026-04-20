@@ -3,6 +3,7 @@
 require __DIR__ . '/config/db.php';
 require __DIR__ . '/partials/auth.php';
 require __DIR__ . '/config/mailer.php';
+require_once __DIR__ . '/config/csrf.php';
 $active = 'users';
 
 // Flash en sesión (para mostrar contraseñas generadas sin exponerlas en URL)
@@ -194,6 +195,15 @@ $roles = $rolesStmt->fetchAll();
 // Columna teléfono (detecta o crea si hace falta)
 $phoneCol = detectOrEnsurePhoneColumn($pdo);
 $extensionCol = detectOrEnsureExtensionColumn($pdo);
+
+// ============================
+// VALIDATE CSRF GLOBALLY
+// ============================
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  if (!csrf_validate()) {
+    die("CSRF validation failed");
+  }
+}
 
 // ============================
 // CREATE USER (POST)
@@ -937,6 +947,7 @@ $users = $stmt->fetchAll();
         </div>
 
         <form id="createUserForm" method="POST" action="users.php" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
           <input type="hidden" name="action" value="create_user">
 
           <div class="modal-body">
@@ -1047,6 +1058,7 @@ $users = $stmt->fetchAll();
         </div>
 
         <form method="POST" action="users.php" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
           <input type="hidden" name="action" value="update_user">
           <input type="hidden" id="editUserId" name="id_user" value="">
 
@@ -1142,6 +1154,7 @@ $users = $stmt->fetchAll();
       </div>
 
       <div class="modal-body">
+        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
         <input type="hidden" name="action" value="update_password">
         <input type="hidden" id="userIdToUpdate" name="id_user" value="">
 
@@ -1235,6 +1248,7 @@ $users = $stmt->fetchAll();
         </div>
 
         <div class="modal-body">
+          <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
           <input type="hidden" name="action" value="delete_user">
           <input type="hidden" id="userIdToDelete" name="id_user" value="">
 

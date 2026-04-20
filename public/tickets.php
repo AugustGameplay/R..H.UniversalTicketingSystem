@@ -3,39 +3,22 @@ require __DIR__ . '/partials/auth.php';
 $active = 'tickets';
 
 require __DIR__ . '/config/db.php'; // Ajusta si tu db.php está en otra ruta
+require_once __DIR__ . '/partials/helpers.php';
+require_once __DIR__ . '/config/csrf.php';
 
+
+require_once __DIR__ . '/config/TicketRepository.php';
+$repo = new TicketRepository($pdo);
 
 // ===============================
-// Eliminar Ticket (desde tickets.php)
+// Eliminar Ticket
 // ===============================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete_ticket') {
-  $delId = (int)($_POST['id_ticket'] ?? 0);
-
-  if ($delId > 0) {
-    // Obtener evidencia para borrarla (si existe)
-    $stmtEv = $pdo->prepare("SELECT attachment_path FROM tickets WHERE id_ticket = :id LIMIT 1");
-    $stmtEv->execute([':id' => $delId]);
-    $att = (string)($stmtEv->fetchColumn() ?: '');
-
-    // Borrar ticket
-    $stmtDel = $pdo->prepare("DELETE FROM tickets WHERE id_ticket = :id");
-    $stmtDel->execute([':id' => $delId]);
-
-    // Intentar borrar archivo físico (solo si está dentro de /uploads)
-    if ($att !== '') {
-      $rel = str_replace('\\', '/', $att);
-      $rel = ltrim($rel, '/');
-      if (strpos($rel, 'public/') === 0) $rel = substr($rel, 7); // por si guardaron "public/uploads/..."
-      if (strpos($rel, '..') === false && (strpos($rel, 'uploads/') === 0)) {
-        $baseUploads = realpath(__DIR__ . '/uploads');
-        $full = realpath(__DIR__ . '/' . $rel);
-        if ($baseUploads && $full && strpos($full, $baseUploads) === 0 && is_file($full)) {
-          @unlink($full);
-        }
-      }
-    }
+  if (!csrf_validate()) {
+    die("CSRF validation failed");
   }
-
+  $delId = (int)($_POST['id_ticket'] ?? 0);
+  $repo->deleteTicket($delId);
   header('Location: tickets.php?deleted=1');
   exit;
 }
@@ -43,149 +26,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
 // ===============================
 // Parámetros GET
 // ===============================
-$q        = trim($_GET['q'] ?? '');
-$stateUI  = trim($_GET['state'] ?? '');    
-// Ignorar placeholders del select (para que no filtren)
-if ($stateUI === 'Filter by status') { $stateUI = ''; }
-// lo que selecciona el usuario en el UI
-$priority = trim($_GET['priority'] ?? '');
-
-// Ignorar placeholder
-if ($priority === 'Priority') { $priority = ''; }
-
+$q          = trim($_GET['q'] ?? '');
+$stateUI    = trim($_GET['state'] ?? '');
+$priority   = trim($_GET['priority'] ?? '');
 $assignedTo = trim($_GET['assigned'] ?? '');
-if ($assignedTo === 'Assigned To') { $assignedTo = ''; }
-
-$page    = max(1, (int)($_GET['page'] ?? 1));
-$perPage = max(5, min(25, (int)($_GET['per_page'] ?? 5)));
-$offset  = ($page - 1) * $perPage;
-
-// ===============================
-// Mapeo UI -> BD (status)
-// BD: Pendiente, En Proceso, Resuelto, Cerrado
-// UI: Abierto, En proceso, En espera, Resuelto, Cancelado
-// ===============================
-$mapStateUItoDB = [
-  'Open'        => 'Pendiente',
-  'In progress' => 'En Proceso',
-  'On hold'     => 'Pendiente',
-  'Resolved'    => 'Resuelto',
-  'Cancelled'   => 'Cerrado',
-];
-
-function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
+$page       = max(1, (int)($_GET['page'] ?? 1));
+$perPage    = max(5, min(25, (int)($_GET['per_page'] ?? 5)));
+$offset     = ($page - 1) * $perPage;
 
 // Construir URL manteniendo querys
 function build_url($overrides = []) {
   $base = $_GET;
   unset($base['created'], $base['updated'], $base['deleted']);
-  foreach ($overrides as $k => $v) {
-    $base[$k] = $v;
-  }
+  foreach ($overrides as $k => $v) { $base[$k] = $v; }
   return 'tickets.php?' . http_build_query($base);
 }
-
-// UI helpers
-function ui_status_label($dbStatus){
-  $map = [
-    'Pendiente'   => 'Open',
-    'En Proceso'  => 'In progress',
-    'Resuelto'    => 'Resolved',
-    'Cerrado'     => 'Closed',
-  ];
-  return $map[$dbStatus] ?? $dbStatus;
-}
-
-function ui_status_class($uiStatus){
-  $map = [
-    'Open'        => 'st-open',
-    'In progress' => 'st-progress',
-    'On hold'     => 'st-wait',
-    'Resolved'    => 'st-done',
-    'Closed'      => 'st-cancel',
-  ];
-  return $map[$uiStatus] ?? 'badge-status';
-}
-
-function ui_prio_label($prio){
-  $map = [
-    'Baja'    => 'Low',
-    'Media'   => 'Medium',
-    'Alta'    => 'High',
-    'Urgente' => 'Urgent',
-  ];
-  return $map[$prio] ?? $prio;
-}
-
-function ui_prio_class($prio){
-  $map = [
-    'Baja'    => 'prio-low',
-    'Media'   => 'prio-medium',
-    'Alta'    => 'prio-high',
-    'Urgente' => 'prio-urgent',
-  ];
-  return $map[$prio] ?? 'prio-medium';
-}
-
-// ===============================
-// FROM base — Creator = t.id_user (known schema, no runtime introspection)
-// ===============================
-$creatorIdCol = 'id_user';
-
-$fromSql = "FROM tickets t LEFT JOIN users u ON u.id_user = t.assigned_user_id";
-$fromSql .= " LEFT JOIN users uc ON uc.id_user = t.id_user";
-
-$selectCreator = ", NULLIF(uc.full_name,'') AS created_by_name";
-
-
-
-// ===============================
-// WHERE dinámico
-// ===============================
-$where = [];
-$params = [];
-
-// Search
-if ($q !== '') {
-  $searchParts = [
-    "CAST(t.id_ticket AS CHAR) LIKE :q",
-    "t.area LIKE :q",
-    "u.full_name LIKE :q",
-    "uc.full_name LIKE :q",
-  ];
-  $where[] = "(" . implode(" OR ", $searchParts) . ")";
-  $params[':q'] = "%{$q}%";
-}
-
-// State (UI)
-if ($stateUI !== '' && $stateUI !== 'Filter by state') {
-  $dbState = $mapStateUItoDB[$stateUI] ?? $stateUI;
-  $where[] = "t.status = :status";
-  $params[':status'] = $dbState;
-}
-
-// Priority
-if ($priority !== '' && $priority !== 'Priority') {
-  $where[] = "t.priority = :priority";
-  $params[':priority'] = $priority;
-}
-
-// Assigned To
-if ($assignedTo !== '') {
-  $where[] = "t.assigned_user_id = :assigned";
-  $params[':assigned'] = $assignedTo;
-}
-
-$whereSql = $where ? ("WHERE " . implode(" AND ", $where)) : "";
-
-// ===============================
-// TOTAL
-// ===============================
-$stmtTotal = $pdo->prepare("SELECT COUNT(*) $fromSql $whereSql");
-$stmtTotal->execute($params);
-$total = (int)$stmtTotal->fetchColumn();
-$totalPages = max(1, (int)ceil($total / $perPage));
-
 
 // ===============================
 // SORT (Excel-like por encabezado)
@@ -203,13 +58,6 @@ $SORT_MAP = [
 $order = $_GET['order'] ?? '';
 $order = is_string($order) ? $order : '';
 
-/**
- * Orden (dropdown tipo “Excel”):
- * - id_desc / id_asc
- * - date_desc / date_asc
- * - area_asc / area_desc
- * - creator_asc / creator_desc
- */
 $orderMap = [
   'id_desc'     => ['id', 'desc'],
   'id_asc'      => ['id', 'asc'],
@@ -231,13 +79,10 @@ if (!isset($SORT_MAP[$sort])) $sort = 'id';
 $dir = ($dirIn === 'asc') ? 'ASC' : 'DESC';
 $orderBySql = $SORT_MAP[$sort] . ' ' . $dir;
 
-
-
-
-// Valores actuales (para íconos y toggles, funcionen también con dropdown \"order\")
+// Valores actuales para UI
 $CURRENT_SORT = $sort;
 $CURRENT_DIRIN = strtolower((string)$dirIn);
-// Si no viene "order" en URL, dedúcelo del sort/dir actual para marcar el option correcto
+
 if ($order === '') {
   $key = $sort . '_' . strtolower($dirIn);
   $deduce = [
@@ -252,58 +97,43 @@ if ($order === '') {
   ];
   $order = $deduce[$key] ?? 'id_desc';
 }
+
 function sort_url(string $col): string {
   global $CURRENT_SORT, $CURRENT_DIRIN;
   $params = $_GET;
-
-  // Al ordenar por encabezado, quitamos el dropdown "order" para que sí cambie el ORDER BY
   unset($params['order'], $params['created'], $params['updated'], $params['deleted']);
-
   $currentSort = $CURRENT_SORT ?? ($params['sort'] ?? '');
   $currentDir  = strtolower($CURRENT_DIRIN ?? ($params['dir'] ?? 'desc'));
-
   $nextDir = ($currentSort === $col && $currentDir === 'asc') ? 'desc' : 'asc';
-
   $params['sort'] = $col;
   $params['dir']  = $nextDir;
-
   unset($params['page']);
   return '?' . http_build_query($params);
 }
+
 function sort_icon(string $col): string {
   global $CURRENT_SORT, $CURRENT_DIRIN;
   $currentSort = $CURRENT_SORT ?? ($_GET['sort'] ?? '');
   $currentDir  = strtolower($CURRENT_DIRIN ?? ($_GET['dir'] ?? 'desc'));
 
-  if ($currentSort !== $col) {
-    return '<span class="sort-ico"><i class="fa-solid fa-sort text-muted" aria-hidden="true"></i></span>';
-  }
-  if ($currentDir === 'asc') {
-    return '<span class="sort-ico"><i class="fa-solid fa-sort-up" aria-hidden="true"></i></span>';
-  }
+  if ($currentSort !== $col) return '<span class="sort-ico"><i class="fa-solid fa-sort text-muted" aria-hidden="true"></i></span>';
+  if ($currentDir === 'asc') return '<span class="sort-ico"><i class="fa-solid fa-sort-up" aria-hidden="true"></i></span>';
   return '<span class="sort-ico"><i class="fa-solid fa-sort-down" aria-hidden="true"></i></span>';
 }
+
 // ===============================
-// DATA
+// Filtros y Ejecución
 // ===============================
-$stmt = $pdo->prepare("
-  SELECT
-    t.id_ticket,
-    t.area,
-    t.priority,
-    t.status,
-    t.created_at,
-    u.full_name AS assigned_name
-    $selectCreator,
-    t.ticket_url,
-    t.attachment_path
-  $fromSql
-  $whereSql
-  ORDER BY $orderBySql
-  LIMIT $perPage OFFSET $offset
-");
-$stmt->execute($params);
-$tickets = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$filters = [
+  'q'        => $q,
+  'status'   => $stateUI === 'Filter by status' ? '' : $stateUI,
+  'priority' => $priority === 'Priority' ? '' : $priority,
+  'assigned' => $assignedTo === 'Assigned To' ? '' : $assignedTo,
+];
+
+$total = $repo->countTickets($filters);
+$totalPages = max(1, (int)ceil($total / $perPage));
+$tickets = $repo->getTickets($filters, $perPage, $offset, $orderBySql);
 
 // Traer usuarios asignables para el filtro (solo IT/Managers activos)
 $itStmt = $pdo->query("
@@ -713,6 +543,7 @@ $deleted = isset($_GET['deleted']) ? (int)$_GET['deleted'] : 0;
           <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
 
           <form method="POST" class="m-0">
+            <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
             <input type="hidden" name="action" value="delete_ticket">
             <input type="hidden" name="id_ticket" id="delTicketId" value="">
             <button type="submit" class="btn btn-danger">
@@ -724,153 +555,7 @@ $deleted = isset($_GET['deleted']) ? (int)$_GET['deleted'] : 0;
     </div>
   </div>
 
-  <script>
-    (function(){
-      // ========= Evidencia Viewer (igual al de ticket_edit) =========
-      const modalEl = document.getElementById('evidenceModal');
-      const evCanvas = document.getElementById('evCanvas');
-      const evTicketCode = document.getElementById('evTicketCode');
-      const evFilename = document.getElementById('evFilename');
-      const evOpenNew = document.getElementById('evOpenNew');
-      const evDownload = document.getElementById('evDownload');
-
-      const btnZoomOut = document.getElementById('evZoomOut');
-      const btnZoomIn  = document.getElementById('evZoomIn');
-      const btnReset   = document.getElementById('evReset');
-
-      let imgEl = null;
-      let iframeEl = null;
-      let scale = 1;
-
-      function safePath(p){
-        if(!p) return '';
-        if(p.includes('..')) return '';
-        p = p.replaceAll('\\\\','/');
-        p = p.replace(/^\/+/, '');
-        if(p.startsWith('public/')) p = p.slice(7);
-        // Extract just the basename for the download API
-        const basename = p.split('/').pop() || '';
-        return basename;
-      }
-
-      function filenameFrom(url){
-        try {
-          // Handle both direct filenames and URLs with query params
-          const u = new URL(url, window.location.href);
-          const fileParam = u.searchParams.get('file');
-          if (fileParam) return decodeURIComponent(fileParam);
-          return decodeURIComponent(url.split('/').pop() || url);
-        }
-        catch(e){ return (url.split('/').pop() || url); }
-      }
-
-      function setZoomControls(enabled){
-        [btnZoomOut, btnZoomIn, btnReset].forEach(b => b.disabled = !enabled);
-      }
-
-      function applyScale(){
-        if(!imgEl) return;
-        imgEl.style.transform = 'scale(' + scale + ')';
-      }
-
-      function resetZoom(){
-        scale = 1;
-        applyScale();
-        if(evCanvas) evCanvas.classList.remove('is-zoomed');
-      }
-
-      function zoom(delta){
-        if(!imgEl) return;
-        scale = Math.max(1, Math.min(4, +(scale + delta).toFixed(2)));
-        applyScale();
-        if(scale > 1) evCanvas.classList.add('is-zoomed');
-        else evCanvas.classList.remove('is-zoomed');
-      }
-
-      btnZoomOut?.addEventListener('click', () => zoom(-0.25));
-      btnZoomIn?.addEventListener('click',  () => zoom(+0.25));
-      btnReset?.addEventListener('click', resetZoom);
-
-      modalEl?.addEventListener('show.bs.modal', function (event) {
-        const btn = event.relatedTarget;
-        const rawFile = btn?.getAttribute('data-file') || '';
-        const ticket = btn?.getAttribute('data-ticket') || '';
-        const file = safePath(rawFile);
-
-        evTicketCode.textContent = ticket ? ('#' + ticket) : '';
-        evCanvas.innerHTML = '';
-        imgEl = null;
-        iframeEl = null;
-        resetZoom();
-
-        if(!file){
-          evFilename.textContent = '';
-          evCanvas.innerHTML = '<div class="alert alert-warning mb-0">Evidence not found.</div>';
-          evOpenNew.href = '#';
-          evDownload.href = '#';
-          setZoomControls(false);
-          return;
-        }
-
-        const url = 'api/download.php?file=' + encodeURIComponent(file);
-        evFilename.textContent = file;
-        evOpenNew.href = url;
-        evDownload.href = url;
-
-        const ext = (url.split('.').pop() || '').toLowerCase();
-
-        if(['png','jpg','jpeg','webp','gif'].includes(ext)){
-          imgEl = document.createElement('img');
-          imgEl.src = url;
-          imgEl.alt = 'Evidence';
-          evCanvas.appendChild(imgEl);
-          setZoomControls(true);
-
-          imgEl.addEventListener('load', resetZoom);
-        } else if(ext === 'pdf'){
-          iframeEl = document.createElement('iframe');
-          iframeEl.src = url;
-          evCanvas.appendChild(iframeEl);
-          setZoomControls(false);
-        } else {
-          setZoomControls(false);
-          evCanvas.innerHTML = `
-            <div class="alert alert-info mb-0">
-              Preview not available for <b>.${ext || 'file'}</b>. You can open or download it.
-            </div>
-          `;
-        }
-      });
-
-      modalEl?.addEventListener('hidden.bs.modal', function(){
-        evCanvas.innerHTML = '';
-        evTicketCode.textContent = '';
-        evFilename.textContent = '';
-        imgEl = null;
-        iframeEl = null;
-        scale = 1;
-      });
-
-      // ========= Delete modal =========
-      const deleteModal = document.getElementById('deleteModal');
-      const delTicketId = document.getElementById('delTicketId');
-      const delTicketCode = document.getElementById('delTicketCode');
-
-      deleteModal?.addEventListener('show.bs.modal', function(event){
-        const btn = event.relatedTarget;
-        const id = btn?.getAttribute('data-id') || '';
-        const code = btn?.getAttribute('data-ticket') || '';
-        if(delTicketId) delTicketId.value = id;
-        if(delTicketCode) delTicketCode.textContent = code ? ('#' + code) : '';
-      });
-
-      deleteModal?.addEventListener('hidden.bs.modal', function(){
-        if(delTicketId) delTicketId.value = '';
-        if(delTicketCode) delTicketCode.textContent = '';
-      });
-
-    })();
-  </script>
+  <script defer src="./assets/js/tickets-actions.js"></script>
 
 <?php if ($updated || $created || $deleted): ?>
 <script>
