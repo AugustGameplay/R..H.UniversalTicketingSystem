@@ -47,15 +47,21 @@ class TicketRepository {
         // Filter: search query (q)
         if (!empty($filters['q'])) {
             $searchParts = [
-                "CAST(t.id_ticket AS CHAR) LIKE :q",
-                "t.area LIKE :q",
-                "t.type LIKE :q",
-                "t.comments LIKE :q",
-                "u.full_name LIKE :q",
-                "uc.full_name LIKE :q"
+                "CAST(t.id_ticket AS CHAR) LIKE :q1",
+                "t.area LIKE :q2",
+                "t.type LIKE :q3",
+                "t.comments LIKE :q4",
+                "u.full_name LIKE :q5",
+                "uc.full_name LIKE :q6"
             ];
             $where[] = "(" . implode(" OR ", $searchParts) . ")";
-            $params[':q'] = "%" . $filters['q'] . "%";
+            $qVal = "%" . $filters['q'] . "%";
+            $params[':q1'] = $qVal;
+            $params[':q2'] = $qVal;
+            $params[':q3'] = $qVal;
+            $params[':q4'] = $qVal;
+            $params[':q5'] = $qVal;
+            $params[':q6'] = $qVal;
         }
 
         // Filter: status
