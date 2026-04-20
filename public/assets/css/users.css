@@ -678,3 +678,36 @@ th.th-center .th-sort {
     max-height: none;
   }
 }
+
+/* Modal delete user (copied from tickets delete modal) */
+#deleteUserModal .modal-content,
+.delete-user-modal {
+  border-radius: 20px;
+  border: none;
+  overflow: hidden;
+  box-shadow: 0 30px 80px rgba(2, 6, 23, .20);
+}
+
+#deleteUserModal .modal-header,
+.delete-user-modal .modal-header {
+  background: linear-gradient(90deg, #b91c1c 0%, #dc2626 100%);
+  border-bottom: none;
+}
+
+#deleteUserModal .modal-title,
+#deleteUserModal .modal-header i,
+.delete-user-modal .modal-title,
+.delete-user-modal .modal-header i {
+  color: #fff;
+}
+
+#deleteUserModal .btn-close,
+.delete-user-modal .btn-close {
+  filter: invert(1) brightness(2);
+  opacity: .80;
+}
+
+#deleteUserModal .btn-close:hover,
+.delete-user-modal .btn-close:hover {
+  opacity: 1;
+}
