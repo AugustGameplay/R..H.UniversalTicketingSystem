@@ -19,8 +19,10 @@ class TicketRepository {
         $map = [
             'Open'        => 'Pendiente',
             'In progress' => 'En Proceso',
+            'In Progress' => 'En Proceso',
             'On hold'     => 'Pendiente',
             'Resolved'    => 'Resuelto',
+            'Closed'      => 'Cerrado',
             'Cancelled'   => 'Cerrado',
         ];
         return $map[$stateUI] ?? $stateUI;
@@ -59,7 +61,7 @@ class TicketRepository {
         }
 
         // Filter: status
-        if (!empty($filters['status']) && $filters['status'] !== 'Todos' && $filters['status'] !== 'Filter by state') {
+        if (!empty($filters['status']) && $filters['status'] !== 'Todos' && $filters['status'] !== 'Filter by state' && $filters['status'] !== 'Filter by status') {
             $dbState = $this->mapStateUIToDB($filters['status']);
             $where[] = "t.status = :status";
             $params[':status'] = $dbState;
