@@ -42,6 +42,7 @@
    * @param {'success'|'error'|'warning'|'info'} type
    */
   window.rhrToast = function (message, type) {
+    if (!message) return;
     type = type || 'success';
 
     var el = document.createElement('div');

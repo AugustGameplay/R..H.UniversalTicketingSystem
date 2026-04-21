@@ -450,14 +450,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
         'id_role' => (string)$id_role,
         'profile_photo' => $finalPhoto,
       ];
-      if ($phoneCol) {
+      if (!empty($phoneCol)) {
         $fieldsToCheck[$phoneCol] = ($phone !== '') ? $phone : null;
       }
-      if ($extensionCol) {
+      if (!empty($extensionCol)) {
         $fieldsToCheck['extension'] = ($extension !== '') ? $extension : null;
       }
 
       foreach ($fieldsToCheck as $field => $newVal) {
+        if (empty($field)) continue; // Evitar keys nulos
         $oldVal = $oldValues[$field] ?? null;
         // Normalize: treat null and empty string as equivalent to avoid false change logs
         $oldNorm = ($oldVal === null || $oldVal === '') ? '' : (string)$oldVal;
@@ -487,10 +488,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
 
     } catch (PDOException $ex) {
       if ($pdo->inTransaction()) $pdo->rollBack();
+      error_log("[USERS] Update failed for User ID {$id_user}: " . $ex->getMessage());
       if (($ex->errorInfo[0] ?? '') === '23000') {
         $editErrors[] = "That email already exists.";
       } else {
-        $editErrors[] = "Error updating: " . $ex->getMessage();
+        $editErrors[] = "Error updating database. Contact internal support. Details: " . $ex->getMessage();
       }
     }
   }
@@ -815,7 +817,7 @@ $users = $stmt->fetchAll();
         <?php endif; ?>
 
         <?php if (!empty($editErrors)): ?>
-          <div data-rhr-toast data-rhr-toast-type="error">
+          <div data-rhr-toast="There were errors updating the user." data-rhr-toast-type="error">
             <ul>
               <?php foreach ($editErrors as $err): ?>
                 <li><?= e($err) ?></li>
