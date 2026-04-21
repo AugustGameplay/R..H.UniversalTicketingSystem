@@ -55,7 +55,28 @@ $migrations[] = [
   ",
 ];
 
-// 4) closed_at column on tickets
+// 4) user_modifications
+$migrations[] = [
+  'name' => 'user_modifications table',
+  'sql' => "
+    CREATE TABLE IF NOT EXISTS user_modifications (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      modified_by INT NULL,
+      modified_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      field_name VARCHAR(64) NOT NULL,
+      old_value TEXT NULL,
+      new_value TEXT NULL,
+      action VARCHAR(32) NOT NULL DEFAULT 'update',
+      notes TEXT NULL,
+      INDEX idx_user_id (user_id),
+      INDEX idx_modified_at (modified_at),
+      INDEX idx_modified_by (modified_by)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  ",
+];
+
+// 5) closed_at column on tickets
 $migrations[] = [
   'name' => 'tickets.closed_at column',
   'sql' => null, // handled below
@@ -71,7 +92,7 @@ $migrations[] = [
   },
 ];
 
-// 5) Indexes on tickets table
+// 6) Indexes on tickets table
 $indexDefs = [
   'idx_tickets_status'      => 'tickets(status)',
   'idx_tickets_priority'    => 'tickets(priority)',
@@ -100,7 +121,7 @@ foreach ($indexDefs as $idxName => $idxDef) {
   ];
 }
 
-// 6) Trigger closed_at
+// 7) Trigger closed_at
 $migrations[] = [
   'name' => 'tickets_set_closed_at trigger',
   'sql' => null,
