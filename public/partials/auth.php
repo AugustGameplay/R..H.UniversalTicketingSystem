@@ -29,6 +29,27 @@ if (empty($_SESSION['user_id'])) {
     exit;
 }
 
+/* ── 1.5) Session timeout por inactividad (15 min) ─────────── */
+define('SESSION_TIMEOUT', 15 * 60); // 900 segundos = 15 minutos
+
+if (isset($_SESSION['last_activity'])) {
+    $elapsed = time() - $_SESSION['last_activity'];
+    if ($elapsed > SESSION_TIMEOUT) {
+        // Sesión expirada → limpiar y redirigir
+        unset(
+            $_SESSION['user_id'], $_SESSION['id_user'], $_SESSION['id'],
+            $_SESSION['uid'], $_SESSION['full_name'], $_SESSION['name'],
+            $_SESSION['email'], $_SESSION['id_role'], $_SESSION['user']
+        );
+        session_regenerate_id(true);
+        $_SESSION['flash_success'] = 'Your session has expired due to inactivity. Please log in again.';
+        header('Location: login.php');
+        exit;
+    }
+}
+// Actualizar marca de última actividad
+$_SESSION['last_activity'] = time();
+
 /* ── 2) Datos de sesión ─────────────────────────────────────── */
 $_AUTH_USER_ID   = (int)($_SESSION['user_id'] ?? 0);
 $_AUTH_ROLE_ID   = (int)($_SESSION['id_role'] ?? 0);

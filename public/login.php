@@ -82,6 +82,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'id_role'   => $roleId,
           ];
 
+          // ✅ Inicializar marca de actividad para timeout automático
+          $_SESSION['last_activity'] = time();
+
           // ✅ SOLUCIÓN: TODOS los roles autenticados van a generarTickets.php
           $_SESSION['flash_login'] = "You have successfully logged in.";
           header("Location: generarTickets.php");

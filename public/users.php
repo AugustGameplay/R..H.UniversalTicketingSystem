@@ -208,10 +208,6 @@ $deleteErrors = [];
 
 $createdPassword = null;
 
-// Flash (sesión)
-$flashGeneratedPass = $_SESSION['flash_generated_pass'] ?? null; // ['full_name','email','password']
-unset($_SESSION['flash_generated_pass']);
-
 // Flash (mensajes por URL)
 $flashCreated   = isset($_GET['created']);
 $flashPassUp    = isset($_GET['pass_updated']);
@@ -317,14 +313,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
 
       $newId = (int)$pdo->lastInsertId();
 
-      // Flash para mostrar la contraseña generada una sola vez (solo si fue auto-generada)
+      // Log: password was auto-generated (the createPassModal JS flow handles display)
       if ($passwordWasGenerated) {
-        $_SESSION['flash_generated_pass'] = [
-          'id_user' => $newId,
-          'full_name' => $full_name,
-          'email' => $email,
-          'password' => $plain_pass,
-        ];
+        error_log('[USERS] Auto-generated password for user ' . $email . ' (ID: ' . $newId . ')');
       }
 
       // Enviar email de bienvenida con credenciales
@@ -456,7 +447,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
         'full_name' => $full_name,
         'email' => $email,
         'area' => $area,
-        'id_role' => $id_role,
+        'id_role' => (string)$id_role,
         'profile_photo' => $finalPhoto,
       ];
       if ($phoneCol) {
@@ -468,7 +459,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
 
       foreach ($fieldsToCheck as $field => $newVal) {
         $oldVal = $oldValues[$field] ?? null;
-        if ($oldVal !== $newVal) {
+        // Normalize: treat null and empty string as equivalent to avoid false change logs
+        $oldNorm = ($oldVal === null || $oldVal === '') ? '' : (string)$oldVal;
+        $newNorm = ($newVal === null || $newVal === '') ? '' : (string)$newVal;
+        if ($oldNorm !== $newNorm) {
           $ins = $pdo->prepare("INSERT INTO user_modifications (user_id, modified_by, field_name, old_value, new_value, action) VALUES (:uid, :modby, :field, :old, :new, 'update')");
           $ins->execute([
             ':uid' => $id_user,
@@ -1240,7 +1234,7 @@ $users = $stmt->fetchAll();
   <!-- MODAL: Modify Password -->
 <div class="modal fade" id="modPassModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <form class="modal-content modal-pro" method="POST" action="users.php">
+    <form id="modPassForm" class="modal-content modal-pro" method="POST" action="users.php">
       <div class="modal-header">
         <h5 class="modal-title fw-bold">
           Password <span class="text-muted" id="modPassUserName" style="font-size: 14px;"></span>
@@ -1253,29 +1247,42 @@ $users = $stmt->fetchAll();
         <input type="hidden" name="action" value="update_password">
         <input type="hidden" id="userIdToUpdate" name="id_user" value="">
 
-        <label class="form-label">New password</label>
-
-        <div class="input-group">
-          <input
-            class="form-control pro-input"
-            id="newPassInput"
-            name="new_password"
-            type="text"
-            placeholder="Generate or type a password"
-            autocomplete="off"
-            required
-          >
-          <button class="btn-pro btn-pro--sm" type="button" id="btnGenPass" title="Generate password">
-            <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Generate
-          </button>
+        <div class="mb-3">
+          <label class="form-label fw-semibold text-dark">New password</label>
+          <div class="input-group shadow-sm" style="border-radius: 10px; overflow: hidden;">
+            <span class="input-group-text bg-white border-end-0 text-muted" style="padding-left: 1rem;">
+              <i class="fa-solid fa-lock"></i>
+            </span>
+            <input
+              class="form-control pro-input border-start-0 ps-1"
+              style="font-family: monospace; font-size: 1.05rem;"
+              id="newPassInput"
+              name="new_password"
+              type="text"
+              placeholder="Type or generate a strong password"
+              autocomplete="off"
+              required
+            >
+          </div>
         </div>
 
-        <small class="text-muted d-block mt-1">Minimum 8 characters, including an uppercase letter, a number, and a symbol.</small>
-
-        <div class="d-flex justify-content-end mt-3">
-          <button class="btn-secondary btn-secondary--sm" type="button" id="btnCopyPass" title="Copy password">
-            <i class="fa-regular fa-copy me-1"></i>Copy to clipboard
-          </button>
+        <div class="bg-light p-3 rounded-3 border mb-1 shadow-sm" style="background: #fafbfe !important; border-color: rgba(15,23,42,0.08) !important;">
+          <div class="text-muted mb-2" style="font-size: 0.85rem;">
+            <i class="fa-solid fa-shield-halved text-success me-1"></i> Requires min 8 chars, uppercase, number & symbol.
+          </div>
+          <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mt-2 pt-2 border-top gap-2">
+            <small class="text-danger fw-bold" style="font-size: 0.8rem;">
+              <i class="fa-solid fa-circle-exclamation me-1"></i> Copy before saving!
+            </small>
+            <div class="d-flex gap-2 w-100 w-sm-auto justify-content-end">
+              <button class="btn btn-white border btn-sm shadow-sm px-3 rounded-pill fw-bold" type="button" id="btnGenPass" style="color: var(--rhr-orange, #F47A21);">
+                <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Generate
+              </button>
+              <button class="btn btn-white border btn-sm shadow-sm px-3 rounded-pill fw-semibold" type="button" id="btnCopyPass" style="color: #0f172a;">
+                <i class="fa-regular fa-copy me-1"></i> Copy
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1299,27 +1306,40 @@ $users = $stmt->fetchAll();
         </div>
 
         <div class="modal-body">
-          <label class="form-label">New password</label>
-
-          <div class="input-group">
-            <input
-              class="form-control pro-input"
-              id="createNewPassInput"
-              type="text"
-              placeholder="Generate or type a password"
-              autocomplete="off"
-            >
-            <button class="btn-pro btn-pro--sm" type="button" id="btnCreateGenPass" title="Generate password">
-              <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Generate
-            </button>
+          <div class="mb-3">
+            <label class="form-label fw-semibold text-dark">New password</label>
+            <div class="input-group shadow-sm" style="border-radius: 10px; overflow: hidden;">
+              <span class="input-group-text bg-white border-end-0 text-muted" style="padding-left: 1rem;">
+                <i class="fa-solid fa-lock"></i>
+              </span>
+              <input
+                class="form-control pro-input border-start-0 ps-1"
+                style="font-family: monospace; font-size: 1.05rem;"
+                id="createNewPassInput"
+                type="text"
+                placeholder="Type or generate a strong password"
+                autocomplete="off"
+              >
+            </div>
           </div>
 
-          <small class="text-muted d-block mt-1">Minimum 8 characters, including an uppercase letter, a number, and a symbol.</small>
-
-          <div class="d-flex justify-content-end mt-3">
-            <button class="btn-secondary btn-secondary--sm" type="button" id="btnCreateCopyPass" title="Copy password">
-              <i class="fa-regular fa-copy me-1"></i>Copy to clipboard
-            </button>
+          <div class="bg-light p-3 rounded-3 border mb-1 shadow-sm" style="background: #fafbfe !important; border-color: rgba(15,23,42,0.08) !important;">
+            <div class="text-muted mb-2" style="font-size: 0.85rem;">
+              <i class="fa-solid fa-shield-halved text-success me-1"></i> Requires min 8 chars, uppercase, number & symbol.
+            </div>
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mt-2 pt-2 border-top gap-2">
+              <small class="text-danger fw-bold" style="font-size: 0.8rem;">
+                <i class="fa-solid fa-circle-exclamation me-1"></i> Copy before saving!
+              </small>
+              <div class="d-flex gap-2 w-100 w-sm-auto justify-content-end">
+                <button class="btn btn-white border btn-sm shadow-sm px-3 rounded-pill fw-bold" type="button" id="btnCreateGenPass" style="color: var(--rhr-orange, #F47A21);">
+                  <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Generate
+                </button>
+                <button class="btn btn-white border btn-sm shadow-sm px-3 rounded-pill fw-semibold" type="button" id="btnCreateCopyPass" style="color: #0f172a;">
+                  <i class="fa-regular fa-copy me-1"></i> Copy
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1535,6 +1555,19 @@ $users = $stmt->fetchAll();
             createNewPassInput.focus();
             return;
           }
+          
+          const isStrong = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(pass);
+          if (!isStrong) {
+            if (typeof window.rhrToast === 'function') {
+              rhrToast('Weak password: minimum 8 characters, including an uppercase letter, a number, and a symbol.', 'error');
+            } else {
+              alert('Weak password: minimum 8 characters, including an uppercase letter, a number, and a symbol.');
+            }
+            createNewPassInput.classList.add('is-invalid');
+            createNewPassInput.focus();
+            return;
+          }
+          createNewPassInput.classList.remove('is-invalid');
           // Llenar la contraseña en el formulario de crear usuario
           createPassInput.value = pass;
 
@@ -1631,6 +1664,35 @@ $users = $stmt->fetchAll();
         });
       }
 
+      // Validar modPassForm antes de enviar
+      const modPassForm = document.getElementById('modPassForm');
+      if (modPassForm && newPassInput) {
+        modPassForm.addEventListener('submit', function (e) {
+          const pass = newPassInput.value.trim();
+          const isStrong = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(pass);
+          if (!isStrong) {
+            e.preventDefault();
+            if (typeof window.rhrToast === 'function') {
+              rhrToast('Weak password: minimum 8 characters, including an uppercase letter, a number, and a symbol.', 'error');
+            } else {
+              alert('Weak password: minimum 8 characters, including an uppercase letter, a number, and a symbol.');
+            }
+            newPassInput.classList.add('is-invalid');
+            newPassInput.focus();
+          }
+        });
+        
+        newPassInput.addEventListener('input', () => {
+          newPassInput.classList.remove('is-invalid');
+        });
+        
+        if (createNewPassInput) {
+          createNewPassInput.addEventListener('input', () => {
+            createNewPassInput.classList.remove('is-invalid');
+          });
+        }
+      }
+
       // ── MODAL USER MODS ──
       const userModsModalEl = document.getElementById('userModsModal');
       const userModsModal = userModsModalEl ? new bootstrap.Modal(userModsModalEl) : null;
@@ -1675,7 +1737,19 @@ $users = $stmt->fetchAll();
           userModsBodyEl.innerHTML = `<div class="mods-empty">There are no modifications recorded for this user yet.</div>`;
           return;
         }
-        userModsBodyEl.innerHTML = `<div class="mods-list">${items.map(it => `
+        userModsBodyEl.innerHTML = `<div class="mods-list">${items.map(it => {
+          const isPassword = it.field_name === 'password_hash';
+          const diffHtml = isPassword 
+            ? `<div class="mod-diff">
+                 <span class="mod-new text-success fw-semibold"><i class="fa-solid fa-key me-1"></i> Password changed</span>
+               </div>`
+            : `<div class="mod-diff">
+                 <span class="mod-old">${e(translateUserVal(it.field_name, it.old_value ?? '—'))}</span>
+                 <span class="mod-arrow">→</span>
+                 <span class="mod-new">${e(translateUserVal(it.field_name, it.new_value ?? '—'))}</span>
+               </div>`;
+
+          return `
           <div class="mod-item">
             <div class="mod-head">
               <div class="mod-when"><i class="fa-regular fa-clock"></i> ${fmtDT(it.modified_at)}</div>
@@ -1683,13 +1757,10 @@ $users = $stmt->fetchAll();
             </div>
             <div class="mod-body">
               <div class="mod-field">${e(userFieldLabels[(it.field_name || '').toLowerCase()] || it.field_name || 'Field')}</div>
-              <div class="mod-diff">
-                <span class="mod-old">${e(translateUserVal(it.field_name, it.old_value ?? '—'))}</span>
-                <span class="mod-arrow">→</span>
-                <span class="mod-new">${e(translateUserVal(it.field_name, it.new_value ?? '—'))}</span>
-              </div>
+              ${diffHtml}
             </div>
-          </div>`).join('')}</div>`;
+          </div>`;
+        }).join('')}</div>`;
       };
 
       document.querySelectorAll('.btn-user-mods').forEach(btn => {
