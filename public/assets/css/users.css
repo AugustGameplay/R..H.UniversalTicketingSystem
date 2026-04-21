@@ -653,13 +653,13 @@ th.th-center .th-sort {
 
 .mods-body {
   min-height: 8.5rem;
-  border-radius: var(--r-md);
+  border-radius: 16px;
 }
 
 .mods-loading,
 .mods-empty {
-  padding: var(--s-5);
-  border-radius: var(--r-md);
+  padding: 1.25rem;
+  border-radius: 16px;
   background: rgba(15, 23, 42, .05);
   font-weight: 700;
   color: rgba(15, 23, 42, .55);
@@ -675,7 +675,7 @@ th.th-center .th-sort {
 /* Card de modificación con borde izquierdo naranja (timeline) */
 .mod-item {
   position: relative;
-  border-radius: var(--r-lg);
+  border-radius: 20px;
   border: 1px solid rgba(15, 23, 42, .07);
   background: rgba(255, 255, 255, .98);
   box-shadow:
@@ -683,7 +683,7 @@ th.th-center .th-sort {
     0 1px 3px rgba(2, 6, 23, .04);
   padding: .9rem 1rem .9rem 1.2rem;
   overflow: hidden;
-  transition: box-shadow var(--t-med) var(--ease), transform var(--t-fast) var(--ease);
+  transition: box-shadow 190ms cubic-bezier(.2,.8,.2,1), transform 120ms cubic-bezier(.2,.8,.2,1);
 }
 
 .mod-item:hover {
@@ -707,7 +707,7 @@ th.th-center .th-sort {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--s-3);
+  gap: .75rem;
   font-size: .74rem;
   font-weight: 800;
   color: rgba(15, 23, 42, .55);
@@ -803,8 +803,8 @@ th.th-center .th-sort {
   padding: .5rem 1.2rem;
   background: rgba(15, 23, 42, .08);
   border: none;
-  color: var(--text);
-  transition: background var(--t-fast) var(--ease);
+  color: #0f172a;
+  transition: background 120ms cubic-bezier(.2,.8,.2,1);
 }
 
 .mods-modal .modal-footer .btn-secondary:hover {

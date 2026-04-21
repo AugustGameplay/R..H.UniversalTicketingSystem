@@ -137,6 +137,10 @@ $_menuShortName = explode(' ', trim($_menuFullName))[0];
 <!-- JS del sidebar (móvil) -->
 <script src="./assets/js/sidebar.js" defer></script>
 
+<!-- Session timeout (auto-logout 15 min inactividad) -->
+<link rel="stylesheet" href="./assets/css/session-timeout.css">
+<script defer src="./assets/js/session-timeout.js"></script>
+
 <?php if (in_array($_menuRoleId, [1, 2])): ?>
 <!-- Real-time notifications for Admin/Superadmin -->
 <link rel="stylesheet" href="./assets/css/rhr-toast.css">
