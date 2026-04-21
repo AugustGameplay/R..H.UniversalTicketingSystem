@@ -108,6 +108,36 @@ function detectOrEnsureExtensionColumn(PDO $pdo): ?string {
   }
 }
 
+// =====================================================
+// AJAX: historial de modificaciones de usuario
+// =====================================================
+if (isset($_GET['ajax']) && $_GET['ajax'] === 'user_mods'){
+  header('Content-Type: application/json; charset=utf-8');
+  $userId = isset($_GET['user_id']) && ctype_digit((string)$_GET['user_id']) ? (int)$_GET['user_id'] : 0;
+  if ($userId <= 0){
+    echo json_encode(['ok'=>true, 'items'=>[]]);
+    exit;
+  }
+  try {
+    $stmt = $pdo->prepare("
+      SELECT
+        m.id, m.user_id, m.modified_at, m.field_name,
+        m.old_value, m.new_value, m.action,
+        COALESCE(u.full_name, '—') AS modified_by_name
+      FROM user_modifications m
+      LEFT JOIN users u ON u.id_user = m.modified_by
+      WHERE m.user_id = :id
+      ORDER BY m.modified_at DESC, m.id DESC
+      LIMIT 200
+    ");
+    $stmt->execute([':id'=>$userId]);
+    echo json_encode(['ok'=>true, 'items'=>$stmt->fetchAll(PDO::FETCH_ASSOC)]);
+  } catch (Throwable $e) {
+    echo json_encode(['ok'=>false, 'items'=>[]]);
+  }
+  exit;
+}
+
 
 function generateStrongPassword(int $length = 12): string {
   // Asegura al menos: 1 mayúscula, 1 minúscula, 1 número, 1 símbolo
@@ -191,6 +221,12 @@ $flashUpdated   = isset($_GET['updated']);
 // Traer roles para el select
 $rolesStmt = $pdo->query("SELECT id_role, name FROM roles ORDER BY id_role");
 $roles = $rolesStmt->fetchAll();
+
+// Crear array de roles para JS
+$rolesJs = [];
+foreach ($roles as $r) {
+  $rolesJs[(int)$r['id_role']] = $r['name'];
+}
 
 // Columna teléfono (detecta o crea si hace falta)
 $phoneCol = detectOrEnsurePhoneColumn($pdo);
@@ -369,6 +405,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
     try {
       $pdo->beginTransaction();
 
+      // Obtener valores antiguos para auditoría
+      $oldValues = [];
+      $stmt = $pdo->prepare("SELECT full_name, email, area, id_role, profile_photo" . ($phoneCol ? ", `$phoneCol`" : "") . ($extensionCol ? ", extension" : "") . " FROM users WHERE id_user = :id");
+      $stmt->execute([':id' => $id_user]);
+      $oldRow = $stmt->fetch(PDO::FETCH_ASSOC);
+      if ($oldRow) {
+        $oldValues = $oldRow;
+      }
+
       $extraSet = '';
       if ($phoneCol) {
         $extraSet .= ", `" . $phoneCol . "` = :phone";
@@ -404,6 +449,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
         $params[':extension'] = ($extension !== '') ? $extension : null;
       }
       $up->execute($params);
+
+      // Registrar cambios en auditoría
+      $modifiedBy = $_SESSION['user_id'] ?? null;
+      $fieldsToCheck = [
+        'full_name' => $full_name,
+        'email' => $email,
+        'area' => $area,
+        'id_role' => $id_role,
+        'profile_photo' => $finalPhoto,
+      ];
+      if ($phoneCol) {
+        $fieldsToCheck[$phoneCol] = ($phone !== '') ? $phone : null;
+      }
+      if ($extensionCol) {
+        $fieldsToCheck['extension'] = ($extension !== '') ? $extension : null;
+      }
+
+      foreach ($fieldsToCheck as $field => $newVal) {
+        $oldVal = $oldValues[$field] ?? null;
+        if ($oldVal !== $newVal) {
+          $ins = $pdo->prepare("INSERT INTO user_modifications (user_id, modified_by, field_name, old_value, new_value, action) VALUES (:uid, :modby, :field, :old, :new, 'update')");
+          $ins->execute([
+            ':uid' => $id_user,
+            ':modby' => $modifiedBy,
+            ':field' => $field,
+            ':old' => $oldVal,
+            ':new' => $newVal,
+          ]);
+        }
+      }
 
       $pdo->commit();
 
@@ -452,6 +527,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'updat
       $up->execute([
         ':hash'    => $hash,
         ':id_user' => $id_user
+      ]);
+
+      // Registrar cambio de contraseña en auditoría
+      $modifiedBy = $_SESSION['user_id'] ?? null;
+      $ins = $pdo->prepare("INSERT INTO user_modifications (user_id, modified_by, field_name, old_value, new_value, action) VALUES (:uid, :modby, :field, :old, :new, 'update')");
+      $ins->execute([
+        ':uid' => $id_user,
+        ':modby' => $modifiedBy,
+        ':field' => 'password_hash',
+        ':old' => '***', // No mostrar hash antiguo
+        ':new' => '***', // No mostrar nuevo hash
       ]);
 
       header("Location: users.php?pass_updated=1");
@@ -850,6 +936,15 @@ $users = $stmt->fetchAll();
                           data-user-photo="<?= e($u['profile_photo'] ?? '') ?>"
                         >
                           <i class="fa-solid fa-pen"></i>
+                        </button>
+
+                        <button
+                          class="icon-action btn-user-mods"
+                          type="button"
+                          title="View modification history"
+                          data-user-id="<?= e($u['id_user']) ?>"
+                        >
+                          <i class="fa-solid fa-clock-rotate-left"></i>
                         </button>
 
                         <button
@@ -1535,6 +1630,87 @@ $users = $stmt->fetchAll();
           delUserName.textContent = name ? `(${name})` : '';
         });
       }
+
+      // ── MODAL USER MODS ──
+      const userModsModalEl = document.getElementById('userModsModal');
+      const userModsModal = userModsModalEl ? new bootstrap.Modal(userModsModalEl) : null;
+      const userModsTitleEl = document.getElementById('userModsTitle');
+      const userModsSubEl = document.getElementById('userModsSub');
+      const userModsBodyEl = document.getElementById('userModsBody');
+
+      const userFieldLabels = {
+        'full_name': 'Name',
+        'email': 'Email',
+        'area': 'Area',
+        'id_role': 'Role',
+        'profile_photo': 'Profile Photo',
+        'phone': 'Phone',
+        'extension': 'Extension',
+        'password_hash': 'Password'
+      };
+
+      const rolesMap = <?= json_encode($rolesJs, JSON_UNESCAPED_UNICODE) ?>;
+
+      const fmtDT = s => {
+        if (!s) return '—';
+        const p = String(s).replace('T',' ').split(' ');
+        const d = (p[0]||'').split('-');
+        return d.length !== 3 ? s : `${d[1]}/${d[2]}/${d[0]} ${(p[1]||'').slice(0,5)}`;
+      };
+
+      const e = s => String(s??'').replace(/[&<>'"]/g, c =>
+        ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));
+
+      const translateUserVal = (field, val) => {
+        if (!val) return val;
+        const f = (field || '').toLowerCase();
+        if (f === 'id_role') {
+          return rolesMap[val] || val;
+        }
+        return val;
+      };
+
+      const renderUserMods = items => {
+        if (!items?.length) {
+          userModsBodyEl.innerHTML = `<div class="mods-empty">There are no modifications recorded for this user yet.</div>`;
+          return;
+        }
+        userModsBodyEl.innerHTML = `<div class="mods-list">${items.map(it => `
+          <div class="mod-item">
+            <div class="mod-head">
+              <div class="mod-when"><i class="fa-regular fa-clock"></i> ${fmtDT(it.modified_at)}</div>
+              <div class="mod-who"><i class="fa-regular fa-user"></i> ${e(it.modified_by_name || '—')}</div>
+            </div>
+            <div class="mod-body">
+              <div class="mod-field">${e(userFieldLabels[(it.field_name || '').toLowerCase()] || it.field_name || 'Field')}</div>
+              <div class="mod-diff">
+                <span class="mod-old">${e(translateUserVal(it.field_name, it.old_value ?? '—'))}</span>
+                <span class="mod-arrow">→</span>
+                <span class="mod-new">${e(translateUserVal(it.field_name, it.new_value ?? '—'))}</span>
+              </div>
+            </div>
+          </div>`).join('')}</div>`;
+      };
+
+      document.querySelectorAll('.btn-user-mods').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!userModsModal) return;
+          const uid = btn.getAttribute('data-user-id');
+          if (!uid) return;
+          userModsTitleEl.textContent = 'User modification history';
+          userModsSubEl.textContent = `User ID: ${uid}`;
+          userModsBodyEl.innerHTML = `<div class="mods-loading">Loading…</div>`;
+          userModsModal.show();
+          try {
+            const res = await fetch(`users.php?ajax=user_mods&user_id=${encodeURIComponent(uid)}`);
+            const data = await res.json();
+            data?.ok ? renderUserMods(data.items)
+                     : (userModsBodyEl.innerHTML = `<div class="mods-empty">The history could not be loaded.</div>`);
+          } catch {
+            userModsBodyEl.innerHTML = `<div class="mods-empty">The history could not be loaded.</div>`;
+          }
+        });
+      });
     });
   </script>
 
@@ -1544,6 +1720,29 @@ $users = $stmt->fetchAll();
   fetch('api/process_queue.php', {headers:{'X-Requested-With':'XMLHttpRequest'}}).catch(()=>{});
   </script>
   <?php endif; ?>
+
+  <!-- Modal User Mods -->
+  <div class="modal fade" id="userModsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content mods-modal">
+        <div class="modal-header">
+          <div>
+            <h5 class="modal-title" id="userModsTitle">User modification history</h5>
+            <div class="mods-sub" id="userModsSub">—</div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="userModsBody" class="mods-body">
+            <div class="mods-loading">Loading…</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
 </body>
 </html>

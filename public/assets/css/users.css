@@ -599,6 +599,218 @@ th.th-center .th-sort {
   width: clamp(320px, 46vw, 620px);
 }
 
+/* ── Modal modificaciones — PREMIUM ─────────────── */
+#userModsModal .modal-dialog {
+  border-radius: 1.2rem;
+}
+
+.mods-modal {
+  border-radius: 1.2rem !important;
+  border: none;
+  overflow: hidden;
+  box-shadow:
+    0 30px 80px rgba(2, 6, 23, .22),
+    0 4px 16px rgba(2, 6, 23, .10);
+}
+
+/* Header con gradiente navy igual que la tabla */
+.mods-modal .modal-header {
+  background: linear-gradient(90deg, var(--rhr-navy) 0%, #0f5a8a 100%);
+  border-bottom: none;
+  border-radius: 1.2rem 1.2rem 0 0;
+  padding: 1.1rem 1.4rem;
+}
+
+.mods-modal .modal-title {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -.1px;
+}
+
+.mods-modal .btn-close {
+  filter: invert(1) brightness(2);
+  opacity: .75;
+}
+
+.mods-modal .btn-close:hover {
+  opacity: 1;
+}
+
+.mods-sub {
+  margin-top: .2rem;
+  font-size: .75rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, .58);
+}
+
+/* Body del modal */
+.mods-modal .modal-body {
+  background: #f3f6fb;
+  padding: 1.2rem 1.4rem;
+  border-radius: 0;
+}
+
+.mods-body {
+  min-height: 8.5rem;
+  border-radius: var(--r-md);
+}
+
+.mods-loading,
+.mods-empty {
+  padding: var(--s-5);
+  border-radius: var(--r-md);
+  background: rgba(15, 23, 42, .05);
+  font-weight: 700;
+  color: rgba(15, 23, 42, .55);
+  text-align: center;
+}
+
+.mods-list {
+  display: flex;
+  flex-direction: column;
+  gap: .85rem;
+}
+
+/* Card de modificación con borde izquierdo naranja (timeline) */
+.mod-item {
+  position: relative;
+  border-radius: var(--r-lg);
+  border: 1px solid rgba(15, 23, 42, .07);
+  background: rgba(255, 255, 255, .98);
+  box-shadow:
+    0 2px 10px rgba(2, 6, 23, .07),
+    0 1px 3px rgba(2, 6, 23, .04);
+  padding: .9rem 1rem .9rem 1.2rem;
+  overflow: hidden;
+  transition: box-shadow var(--t-med) var(--ease), transform var(--t-fast) var(--ease);
+}
+
+.mod-item:hover {
+  box-shadow: 0 6px 20px rgba(2, 6, 23, .10);
+  transform: translateY(-1px);
+}
+
+/* Línea de timeline naranja a la izquierda */
+.mod-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: .28rem;
+  background: linear-gradient(180deg, var(--rhr-orange), var(--rhr-orange-dark));
+  border-radius: 0 2px 2px 0;
+}
+
+.mod-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  font-size: .74rem;
+  font-weight: 800;
+  color: rgba(15, 23, 42, .55);
+}
+
+.mod-when i {
+  margin-right: .3rem;
+  color: var(--rhr-orange);
+}
+
+.mod-who {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  background: rgba(8, 59, 92, .07);
+  padding: .18rem .55rem;
+  border-radius: 999px;
+  color: var(--rhr-navy);
+  font-weight: 900;
+}
+
+.mod-who i {
+  color: var(--rhr-orange-dark);
+}
+
+/* Cuerpo del item */
+.mod-body {
+  margin-top: .6rem;
+}
+
+.mod-field {
+  display: inline-flex;
+  align-items: center;
+  padding: .15rem .55rem;
+  border-radius: .4rem;
+  background: linear-gradient(90deg, var(--rhr-navy), #0f5a8a);
+  color: rgba(255, 255, 255, .85);
+  font-size: .60rem;
+  font-weight: 900;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+  margin-bottom: .5rem;
+}
+
+.mod-diff {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  flex-wrap: wrap;
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+/* Valor anterior — gris tachado */
+.mod-old {
+  padding: .26rem .7rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, .07);
+  color: rgba(15, 23, 42, .55);
+  text-decoration: line-through;
+  text-decoration-color: rgba(15, 23, 42, .30);
+}
+
+/* Flecha */
+.mod-arrow {
+  color: var(--rhr-orange);
+  font-size: .9rem;
+  opacity: .9;
+}
+
+/* Valor nuevo — verde */
+.mod-new {
+  padding: .26rem .7rem;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, .13);
+  color: #15803d;
+  border: 1px solid rgba(34, 197, 94, .25);
+  font-weight: 900;
+}
+
+/* Footer del modal */
+.mods-modal .modal-footer {
+  background: rgba(248, 250, 253, .98);
+  border-top: 1px solid rgba(15, 23, 42, .06);
+  border-radius: 0 0 1.2rem 1.2rem;
+  padding: .8rem 1.4rem;
+}
+
+.mods-modal .modal-footer .btn-secondary {
+  border-radius: .5rem;
+  font-weight: 800;
+  font-size: .82rem;
+  padding: .5rem 1.2rem;
+  background: rgba(15, 23, 42, .08);
+  border: none;
+  color: var(--text);
+  transition: background var(--t-fast) var(--ease);
+}
+
+.mods-modal .modal-footer .btn-secondary:hover {
+  background: rgba(15, 23, 42, .14);
+}
+
 .users-search__group {
   position: relative;
   display: flex;
@@ -710,4 +922,38 @@ th.th-center .th-sort {
 #deleteUserModal .btn-close:hover,
 .delete-user-modal .btn-close:hover {
   opacity: 1;
+}
+
+/* Media queries para modal mods */
+@media (max-width: 768px) {
+  #userModsModal .modal-dialog {
+    margin: 10px;
+    border-radius: 1.2rem;
+  }
+
+  .mods-modal {
+    border-radius: 1.2rem !important;
+  }
+
+  .mod-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .mod-diff {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .mod-old::after {
+    content: ' → ';
+    color: rgba(15, 23, 42, .55);
+    font-weight: bold;
+  }
+
+  .mod-arrow {
+    display: none;
+  }
 }
