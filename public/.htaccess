@@ -1,0 +1,28 @@
+# ============================================================
+#  Email Configuration — RH&R Ticketing System
+# ============================================================
+
+# ── Driver: smtp = emails reales via GoDaddy ──
+SetEnv MAIL_DRIVER smtp
+
+# ── GoDaddy SMTP ───────────────────────────────────────────
+SetEnv SMTP_HOST smtpout.secureserver.net
+SetEnv SMTP_PORT 465
+SetEnv SMTP_USER monicam@rhr-universal.com
+SetEnv SMTP_PASS "Universal2025$"
+SetEnv SMTP_ENCRYPTION ssl
+
+# ── Remitente ──
+SetEnv MAIL_FROM monicam@rhr-universal.com
+SetEnv MAIL_FROM_NAME "RH&R Ticketing"
+
+# ── Admin: recibe notificación de cada ticket nuevo ──
+SetEnv TICKETS_NOTIFY_EMAIL monicam@rhr-universal.com
+
+# ── URL de la app (para links en los emails) ──
+SetEnv APP_URL http://localhost/ticketsystem/R..H.UniversalTicketingSystem/public
+
+# ── Info de soporte (se muestra en los templates) ──
+SetEnv SUPPORT_EMAIL monicam@rhr-universal.com
+SetEnv SUPPORT_PHONE "+1 (555) 123-4567"
+SetEnv DEFAULT_ASSIGNEE_NAME "IT Service Desk"

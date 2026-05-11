@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ticket En Proceso – IT Support | RH&R Universal</title>
+  <title>Ticket In Progress – IT Support | RH&R Universal</title>
   <link
     href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Sans:wght@300;400;500;700&display=swap"
     rel="stylesheet" />
@@ -416,6 +416,60 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
     }
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      body { padding: 0; }
+      .wrapper { border-radius: 0; box-shadow: none; }
+
+      .header { padding: 22px 20px 20px; }
+      .header-top { margin-bottom: 14px; }
+      .logo-img { height: 38px; }
+      .status-badge { font-size: 10px; padding: 5px 10px; }
+      .gear-circle { width: 44px; height: 44px; font-size: 20px; }
+      .header-title { font-size: 21px; }
+      .header-subtitle { font-size: 13px; }
+
+      .body { padding: 22px 20px; }
+      .greeting { font-size: 14px; margin-bottom: 16px; }
+
+      .ticket-card { padding: 16px 16px; margin: 16px 0; border-radius: 10px; }
+      .ticket-id { font-size: 11px; margin-bottom: 12px; }
+      .ticket-row {
+        flex-direction: column;
+        gap: 3px;
+        padding: 10px 0;
+      }
+      .ticket-label { min-width: unset; font-size: 10px; }
+      .ticket-value { text-align: left; font-size: 14px; }
+
+      .agente-box { padding: 16px 16px; margin: 16px 0; border-radius: 8px; }
+      .agente-label { font-size: 10px; margin-bottom: 12px; }
+      .agente-info { gap: 12px; margin-bottom: 14px; }
+      .agente-avatar { width: 42px; height: 42px; font-size: 17px; }
+      .agente-datos-nombre { font-size: 14px; }
+      .agente-datos-puesto { font-size: 12px; }
+
+      .telefono-row { padding: 12px 14px; gap: 10px; border-radius: 8px; }
+      .telefono-number { font-size: 15px; }
+      .telefono-nota { font-size: 11px; }
+
+      .cta-area { margin: 24px 0 8px; }
+      .cta-btn {
+        display: block;
+        text-align: center;
+        padding: 16px 20px;
+        font-size: 15px;
+        border-radius: 10px;
+      }
+
+      .info-note { padding: 14px 14px; gap: 10px; border-radius: 8px; margin-top: 20px; }
+      .info-note-icon { font-size: 16px; }
+      .info-note-text { font-size: 12px; }
+
+      .footer { padding: 22px 20px; }
+      .footer-text { font-size: 11px; }
+      .footer-copy { font-size: 9px; }
+    }
   </style>
 </head>
 
@@ -428,14 +482,14 @@
         <img
           src="https://inboxguru.s3.amazonaws.com/001-c060925a-e121-4a50-915f-f0c8fe967eb3/Dise%C3%B1o%20sin%20t%C3%ADtulo%20%2827%29.png"
           alt="RH&R Universal" class="logo-img" />
-        <div class="status-badge">⚙ EN PROCESO</div>
+        <div class="status-badge">⚙ IN PROGRESS</div>
       </div>
       <div class="gear-wrap">
         <div class="gear-circle">⚙️</div>
       </div>
       <div class="header-content">
-        <div class="header-title">Tu ticket está siendo <span>atendido</span></div>
-        <div class="header-subtitle">Un agente ha sido asignado y ya está trabajando en tu solicitud.</div>
+        <div class="header-title">Your ticket is being <span>handled</span></div>
+        <div class="header-subtitle">An agent has been assigned and is already working on your request.</div>
       </div>
     </div>
 
@@ -443,37 +497,36 @@
     <div class="body">
 
       <p class="greeting">
-        Hola, <strong>{{nombre_usuario}}</strong>.<br />
-        Buenas noticias — tu ticket ha sido asignado a un miembro del equipo de IT Support y ya se encuentra en proceso
-        de resolución.
+        Hello, <strong>{{nombre_usuario}}</strong>.<br />
+        Good news — your ticket has been assigned to a member of the IT Support team and is currently being resolved.
       </p>
 
       <div class="ticket-card">
         <div class="ticket-id">Ticket #{{numero_ticket}}</div>
         <div class="ticket-row">
-          <span class="ticket-label">Asunto</span>
+          <span class="ticket-label">Subject</span>
           <span class="ticket-value">{{asunto_ticket}}</span>
         </div>
         <div class="ticket-row">
-          <span class="ticket-label">Categoría</span>
+          <span class="ticket-label">Category</span>
           <span class="ticket-value">{{categoria}}</span>
         </div>
         <div class="ticket-row">
-          <span class="ticket-label">Fecha apertura</span>
+          <span class="ticket-label">Open date</span>
           <span class="ticket-value">{{fecha_apertura}}</span>
         </div>
         <div class="ticket-row">
-          <span class="ticket-label">Fecha asignación</span>
+          <span class="ticket-label">Assigned date</span>
           <span class="ticket-value">{{fecha_asignacion}}</span>
         </div>
         <div class="ticket-row">
-          <span class="ticket-label">Estado</span>
-          <span class="ticket-value in-process">⚙ En Proceso</span>
+          <span class="ticket-label">Status</span>
+          <span class="ticket-value in-process">⚙ In Progress</span>
         </div>
       </div>
 
       <div class="agente-box">
-        <div class="agente-label">Agente asignado</div>
+        <div class="agente-label">Assigned agent</div>
         <div class="agente-info">
           <div class="agente-avatar">{{inicial_agente}}</div>
           <div>
@@ -484,22 +537,21 @@
         <div class="telefono-row">
           <div class="telefono-icon">📞</div>
           <div class="telefono-content">
-            <div class="telefono-label">Teléfono de contacto</div>
+            <div class="telefono-label">Contact phone</div>
             <a href="tel:{{telefono_agente}}" class="telefono-number">{{telefono_agente}}</a>
-            <div class="telefono-nota">Comunícate si requieres atención inmediata</div>
+            <div class="telefono-nota">Reach out if you need immediate assistance</div>
           </div>
         </div>
       </div>
 
       <div class="cta-area">
-        <a href="{{url_ticket}}" class="cta-btn">Ver mi ticket →</a>
+        <a href="{{url_ticket}}" class="cta-btn">View my ticket →</a>
       </div>
 
       <div class="info-note">
         <div class="info-note-icon">💬</div>
         <div class="info-note-text">
-          <strong>¿Necesitas agregar información?</strong> Puedes responder directamente a este correo o acceder al
-          portal para actualizar tu ticket. El agente asignado revisará cada actualización.
+          <strong>Need to add more information?</strong> You can reply directly to this email or access the portal to update your ticket. The assigned agent will review every update.
         </div>
       </div>
 
@@ -516,7 +568,7 @@
         <div class="footer-divider-line"></div>
       </div>
       <div class="footer-text">
-        Este correo fue generado automáticamente por el sistema de tickets de IT Support.<br />
+        This email was automatically generated by the IT Support ticketing system.<br />
       </div>
       <div class="footer-copy">© {{año}} RH&amp;R Universal · IT Support Department</div>
     </div>
