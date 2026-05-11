@@ -2,8 +2,12 @@
 // logout.php
 session_start();
 
-// ✅ Mensaje flash para mostrar en login
-$_SESSION['flash_success'] = "Has cerrado sesión correctamente.";
+// ✅ Mensaje flash según razón del logout
+if (isset($_GET['reason']) && $_GET['reason'] === 'timeout') {
+    $_SESSION['flash_timeout'] = "Tu sesión expiró por inactividad. Inicia sesión nuevamente.";
+} else {
+    $_SESSION['flash_success'] = "Has cerrado sesión correctamente.";
+}
 
 // ✅ Eliminar SOLO variables de autenticación (y aliases)
 unset(

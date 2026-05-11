@@ -1,3 +1,4 @@
+
 <?php
 /**
  * partials/auth.php
@@ -29,6 +30,36 @@ if (empty($_SESSION['user_id'])) {
     exit;
 }
 
+/* ── 1b) Timeout por inactividad ─────────────────────────────
+   • Rol 3 (usuario general): 15 min (900 seg)
+   • Roles 1–2 (Superadmin / Admin): 24 h (86 400 seg)
+   ──────────────────────────────────────────────────────────── */
+$_currentRoleId = (int)($_SESSION['id_role'] ?? 0);
+$_sessionTimeout = in_array($_currentRoleId, [1, 2], true) ? 86400 : 900;
+
+if (isset($_SESSION['last_activity'])) {
+    $elapsed = time() - $_SESSION['last_activity'];
+    if ($elapsed > $_sessionTimeout) {
+        // Guardar mensaje flash antes de limpiar
+        $flashMsg = "Tu sesión expiró por inactividad. Inicia sesión nuevamente.";
+
+        // Limpiar variables de autenticación
+        unset(
+            $_SESSION['user_id'], $_SESSION['id_user'], $_SESSION['id'],
+            $_SESSION['uid'], $_SESSION['full_name'], $_SESSION['name'],
+            $_SESSION['email'], $_SESSION['id_role'], $_SESSION['user'],
+            $_SESSION['last_activity']
+        );
+
+        $_SESSION['flash_timeout'] = $flashMsg;
+        session_regenerate_id(true);
+        header('Location: login.php');
+        exit;
+    }
+}
+// Actualizar timestamp de última actividad
+$_SESSION['last_activity'] = time();
+
 /* ── 2) Datos de sesión ─────────────────────────────────────── */
 $_AUTH_USER_ID   = (int)($_SESSION['user_id'] ?? 0);
 $_AUTH_ROLE_ID   = (int)($_SESSION['id_role'] ?? 0);
@@ -47,6 +78,7 @@ $_PAGE_PERMISSIONS = [
     'history'        => [1, 2],
     'users'          => [1, 2],
     'ticket_edit'    => [1, 2],
+    'report_pdf'     => [1, 2],    // reportes PDF/Excel
 ];
 
 /* ── 4) Resolver página actual ──────────────────────────────── */
@@ -97,6 +129,7 @@ function _auth_detect_page_key(): string {
         'history.php'        => 'history',
         'users.php'          => 'users',
         'ticket_edit.php'    => 'ticket_edit',
+        'report_pdf.php'     => 'report_pdf',
         default              => '',
     };
 }

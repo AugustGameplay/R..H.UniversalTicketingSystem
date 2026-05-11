@@ -127,3 +127,7 @@ $_menuShortName = explode(' ', trim($_menuFullName))[0];
 
 <!-- JS del sidebar (móvil) -->
 <script src="./assets/js/sidebar.js" defer></script>
+
+<!-- Session timeout (auto-logout por inactividad) -->
+<link rel="stylesheet" href="./assets/css/session-timeout.css">
+<script src="./assets/js/session-timeout.js" defer></script>

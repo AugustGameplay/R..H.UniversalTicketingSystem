@@ -3,8 +3,7 @@ require __DIR__ . '/partials/auth.php';
 $active = 'history';
 
 require __DIR__ . '/config/db.php';
-
-function esc($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
+require_once __DIR__ . '/partials/helpers.php';
 
 // =====================================================
 // Fechas (GET) - inicio y fin
@@ -29,175 +28,13 @@ $paramsRange = [
 ];
 
 // =====================================================
-// Detectar columnas útiles en tickets
+// Campos de auditoría (estáticos)
 // =====================================================
-$ticketCols = [];
-try {
-  $colsStmt = $pdo->query("SHOW COLUMNS FROM tickets");
-  foreach ($colsStmt->fetchAll(PDO::FETCH_ASSOC) as $c){
-    $ticketCols[strtolower($c['Field'])] = strtolower($c['Type']);
-  }
-} catch (Throwable $e) {
-  $ticketCols = [];
-}
-
-// =====================================================
-// 1) "Creado por" (ID o texto)
-// =====================================================
-$creatorIdField = null;
-$creatorNameField = null;
-$creatorJoinSQL = "";
-$creatorNameExpr = "''";
-
-if ($ticketCols){
-  $idCandidates = ['created_by_user_id','creator_user_id','created_by_id','user_id','id_user','created_by'];
-  foreach ($idCandidates as $f){
-    $lf = strtolower($f);
-    if (isset($ticketCols[$lf]) && preg_match('/^(int|bigint|smallint|mediumint|tinyint)/', $ticketCols[$lf])){
-      $creatorIdField = $f;
-      break;
-    }
-  }
-
-  $nameCandidates = ['created_by_name','creator_name','created_by'];
-  foreach ($nameCandidates as $f){
-    $lf = strtolower($f);
-    if (isset($ticketCols[$lf]) && !preg_match('/^(int|bigint|smallint|mediumint|tinyint)/', $ticketCols[$lf])){
-      $creatorNameField = $f;
-      break;
-    }
-  }
-
-  if ($creatorIdField){
-    $creatorJoinSQL = "LEFT JOIN users cu ON cu.id_user = t.$creatorIdField";
-  }
-
-  if ($creatorIdField && $creatorNameField){
-    $creatorNameExpr = "COALESCE(cu.full_name, t.$creatorNameField, '')";
-  } elseif ($creatorIdField){
-    $creatorNameExpr = "COALESCE(cu.full_name, '')";
-  } elseif ($creatorNameField){
-    $creatorNameExpr = "COALESCE(t.$creatorNameField, '')";
-  }
-}
-
-// =====================================================
-// 2) "Cerrado" (fecha/hora)
-// =====================================================
-$closedField = null;
-$closedCandidates = ['closed_at','resolved_at','completed_at','closed_datetime','closed_date'];
-foreach ($closedCandidates as $f){
-  if (isset($ticketCols[strtolower($f)])) { $closedField = $f; break; }
-}
-
-if (!$closedField){
-  try {
-    $pdo->exec("ALTER TABLE tickets ADD COLUMN closed_at DATETIME NULL");
-    $closedField = 'closed_at';
-
-    $updatedCandidates = ['updated_at','modified_at','last_updated_at','last_update'];
-    foreach ($updatedCandidates as $u){
-      if (isset($ticketCols[strtolower($u)])){
-        try {
-          $pdo->exec("UPDATE tickets SET closed_at = {$u} WHERE (status='Cerrado' OR status='Closed') AND closed_at IS NULL AND {$u} IS NOT NULL");
-        } catch (Throwable $e) {}
-        break;
-      }
-    }
-
-    $trgName = 'tickets_set_closed_at';
-    $exists = $pdo->prepare("SELECT COUNT(*) FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = DATABASE() AND TRIGGER_NAME = :t");
-    $exists->execute([':t'=>$trgName]);
-    if ((int)$exists->fetchColumn() === 0){
-      $pdo->exec("DROP TRIGGER IF EXISTS $trgName");
-      $pdo->exec("
-        CREATE TRIGGER $trgName
-        BEFORE UPDATE ON tickets
-        FOR EACH ROW
-        BEGIN
-          IF (NEW.status = 'Cerrado' OR NEW.status = 'Closed') AND (OLD.status <> 'Cerrado' AND OLD.status <> 'Closed') THEN
-            SET NEW.closed_at = IFNULL(NEW.closed_at, NOW());
-          END IF;
-          IF (NEW.status <> 'Cerrado' AND NEW.status <> 'Closed') AND (OLD.status = 'Cerrado' OR OLD.status = 'Closed') THEN
-            SET NEW.closed_at = NULL;
-          END IF;
-        END
-      ");
-    }
-  } catch (Throwable $e) {
-    $closedField = null;
-  }
-}
-
-if ($closedField){
-  try {
-    $updatedCandidates = ['updated_at','modified_at','last_updated_at','last_update'];
-    foreach ($updatedCandidates as $u){
-      if (isset($ticketCols[strtolower($u)])){
-        try {
-          $pdo->exec("UPDATE tickets SET {$closedField} = IFNULL({$closedField}, {$u}) WHERE (status='Cerrado' OR status='Closed') AND {$closedField} IS NULL AND {$u} IS NOT NULL");
-        } catch (Throwable $e) {}
-        break;
-      }
-    }
-
-    $trgName = 'tickets_set_closed_at';
-    try { $pdo->exec("DROP TRIGGER IF EXISTS {$trgName}"); } catch (Throwable $e) {}
-
-    $pdo->exec("
-      CREATE TRIGGER {$trgName}
-      BEFORE UPDATE ON tickets
-      FOR EACH ROW
-      BEGIN
-        IF (NEW.status = 'Cerrado' OR NEW.status = 'Closed')
-           AND (OLD.status <> 'Cerrado' AND OLD.status <> 'Closed') THEN
-          SET NEW.{$closedField} = IFNULL(NEW.{$closedField}, NOW());
-        END IF;
-        IF (NEW.status <> 'Cerrado' AND NEW.status <> 'Closed')
-           AND (OLD.status = 'Cerrado' OR OLD.status = 'Closed') THEN
-          SET NEW.{$closedField} = NULL;
-        END IF;
-      END
-    ");
-  } catch (Throwable $e) {}
-}
-
-// =====================================================
-// 3) Tabla de modificaciones (auditoría)
-// =====================================================
-$modsTable = null;
-$modsCandidates = ['ticket_modifications','ticket_changes','ticket_audit','ticket_history','tickets_history','ticket_log'];
-foreach ($modsCandidates as $t){
-  try {
-    $q = $pdo->prepare("SHOW TABLES LIKE :t");
-    $q->execute([':t'=>$t]);
-    if ($q->fetchColumn()){ $modsTable = $t; break; }
-  } catch (Throwable $e) {}
-}
-
-if (!$modsTable){
-  try {
-    $pdo->exec("
-      CREATE TABLE IF NOT EXISTS ticket_modifications (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        ticket_id INT NOT NULL,
-        modified_by INT NULL,
-        modified_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        field_name VARCHAR(64) NOT NULL,
-        old_value TEXT NULL,
-        new_value TEXT NULL,
-        action VARCHAR(32) NOT NULL DEFAULT 'update',
-        notes TEXT NULL,
-        INDEX idx_ticket_id (ticket_id),
-        INDEX idx_modified_at (modified_at),
-        INDEX idx_modified_by (modified_by)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    ");
-    $modsTable = 'ticket_modifications';
-  } catch (Throwable $e) {
-    $modsTable = null;
-  }
-}
+$creatorIdField = 'id_user';
+$creatorJoinSQL = "LEFT JOIN users cu ON cu.id_user = t.id_user";
+$creatorNameExpr = "COALESCE(cu.full_name, '')";
+$closedField = 'closed_at';
+$modsTable = 'ticket_modifications';
 
 // =====================================================
 // AJAX: historial de modificaciones (modal)
@@ -248,7 +85,7 @@ if ($creatorIdField && $creatorId > 0){
 }
 
 // =====================================================
-// Download CSV
+// Download CSV (mejorado con más columnas + BOM UTF-8)
 // =====================================================
 if (isset($_GET['download']) && $_GET['download'] == '1') {
   $extraWhere = "";
@@ -265,11 +102,17 @@ if (isset($_GET['download']) && $_GET['download'] == '1') {
   header('Content-Type: text/csv; charset=utf-8');
   header('Content-Disposition: attachment; filename="tickets_history_'.$start.'_to_'.$end.'_'.$view.'.csv"');
   $out = fopen('php://output', 'w');
-  fputcsv($out, ['ID','Creado','Cerrado','Área','Prioridad','Estatus','Asignado a','Creado por']);
+  // BOM UTF-8 para que Excel abra correctamente con acentos
+  fwrite($out, "\xEF\xBB\xBF");
+  fputcsv($out, ['ID','Created','Closed','Area','Category','Type','Priority','Status','Assigned to','Created by','Resolution Time']);
   $closedSelect = $closedField ? "t.$closedField AS closed_at" : "NULL AS closed_at";
   $stmt = $pdo->prepare("
-    SELECT t.id_ticket, t.created_at, $closedSelect, t.area, t.priority, t.status,
-           COALESCE(u.full_name, '') AS assigned_name, $creatorNameExpr AS created_by_name
+    SELECT t.id_ticket, t.created_at, $closedSelect, t.area,
+           COALESCE(NULLIF(TRIM(t.category), ''), 'Uncategorized') AS category,
+           COALESCE(NULLIF(TRIM(t.type), ''), '') AS type,
+           t.priority, t.status,
+           COALESCE(u.full_name, '') AS assigned_name,
+           $creatorNameExpr AS created_by_name
     FROM tickets t
     LEFT JOIN users u ON u.id_user = t.assigned_user_id
     $creatorJoinSQL
@@ -278,7 +121,33 @@ if (isset($_GET['download']) && $_GET['download'] == '1') {
   ");
   $stmt->execute($params);
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    fputcsv($out, [$row['id_ticket'],$row['created_at'],$row['closed_at']?:'',$row['area'],$row['priority'],$row['status'],$row['assigned_name'],$row['created_by_name']]);
+    // Calcular tiempo de resolución
+    $resTime = '';
+    if (!empty($row['closed_at']) && !empty($row['created_at'])) {
+      try {
+        $d1 = new DateTime($row['created_at']);
+        $d2 = new DateTime($row['closed_at']);
+        $diff = $d1->diff($d2);
+        $parts = [];
+        if ($diff->d > 0) $parts[] = $diff->d . 'd';
+        if ($diff->h > 0) $parts[] = $diff->h . 'h';
+        if ($diff->i > 0) $parts[] = $diff->i . 'min';
+        $resTime = $parts ? implode(' ', $parts) : '0min';
+      } catch (Throwable $e) {}
+    }
+    fputcsv($out, [
+      $row['id_ticket'],
+      $row['created_at'],
+      $row['closed_at'] ?: '',
+      $row['area'],
+      $row['category'],
+      $row['type'],
+      getPriorityEn($row['priority']),
+      getStatusEn($row['status']),
+      $row['assigned_name'],
+      $row['created_by_name'],
+      $resTime,
+    ]);
   }
   fclose($out);
   exit;
@@ -314,7 +183,7 @@ if ($view === 'closed')     { $extraWhere = " AND (t.status = 'Cerrado' OR t.sta
 
 // FIX: aplicar filtro de categoría a la query principal
 if ($cat !== '') {
-  $extraWhere .= " AND COALESCE(NULLIF(TRIM(t.category), ''), 'Sin categoría') = :cat";
+  $extraWhere .= " AND COALESCE(NULLIF(TRIM(t.category), ''), 'Uncategorized') = :cat";
   $params[':cat'] = $cat;
 }
 
@@ -324,10 +193,10 @@ if ($cat !== '') {
 $categoryCounts = [];
 try {
   $stmtCat = $pdo->prepare("
-    SELECT COALESCE(NULLIF(TRIM(t.category), ''), 'Sin categoría') AS category, COUNT(*) AS total
+    SELECT COALESCE(NULLIF(TRIM(t.category), ''), 'Uncategorized') AS category, COUNT(*) AS total
     FROM tickets t
     WHERE $whereBase $extraWhere
-    GROUP BY COALESCE(NULLIF(TRIM(t.category), ''), 'Sin categoría')
+    GROUP BY COALESCE(NULLIF(TRIM(t.category), ''), 'Uncategorized')
     ORDER BY total DESC, category ASC
   ");
   $stmtCat->execute($params);
@@ -341,21 +210,21 @@ try {
   $stmtAlert = $pdo->prepare("
     SELECT
       DATE(t.created_at) AS dia,
-      COALESCE(NULLIF(TRIM(t.category), ''), 'Sin categoría') AS category,
-      COALESCE(NULLIF(TRIM(t.type), ''), 'Sin tipo') AS type,
+      COALESCE(NULLIF(TRIM(t.category), ''), 'Uncategorized') AS category,
+      COALESCE(NULLIF(TRIM(t.type), ''), 'No type selected') AS type,
       COUNT(*) AS total,
       COUNT(DISTINCT t.id_user) AS reportantes
     FROM tickets t
     WHERE $whereBase
     GROUP BY DATE(t.created_at),
-             COALESCE(NULLIF(TRIM(t.category), ''), 'Sin categoría'),
-             COALESCE(NULLIF(TRIM(t.type), ''), 'Sin tipo')
+             COALESCE(NULLIF(TRIM(t.category), ''), 'Uncategorized'),
+             COALESCE(NULLIF(TRIM(t.type), ''), 'No type selected')
     HAVING COUNT(*) >= :thr AND COUNT(DISTINCT t.id_user) >= :minu
     ORDER BY total DESC, reportantes DESC
   ");
   $stmtAlert->execute($params + [':thr'=>$ALERT_THRESHOLD, ':minu'=>$ALERT_MIN_USERS]);
   while ($r = $stmtAlert->fetch(PDO::FETCH_ASSOC)){
-    $ck = $r['category'] ?? 'Sin categoría';
+    $ck = $r['category'] ?? 'Uncategorized';
     if (!isset($alertsByCategory[$ck])) $alertsByCategory[$ck] = $r;
   }
 } catch (Throwable $e) { $alertsByCategory = []; }
@@ -396,8 +265,8 @@ if ($creatorIdField){
   } catch (Throwable $e) { $usersList = []; }
 }
 
-$startText = (new DateTime($start))->format('d/m/Y');
-$endText   = (new DateTime($end))->format('d/m/Y');
+$startText = (new DateTime($start))->format('m/d/Y');
+$endText   = (new DateTime($end))->format('m/d/Y');
 
 function build_qs(array $pairs): string {
   $pairs = array_filter($pairs, fn($v) => $v !== null && $v !== '' && $v !== 0);
@@ -407,10 +276,10 @@ function build_qs(array $pairs): string {
 $qsBase = build_qs(['start'=>$start, 'end'=>$end, 'creator'=>$creatorId, 'cat'=>$cat]);
 
 $fieldLabels = [
-  'status'=>'Estatus','priority'=>'Prioridad','area'=>'Área',
-  'assigned_user_id'=>'Asignado a','assigned_to'=>'Asignado a',
-  'ticket_url'=>'URL','url'=>'URL','evidence'=>'Evidencia',
-  'evidence_path'=>'Evidencia','attachment'=>'Adjunto','notes'=>'Notas',
+  'status'=>'Status','priority'=>'Priority','area'=>'Area',
+  'assigned_user_id'=>'Assigned to','assigned_to'=>'Assigned to',
+  'ticket_url'=>'URL','url'=>'URL','evidence'=>'Evidence',
+  'evidence_path'=>'Evidence','attachment'=>'Attachment','notes'=>'Notes',
 ];
 ?>
 <!DOCTYPE html>
@@ -419,6 +288,7 @@ $fieldLabels = [
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>History | RH&R Ticketing</title>
+  <link rel="icon" type="image/png" href="./assets/img/isotopo.png" />
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
@@ -501,12 +371,12 @@ $fieldLabels = [
             <?php if (!empty($categoryCounts)): ?>
               <div class="history-cat-section">
                 <div class="history-cat-head">
-                  <div class="history-cat-title">Categorías</div>
-                  <div class="history-cat-sub">Conteo por categoría (mismo filtro actual)</div>
+                  <div class="history-cat-title">Categories</div>
+                  <div class="history-cat-sub">Count by category (same current filter)</div>
                 </div>
                 <div class="history-cat-grid">
                   <?php foreach ($categoryCounts as $cc):
-                    $catName  = $cc['category'] ?? 'Sin categoría';
+                    $catName  = $cc['category'] ?? 'Uncategorized';
                     $catTotal = (int)($cc['total'] ?? 0);
                     $alert    = $alertsByCategory[$catName] ?? null;
                     $hasAlert = !empty($alert);
@@ -518,14 +388,14 @@ $fieldLabels = [
                   ?>
                     <a href="history.php?<?= esc($catQS) ?>"
                        class="stat-card stat-total stat-cat <?= $hasAlert ? 'stat-cat--warn' : '' ?> <?= $isActive ? 'is-active' : '' ?>"
-                       role="button" aria-label="<?= esc($catName) ?>" title="<?= $isActive ? 'Quitar filtro' : 'Filtrar por '.esc($catName) ?>">
+                       role="button" aria-label="<?= esc($catName) ?>" title="<?= $isActive ? 'Clear filter' : 'Filter by '.esc($catName) ?>">
                       <div class="stat-num"><?= $catTotal ?></div>
                       <div class="stat-label"><?= esc($catName) ?></div>
                       <?php if ($hasAlert): ?>
                         <div class="cat-warn">
                           <i class="fa-solid fa-triangle-exclamation"></i>
                           <span>
-                            Posible falla general: <b><?= esc($alert['type'] ?? '') ?></b>
+                            Possible general issue: <b><?= esc(getTypeEn($alert['type'] ?? '')) ?></b>
                             <span class="muted">(<?= (int)($alert['total'] ?? 0) ?>)</span>
                             <span class="muted"><?= esc($alert['dia'] ?? '') ?></span>
                           </span>
@@ -548,14 +418,14 @@ $fieldLabels = [
                   <?php if ($cat !== ''): ?>
                     <span class="chip-cat">
                       <i class="fa-solid fa-tag"></i> <?= esc($cat) ?>
-                      <a class="chip-cat__clear" href="history.php?<?= esc(build_qs(['start'=>$start,'end'=>$end,'creator'=>$creatorId,'view'=>$view])) ?>" title="Quitar filtro de categoría">×</a>
+                      <a class="chip-cat__clear" href="history.php?<?= esc(build_qs(['start'=>$start,'end'=>$end,'creator'=>$creatorId,'view'=>$view])) ?>" title="Clear category filter">×</a>
                     </span>
                   <?php endif; ?>
                 </div>
                 <div class="history-right__meta">
-                  <?= esc("Del $startText al $endText") ?>
+                  <?= esc("From $startText to $endText") ?>
                   <?php if ($creatorIdField && $creatorId > 0 && $selectedCreatorName): ?>
-                    <span class="chip-creator">Creados por: <?= esc($selectedCreatorName) ?></span>
+                    <span class="chip-creator">Created by: <?= esc($selectedCreatorName) ?></span>
                   <?php endif; ?>
                 </div>
               </div>
@@ -601,26 +471,46 @@ $fieldLabels = [
                     <?php foreach ($rows as $r): ?>
                       <?php
                         $createdTxt = '—'; $closedTxt = '—';
-                        try { $createdTxt = (new DateTime($r['created_at']))->format('d/m/Y H:i'); } catch (Throwable $e) {}
+                        try { $createdTxt = (new DateTime($r['created_at']))->format('m/d/Y H:i'); } catch (Throwable $e) {}
                         if (!empty($r['closed_at'])){
-                          try { $closedTxt = (new DateTime($r['closed_at']))->format('d/m/Y H:i'); }
+                          try { $closedTxt = (new DateTime($r['closed_at']))->format('m/d/Y H:i'); }
                           catch (Throwable $e) { $closedTxt = esc((string)$r['closed_at']); }
                         }
                       ?>
                       <tr>
-                        <td class="td-id"><?= (int)$r['id_ticket'] ?></td>
+                        <td class="td-id"><span><?= (int)$r['id_ticket'] ?></span></td>
                         <td><?= esc($createdTxt) ?></td>
                         <td><?= esc($closedTxt) ?></td>
                         <td class="td-ellipsis" title="<?= esc($r['area']) ?>"><?= esc($r['area']) ?></td>
-                        <td><?= esc($r['priority']) ?></td>
-                        <td><?= esc($r['status']) ?></td>
+                        <td class="td-priority"><?php
+                          $pri = esc($r['priority']);
+                          $priEn = getPriorityEn($r['priority']);
+                          $priClass = match($r['priority']) {
+                            'Urgente' => 'badge-urgente',
+                            'Alta'    => 'badge-alta',
+                            'Media'   => 'badge-media',
+                            'Baja'    => 'badge-baja',
+                            default   => 'badge-media',
+                          };
+                        ?><span class="<?= $priClass ?>"><?= esc($priEn) ?></span></td>
+                        <td class="td-status"><?php
+                          $st = esc($r['status']);
+                          $stEn = getStatusEn($r['status']);
+                          $stClass = match(strtolower((string)$r['status'])) {
+                            'cerrado', 'closed'  => 'badge-cerrado',
+                            'resuelto', 'done'   => 'badge-resuelto',
+                            'en proceso'         => 'badge-proceso',
+                            'pendiente'          => 'badge-pendiente',
+                            default              => 'badge-pendiente',
+                          };
+                        ?><span class="<?= $stClass ?>"><?= esc($stEn) ?></span></td>
                         <td class="td-ellipsis" title="<?= esc($r['assigned_name']) ?>"><?= esc($r['assigned_name']) ?></td>
                         <td class="td-ellipsis" title="<?= esc($r['created_by_name']?:'—') ?>"><?= esc($r['created_by_name']?:'—') ?></td>
                         <td class="td-actions">
                           <button type="button" class="btn-mods"
                                   data-ticket-id="<?= (int)$r['id_ticket'] ?>"
                                   <?= $modsTable ? '' : 'disabled' ?>
-                                  title="Ver historial de modificaciones">
+                                  title="View modification history">
                             <i class="fa-solid fa-clock-rotate-left"></i>
                           </button>
                         </td>
@@ -632,9 +522,15 @@ $fieldLabels = [
             </div>
 
             <div class="history-footer">
-              <a class="btn-download d-inline-flex align-items-center justify-content-center text-decoration-none"
-                 href="history.php?<?= esc($qsBase) ?>&view=<?= esc($view) ?>&download=1">
-                <i class="fa-solid fa-download me-2"></i> Download
+              <a class="btn-download btn-download--pdf d-inline-flex align-items-center justify-content-center text-decoration-none"
+                 href="report_pdf.php?<?= esc($qsBase) ?>&view=<?= esc($view) ?>"
+                 title="Download professional PDF report">
+                <i class="fa-solid fa-file-pdf me-2"></i> PDF Report
+              </a>
+              <a class="btn-download btn-download--csv d-inline-flex align-items-center justify-content-center text-decoration-none"
+                 href="history.php?<?= esc($qsBase) ?>&view=<?= esc($view) ?>&download=1"
+                 title="Download data as Excel/CSV">
+                <i class="fa-solid fa-file-excel me-2"></i> Excel (CSV)
               </a>
             </div>
           </div><!-- /history-right -->
@@ -653,7 +549,7 @@ $fieldLabels = [
             <h5 class="modal-title" id="modsTitle">Modification history</h5>
             <div class="mods-sub" id="modsSub">—</div>
           </div>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div id="modsBody" class="mods-body">
@@ -700,7 +596,7 @@ $fieldLabels = [
     };
 
     const fpStart = flatpickr(startEl, {
-      dateFormat: "d/m/Y", defaultDate: startEl.value,
+      dateFormat: "m/d/Y", defaultDate: startEl.value,
       allowInput: false, locale: { firstDayOfWeek: 1 },
       onChange: sel => {
         if (!sel?.[0]) return;
@@ -711,7 +607,7 @@ $fieldLabels = [
     });
 
     const fpEnd = flatpickr(endEl, {
-      dateFormat: "d/m/Y", defaultDate: endEl.value,
+      dateFormat: "m/d/Y", defaultDate: endEl.value,
       allowInput: false, locale: { firstDayOfWeek: 1 },
       onChange: sel => {
         if (!sel?.[0]) return;
@@ -736,15 +632,39 @@ $fieldLabels = [
       if (!s) return '—';
       const p = String(s).replace('T',' ').split(' ');
       const d = (p[0]||'').split('-');
-      return d.length !== 3 ? s : `${d[2]}/${d[1]}/${d[0]} ${(p[1]||'').slice(0,5)}`;
+      return d.length !== 3 ? s : `${d[1]}/${d[2]}/${d[0]} ${(p[1]||'').slice(0,5)}`;
     };
 
     const e = s => String(s??'').replace(/[&<>'"]/g, c =>
       ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));
 
+    const translateVal = (field, val) => {
+      if(!val) return val;
+      const f = (field||'').toLowerCase();
+      const v = String(val).trim().toLowerCase();
+      if(f === 'status') {
+        if(v === 'cerrado' || v === 'closed') return 'Closed';
+        if(v === 'resuelto' || v === 'done') return 'Resolved';
+        if(v === 'en proceso') return 'In Progress';
+        if(v === 'pendiente') return 'Pending';
+      }
+      if(f === 'priority') {
+        if(v === 'urgente') return 'Urgent';
+        if(v === 'alta') return 'High';
+        if(v === 'media') return 'Medium';
+        if(v === 'baja') return 'Low';
+        if(v === 'alta/media') return 'High/Medium';
+      }
+      if(f === 'type') {
+        if(v === 'falla') return 'Fault';
+        if(v === 'solicitud') return 'Request';
+      }
+      return val;
+    };
+
     const renderMods = items => {
       if (!items?.length){
-        bodyEl.innerHTML = `<div class="mods-empty">Aún no hay modificaciones registradas para este ticket.</div>`;
+        bodyEl.innerHTML = `<div class="mods-empty">There are no modifications recorded for this ticket yet.</div>`;
         return;
       }
       bodyEl.innerHTML = `<div class="mods-list">${items.map(it => `
@@ -754,11 +674,11 @@ $fieldLabels = [
             <div class="mod-who"><i class="fa-regular fa-user"></i> ${e(it.modified_by_name||'—')}</div>
           </div>
           <div class="mod-body">
-            <div class="mod-field">${e(FL[(it.field_name||'').toLowerCase()]||it.field_name||'Campo')}</div>
+            <div class="mod-field">${e(FL[(it.field_name||'').toLowerCase()]||it.field_name||'Field')}</div>
             <div class="mod-diff">
-              <span class="mod-old">${e(it.old_value??'—')}</span>
+              <span class="mod-old">${e(translateVal(it.field_name, it.old_value??'—'))}</span>
               <span class="mod-arrow">→</span>
-              <span class="mod-new">${e(it.new_value??'—')}</span>
+              <span class="mod-new">${e(translateVal(it.field_name, it.new_value??'—'))}</span>
             </div>
           </div>
         </div>`).join('')}</div>`;

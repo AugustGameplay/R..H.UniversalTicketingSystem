@@ -921,7 +921,7 @@ $users = $stmt->fetchAll();
   <!-- MODAL: Modify Password -->
 <div class="modal fade" id="modPassModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <form class="modal-content modal-pro" method="POST" action="users.php">
+    <form id="modPassForm" class="modal-content modal-pro" method="POST" action="users.php">
       <div class="modal-header">
         <h5 class="modal-title fw-bold">
           Password <span class="text-muted" id="modPassUserName" style="font-size: 14px;"></span>
@@ -933,29 +933,42 @@ $users = $stmt->fetchAll();
         <input type="hidden" name="action" value="update_password">
         <input type="hidden" id="userIdToUpdate" name="id_user" value="">
 
-        <label class="form-label">New password</label>
-
-        <div class="input-group">
-          <input
-            class="form-control pro-input"
-            id="newPassInput"
-            name="new_password"
-            type="text"
-            placeholder="Generate or type a password"
-            autocomplete="off"
-            required
-          >
-          <button class="btn-pro btn-pro--sm" type="button" id="btnGenPass" title="Generar contraseña">
-            <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Generate
-          </button>
+        <div class="mb-3">
+          <label class="form-label fw-semibold text-dark">New password</label>
+          <div class="input-group shadow-sm" style="border-radius: 10px; overflow: hidden;">
+            <span class="input-group-text bg-white border-end-0 text-muted" style="padding-left: 1rem;">
+              <i class="fa-solid fa-lock"></i>
+            </span>
+            <input
+              class="form-control pro-input border-start-0 ps-1"
+              style="font-family: monospace; font-size: 1.05rem;"
+              id="newPassInput"
+              name="new_password"
+              type="text"
+              placeholder="Type or generate a strong password"
+              autocomplete="off"
+              required
+            >
+          </div>
         </div>
 
-        <small class="text-muted d-block mt-1">Minimum 8 characters, including an uppercase letter, a number, and a symbol.</small>
-
-        <div class="d-flex justify-content-end mt-3">
-          <button class="btn-secondary btn-secondary--sm" type="button" id="btnCopyPass" title="Copiar contraseña">
-            <i class="fa-regular fa-copy me-1"></i>Copy to clipboard
-          </button>
+        <div class="bg-light p-3 rounded-3 border mb-1 shadow-sm" style="background: #fafbfe !important; border-color: rgba(15,23,42,0.08) !important;">
+          <div class="text-muted mb-2" style="font-size: 0.85rem;">
+            <i class="fa-solid fa-shield-halved text-success me-1"></i> Requires min 8 chars, uppercase, number & symbol.
+          </div>
+          <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mt-2 pt-2 border-top gap-2">
+            <small class="text-danger fw-bold" style="font-size: 0.8rem;">
+              <i class="fa-solid fa-circle-exclamation me-1"></i> Copy before saving!
+            </small>
+            <div class="d-flex gap-2 w-100 w-sm-auto justify-content-end">
+              <button class="btn btn-white border btn-sm shadow-sm px-3 rounded-pill fw-bold" type="button" id="btnGenPass" style="color: var(--rhr-orange, #F47A21);">
+                <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Generate
+              </button>
+              <button class="btn btn-white border btn-sm shadow-sm px-3 rounded-pill fw-semibold" type="button" id="btnCopyPass" style="color: #0f172a;">
+                <i class="fa-regular fa-copy me-1"></i> Copy
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1193,6 +1206,25 @@ $users = $stmt->fetchAll();
 
           userIdToDelete.value = id;
           delUserName.textContent = name ? `(${name})` : '';
+        });
+      }
+
+      // Validar modPassForm antes de enviar
+      const modPassForm = document.getElementById('modPassForm');
+      if (modPassForm && newPassInput) {
+        modPassForm.addEventListener('submit', function (e) {
+          const pass = newPassInput.value.trim();
+          const isStrong = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/.test(pass);
+          if (!isStrong) {
+            e.preventDefault();
+            alert('Contraseña débil: mínimo 8 caracteres e incluir mayúscula, número y símbolo.');
+            newPassInput.classList.add('is-invalid');
+            newPassInput.focus();
+          }
+        });
+        
+        newPassInput.addEventListener('input', () => {
+          newPassInput.classList.remove('is-invalid');
         });
       }
     });

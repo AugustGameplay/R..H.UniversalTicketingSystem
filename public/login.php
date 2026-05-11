@@ -1,10 +1,14 @@
-﻿<?php
+<?php
 // login.php
 session_start();
 
 // ✅ Flash toast (logout)
 $flash_success = $_SESSION['flash_success'] ?? null;
 unset($_SESSION['flash_success']);
+
+// ✅ Flash toast (timeout)
+$flash_timeout = $_SESSION['flash_timeout'] ?? null;
+unset($_SESSION['flash_timeout']);
 
 // ✅ Si ya hay sesión iniciada, TODOS los roles van a generarTickets.php
 if (!empty($_SESSION['user_id']) || !empty($_SESSION['id_user'])) {
@@ -81,6 +85,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'email'     => $userEmail,
             'id_role'   => $roleId,
           ];
+
+          // ✅ Timestamp de actividad para auto-logout
+          $_SESSION['last_activity'] = time();
 
           // ✅ SOLUCIÓN: TODOS los roles autenticados van a generarTickets.php
           header("Location: generarTickets.php");
@@ -187,6 +194,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
   <?php endif; ?>
 
+  <!-- ✅ Toast timeout (naranja/warning) -->
+  <?php if (!empty($flash_timeout)): ?>
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 2000;">
+      <div id="timeoutToast" class="toast align-items-center text-bg-warning border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+          <div class="toast-body">
+            <i class="fa-solid fa-clock me-2"></i>
+            <?php echo htmlspecialchars($flash_timeout, ENT_QUOTES, 'UTF-8'); ?>
+          </div>
+          <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+        </div>
+      </div>
+    </div>
+  <?php endif; ?>
+
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
           integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
@@ -197,6 +219,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       const el = document.getElementById('logoutToast');
       if (!el) return;
       const t = new bootstrap.Toast(el, { delay: 2600 });
+      t.show();
+    });
+  </script>
+  <?php endif; ?>
+
+  <?php if (!empty($flash_timeout)): ?>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const el = document.getElementById('timeoutToast');
+      if (!el) return;
+      const t = new bootstrap.Toast(el, { delay: 4000 });
       t.show();
     });
   </script>
