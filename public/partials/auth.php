@@ -29,12 +29,16 @@ if (empty($_SESSION['user_id'])) {
     exit;
 }
 
-/* ── 1.5) Session timeout por inactividad (15 min) ─────────── */
-define('SESSION_TIMEOUT', 15 * 60); // 900 segundos = 15 minutos
+/* ── 1.5) Session timeout por inactividad (por rol) ────────── */
+// Rol 3 (usuario general) = 15 min | Roles 1-2 (admin/superadmin) = 1 día
+$_role_for_timeout = (int)($_SESSION['id_role'] ?? 3);
+$_session_timeout  = in_array($_role_for_timeout, [1, 2], true)
+    ? 86400   // 24 horas = 1 día
+    : 900;    // 15 minutos
 
 if (isset($_SESSION['last_activity'])) {
     $elapsed = time() - $_SESSION['last_activity'];
-    if ($elapsed > SESSION_TIMEOUT) {
+    if ($elapsed > $_session_timeout) {
         // Sesión expirada → limpiar y redirigir
         unset(
             $_SESSION['user_id'], $_SESSION['id_user'], $_SESSION['id'],
