@@ -176,17 +176,14 @@ $deleted = isset($_GET['deleted']) ? (int)$_GET['deleted'] : 0;
   <!-- Adaptive rows per page (runs before render to avoid flash) -->
   <script>
     (function () {
-      // Altura del "chrome" del panel (header + filtros + thead + paginación + paddings)
-      var PANEL_CHROME = 320;
-      var ROW_H        = 54;
-      // El panel tiene min/max definido en CSS: clamp(640px, 86vh, 900px)
-      var panelH = Math.min(900, Math.max(640, window.innerHeight * 0.86));
-      var ideal  = Math.max(5, Math.min(25, Math.floor((panelH - PANEL_CHROME) / ROW_H)));
-
+      // Adaptive rows: only redirect when per_page is NOT yet in the URL
+      // (i.e. first visit). Once set, respect it to avoid redirect loops.
       var params  = new URLSearchParams(window.location.search);
-      var current = parseInt(params.get('per_page') || '0', 10);
-
-      if (current !== ideal) {
+      if (!params.has('per_page')) {
+        var PANEL_CHROME = 320;
+        var ROW_H        = 54;
+        var panelH = Math.min(900, Math.max(640, window.innerHeight * 0.86));
+        var ideal  = Math.max(5, Math.min(25, Math.floor((panelH - PANEL_CHROME) / ROW_H)));
         params.set('per_page', String(ideal));
         params.set('page', '1');
         window.location.replace(window.location.pathname + '?' + params.toString());
@@ -231,6 +228,7 @@ $deleted = isset($_GET['deleted']) ? (int)$_GET['deleted'] : 0;
                 <?php if($priority!==''): ?><input type="hidden" name="priority" value="<?= esc($priority) ?>"><?php endif; ?>
               <?php if($order!==''): ?><input type="hidden" name="order" value="<?= esc($order) ?>"><?php endif; ?>
               <?php if($assignedTo!==''): ?><input type="hidden" name="assigned" value="<?= esc($assignedTo) ?>"><?php endif; ?>
+              <input type="hidden" name="per_page" value="<?= esc((string)$perPage) ?>">
 </form>
 
               <button class="avatar-btn" type="button" title="Profile">
@@ -260,6 +258,7 @@ $deleted = isset($_GET['deleted']) ? (int)$_GET['deleted'] : 0;
           <!-- Filters -->
           <form class="filters row g-2 mt-3" method="GET" action="tickets.php">
             <input type="hidden" name="q" value="<?= esc($q) ?>">
+            <input type="hidden" name="per_page" value="<?= esc((string)$perPage) ?>">
 
             <!-- Status -->
             <div class="col-12 col-md">
