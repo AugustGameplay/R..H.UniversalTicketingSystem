@@ -528,9 +528,9 @@ $fieldLabels = [
                 <i class="fa-solid fa-file-pdf me-2"></i> PDF Report
               </a>
               <a class="btn-download btn-download--csv d-inline-flex align-items-center justify-content-center text-decoration-none"
-                 href="history.php?<?= esc($qsBase) ?>&view=<?= esc($view) ?>&download=1"
-                 title="Download data as Excel/CSV">
-                <i class="fa-solid fa-file-excel me-2"></i> Excel (CSV)
+                 href="report_excel.php?<?= esc($qsBase) ?>&view=<?= esc($view) ?>"
+                 title="Download professional Excel report">
+                <i class="fa-solid fa-file-excel me-2"></i> Excel Report
               </a>
             </div>
           </div><!-- /history-right -->
