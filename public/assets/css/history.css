@@ -995,6 +995,8 @@ body {
 .history-footer {
   display: flex;
   justify-content: center;
+  gap: var(--s-3);
+  flex-wrap: wrap;
   /* FIX: no dejar que el footer se comprima */
   flex-shrink: 0;
 }
@@ -1023,10 +1025,27 @@ body {
   background: var(--rhr-navy-hover);
   box-shadow: var(--shadow-lg);
   transform: translateY(-1px);
+  color: #fff;
 }
 
 .btn-download:active {
   transform: translateY(1px);
+}
+
+/* PDF Report button */
+.btn-download--pdf {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+.btn-download--pdf:hover {
+  background: linear-gradient(135deg, #c0392b, #a93226);
+}
+
+/* Excel/CSV button */
+.btn-download--csv {
+  background: linear-gradient(135deg, #27ae60, #1e8449);
+}
+.btn-download--csv:hover {
+  background: linear-gradient(135deg, #1e8449, #196f3d);
 }
 
 /* ── Modal modificaciones — PREMIUM ─────────────── */

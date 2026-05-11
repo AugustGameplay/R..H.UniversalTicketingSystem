@@ -85,7 +85,7 @@ if ($creatorIdField && $creatorId > 0){
 }
 
 // =====================================================
-// Download CSV
+// Download CSV (mejorado con más columnas + BOM UTF-8)
 // =====================================================
 if (isset($_GET['download']) && $_GET['download'] == '1') {
   $extraWhere = "";
@@ -102,11 +102,17 @@ if (isset($_GET['download']) && $_GET['download'] == '1') {
   header('Content-Type: text/csv; charset=utf-8');
   header('Content-Disposition: attachment; filename="tickets_history_'.$start.'_to_'.$end.'_'.$view.'.csv"');
   $out = fopen('php://output', 'w');
-  fputcsv($out, ['ID','Created','Closed','Area','Priority','Status','Assigned to','Created by']);
+  // BOM UTF-8 para que Excel abra correctamente con acentos
+  fwrite($out, "\xEF\xBB\xBF");
+  fputcsv($out, ['ID','Created','Closed','Area','Category','Type','Priority','Status','Assigned to','Created by','Resolution Time']);
   $closedSelect = $closedField ? "t.$closedField AS closed_at" : "NULL AS closed_at";
   $stmt = $pdo->prepare("
-    SELECT t.id_ticket, t.created_at, $closedSelect, t.area, t.priority, t.status,
-           COALESCE(u.full_name, '') AS assigned_name, $creatorNameExpr AS created_by_name
+    SELECT t.id_ticket, t.created_at, $closedSelect, t.area,
+           COALESCE(NULLIF(TRIM(t.category), ''), 'Uncategorized') AS category,
+           COALESCE(NULLIF(TRIM(t.type), ''), '') AS type,
+           t.priority, t.status,
+           COALESCE(u.full_name, '') AS assigned_name,
+           $creatorNameExpr AS created_by_name
     FROM tickets t
     LEFT JOIN users u ON u.id_user = t.assigned_user_id
     $creatorJoinSQL
@@ -115,15 +121,32 @@ if (isset($_GET['download']) && $_GET['download'] == '1') {
   ");
   $stmt->execute($params);
   while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    // Calcular tiempo de resolución
+    $resTime = '';
+    if (!empty($row['closed_at']) && !empty($row['created_at'])) {
+      try {
+        $d1 = new DateTime($row['created_at']);
+        $d2 = new DateTime($row['closed_at']);
+        $diff = $d1->diff($d2);
+        $parts = [];
+        if ($diff->d > 0) $parts[] = $diff->d . 'd';
+        if ($diff->h > 0) $parts[] = $diff->h . 'h';
+        if ($diff->i > 0) $parts[] = $diff->i . 'min';
+        $resTime = $parts ? implode(' ', $parts) : '0min';
+      } catch (Throwable $e) {}
+    }
     fputcsv($out, [
       $row['id_ticket'],
       $row['created_at'],
-      $row['closed_at']?:'',
+      $row['closed_at'] ?: '',
       $row['area'],
+      $row['category'],
+      $row['type'],
       getPriorityEn($row['priority']),
       getStatusEn($row['status']),
       $row['assigned_name'],
-      $row['created_by_name']
+      $row['created_by_name'],
+      $resTime,
     ]);
   }
   fclose($out);
@@ -499,9 +522,15 @@ $fieldLabels = [
             </div>
 
             <div class="history-footer">
-              <a class="btn-download d-inline-flex align-items-center justify-content-center text-decoration-none"
-                 href="history.php?<?= esc($qsBase) ?>&view=<?= esc($view) ?>&download=1">
-                <i class="fa-solid fa-download me-2"></i> Download
+              <a class="btn-download btn-download--pdf d-inline-flex align-items-center justify-content-center text-decoration-none"
+                 href="report_pdf.php?<?= esc($qsBase) ?>&view=<?= esc($view) ?>"
+                 title="Download professional PDF report">
+                <i class="fa-solid fa-file-pdf me-2"></i> PDF Report
+              </a>
+              <a class="btn-download btn-download--csv d-inline-flex align-items-center justify-content-center text-decoration-none"
+                 href="history.php?<?= esc($qsBase) ?>&view=<?= esc($view) ?>&download=1"
+                 title="Download data as Excel/CSV">
+                <i class="fa-solid fa-file-excel me-2"></i> Excel (CSV)
               </a>
             </div>
           </div><!-- /history-right -->
